@@ -1,4 +1,3 @@
-// File: src/context/AuthContext.tsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { User } from '../types/types';
 
@@ -11,8 +10,24 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
   currentUser: null,
-  login: async () => ({ id: '', firstName: '', lastName: '', email: '', registrationNumber: '' }),
-  register: async () => ({ id: '', firstName: '', lastName: '', email: '', registrationNumber: '' }),
+  login: async () => ({ 
+    id: '', 
+    firstName: '', 
+    lastName: '', 
+    email: '', 
+    registrationNumber: '',
+    category: '',  // Add required properties
+    registrationEndDate: ''
+  }),
+  register: async () => ({ 
+    id: '', 
+    firstName: '', 
+    lastName: '', 
+    email: '', 
+    registrationNumber: '',
+    category: '',  // Add required properties
+    registrationEndDate: ''
+  }),
   logout: () => {},
 });
 
@@ -43,9 +58,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (user) {
           const { password, ...userWithoutPassword } = user;
-          setCurrentUser(userWithoutPassword);
+          setCurrentUser(userWithoutPassword as User);
           localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-          resolve(userWithoutPassword);
+          resolve(userWithoutPassword as User);
         } else {
           reject(new Error('Invalid email or password'));
         }
@@ -71,13 +86,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const id = `user_${Date.now()}`;
         const registrationNumber = `LYA ${Math.floor(100 + Math.random() * 900)}`;
         
-        // Create new user
+        // Create new user with required fields
         const newUser = {
           id,
+          firstName: userData.firstName || '',
+          lastName: userData.lastName || '',
+          email: userData.email || '',
           registrationNumber,
+          category: userData.category || 'Standard',  // Default value for required field
+          registrationEndDate: userData.registrationEndDate || '',  // Default value for required field
+          photo: userData.photo,
+          signature: userData.signature,
           registrationDate: new Date(),
           expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
-          ...userData,
           password
         };
         
@@ -87,10 +108,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Return user without password
         const { password: _, ...userWithoutPassword } = newUser;
-        setCurrentUser(userWithoutPassword);
+        setCurrentUser(userWithoutPassword as User);
         localStorage.setItem('user', JSON.stringify(userWithoutPassword));
         
-        resolve(userWithoutPassword);
+        resolve(userWithoutPassword as User);
       }, 500);
     });
   };
@@ -114,5 +135,3 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
-
-
