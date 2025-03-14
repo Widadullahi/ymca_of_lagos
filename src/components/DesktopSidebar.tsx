@@ -13,7 +13,7 @@ const DesktopSidebar = () => {
   };
 
   return (
-    <aside className=" top-4 left-4 md:block h-screen w-56 border-r-[1px] border-gray-200 ">
+    <aside className="hidden top-4 left-4 md:block h-screen w-56 border-r-[1px] border-gray-200 ">
     {/* <aside className="hidden top-4 left-4 md:block h-screen w-56 border-r-[1px] border-gray-200 "> */}
     {/* <aside className="fixed z-50 top-4 left-4 lg:block h-screen w-56 border-r-[1px] border-gray-200 "> */}
       {/* Sidebar Header */}
