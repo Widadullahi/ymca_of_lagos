@@ -24,11 +24,7 @@ const AdminUpdatesPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Modal state
-  const [selectedUpdate, setSelectedUpdate] = useState<Update | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   // Form state
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
