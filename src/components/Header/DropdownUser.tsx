@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import ClickOutside from '../../components/ClickOutside';
-import { useAuth } from '../../context/authContext';
+import { useAuth } from '../../context/AuthContext';
+import ClickOutside from '../ClickOutside';
+
 
 const DropdownUser = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { currentUser, logout } = useAuth();
 
   return (
     <ClickOutside onClick={() => setDropdownOpen(false)} className="relative">
@@ -17,13 +18,13 @@ const DropdownUser = () => {
       >
         <span className="hidden text-right lg:block">
           <span className="block text-sm font-medium text-black">
-            {user?.first_name} {user?.last_name}
+            {currentUser?.firstName} {currentUser?.lastName}
           </span>
-          <span className="block text-xs">{user?.email} ({user?.is_active})</span>
+          <span className="block text-xs">{currentUser?.email}</span>
         </span>
 
         <span className="h-12 w-12 rounded-full">
-          <img src={user?.profile_image || 'https://avatars.githubusercontent.com/u/95700260?s=400&u=8a038fc4fa00588887195b84026eb610c9213b4f&v=4'} alt="User" className="h-12 w-12 rounded-full" />
+          <img src={currentUser?.profile_image || 'https://avatars.githubusercontent.com/u/95700260?s=400&u=8a038fc4fa00588887195b84026eb610c9213b4f&v=4'} alt="User" className="h-12 w-12 rounded-full" />
         </span>
 
       </Link>
