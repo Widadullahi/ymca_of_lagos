@@ -1,11 +1,16 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import avatar from '../assets/images/widad.jpeg'
+import avatar from '../assets/images/widad.jpeg';
 
-const IDCardPreview: React.FC = () => {
+interface IDCardPreviewProps {
+  forwardedRef?: React.Ref<HTMLDivElement>;
+}
+
+const IDCardPreview: React.FC<IDCardPreviewProps> = ({ forwardedRef }) => {
   const { currentUser } = useAuth();
+  
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="w-full max-w-md mx-auto" ref={forwardedRef}>
       <div className="bg-white rounded-lg overflow-hidden shadow-lg mb-4">
         {/* Front of ID Card */}
         <div className="relative">
@@ -44,13 +49,6 @@ const IDCardPreview: React.FC = () => {
             <div className="flex mb-4">
               {/* Photo */}
               <div className="mr-4 border-2 border-red-600 w-24 h-32 flex-shrink-0">
-                {/* {currentUser?.photo && (
-                  <img 
-                    src={avatar}
-                    alt="Member" 
-                    className="w-full h-full object-cover"
-                  />
-                )} */}
                 <img 
                   src={avatar}
                   alt="Member" 
@@ -60,18 +58,18 @@ const IDCardPreview: React.FC = () => {
               
               {/* Info */}
               <div className="flex-grow text-gray-700">
-                <h2 className="text-3xl font-bold">{currentUser?.lastName.toUpperCase()}</h2>
-                <h3 className="text-2xl mb-2">{currentUser?.firstName.toUpperCase()}</h3>
+                <h2 className="text-3xl font-bold">{currentUser?.lastName?.toUpperCase() || 'DOE'}</h2>
+                <h3 className="text-2xl mb-2">{currentUser?.firstName?.toUpperCase() || 'JOHN'}</h3>
                 
                 <div className="grid grid-cols-2 gap-1 text-sm">
                   <div className="font-semibold">Registration No.:</div>
-                  <div className="text-red-600 font-bold">{currentUser?.registrationNumber}</div>
+                  <div className="text-red-600 font-bold">{currentUser?.registrationNumber || 'YM-001234'}</div>
                   
                   <div className="font-semibold">Category:</div>
-                  <div className="text-red-600 font-bold">{currentUser?.category}</div>
+                  <div className="text-red-600 font-bold">{currentUser?.category || 'FULL MEMBER'}</div>
                   
                   <div className="font-semibold">Reg. Period Ending:</div>
-                  <div className="text-red-600 font-bold">{currentUser?.registrationEndDate}</div>
+                  <div className="text-red-600 font-bold">{currentUser?.registrationEndDate || '31/12/2025'}</div>
                   
                   <div className="font-semibold mt-2">Holder's Signature:</div>
                 </div>

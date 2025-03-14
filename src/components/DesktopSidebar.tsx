@@ -2,7 +2,7 @@
 // DesktopSidebar.tsx
 import { NavLink } from 'react-router-dom';
 import { GoHome } from "react-icons/go";
-import { MdOutlinePeopleAlt } from "react-icons/md";
+import { MdOutlinePeopleAlt ,MdOutlineNewspaper} from "react-icons/md";
 import NavItem from './NavItem';
 
 const DesktopSidebar = () => {
@@ -13,7 +13,8 @@ const DesktopSidebar = () => {
   };
 
   return (
-    <aside className="hidden top-4 left-4 md:block h-screen w-56 border-r-[1px] border-gray-200 ">
+    <aside className=" top-4 left-4 md:block h-screen w-56 border-r-[1px] border-gray-200 ">
+    {/* <aside className="hidden top-4 left-4 md:block h-screen w-56 border-r-[1px] border-gray-200 "> */}
     {/* <aside className="fixed z-50 top-4 left-4 lg:block h-screen w-56 border-r-[1px] border-gray-200 "> */}
       {/* Sidebar Header */}
       <div className="flex items-center px-6 py-6">
@@ -26,16 +27,26 @@ const DesktopSidebar = () => {
       <nav className="mt-9 px-6 flex-1">
         <ul className="flex flex-col gap-1.5">
           <NavItem to="/dashboard" icon={<GoHome />} label="Home" />
+          <NavItem to="/updates" icon={<MdOutlineNewspaper />} label="Updates" />
           <NavItem to="/admin-dashboard" icon={<GoHome />} label="Home A" />
+          <NavItem to="/admin/users" icon={<MdOutlinePeopleAlt />} label="Members A" />
+          <NavItem to="/admin/updates" icon={<MdOutlineNewspaper />} label="Updates A" />
           
           {/* Collapsible menu */}
-          <NavItem 
+          {/* <NavItem 
             icon={<MdOutlinePeopleAlt />} 
             label="Members A" 
             subItems={[
               { to: "/admin/users", label: "Members List" },
             ]}
           />
+          <NavItem 
+            icon={<MdOutlineNewspaper />} 
+            label="Updates A" 
+            subItems={[
+              { to: "/admin/updates", label: "Updates List" },
+            ]}
+          /> */}
           
           {/* Logout button */}
           <li>

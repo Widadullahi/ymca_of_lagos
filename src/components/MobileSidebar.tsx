@@ -2,7 +2,7 @@
 import { useRef, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { GoHome } from "react-icons/go";
-import { MdOutlinePeopleAlt } from "react-icons/md";
+import { MdOutlinePeopleAlt ,MdOutlineNewspaper} from "react-icons/md";
 import NavItem from './NavItem';
 
 interface MobileSidebarProps {
@@ -127,16 +127,19 @@ const MobileSidebar = ({ isOpen, setIsOpen }: MobileSidebarProps) => {
           <nav className="px-4 py-6">
             <ul className="flex flex-col gap-1">
               <NavItem to="/dashboard" icon={<GoHome />} label="Home" />
+              <NavItem to="/updates" icon={<MdOutlineNewspaper />} label="Updates" />
               <NavItem to="/admin-dashboard" icon={<GoHome />} label="Home A" />
+              <NavItem to="/admin/users" icon={<MdOutlinePeopleAlt />} label="Members A" />
+                <NavItem to="/admin/updates" icon={<MdOutlineNewspaper />} label="Updates A" />
               
               {/* Collapsible menu */}
-              <NavItem 
+              {/* <NavItem 
                 icon={<MdOutlinePeopleAlt />} 
                 label="Members A" 
                 subItems={[
                   { to: "/admin/users", label: "Members List" },
                 ]}
-              />
+              /> */}
               
               {/* Logout button */}
               <li>
