@@ -1,7 +1,7 @@
 // components/Layout.tsx
 import React, { JSX, useState } from 'react';
-import Sidebar from './Sidebar';
 import Header from './Header';
+import Navigation from './Navigation';
 
 
 interface LayoutProps {
@@ -13,13 +13,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="dark:bg-boxdark-2 dark:text-bodydark">
+    <div className="">
       {/* Sidebar */}
       <div className="flex h-screen overflow-hidden">
-        {/* side bar goes here */}
-        <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen}/>
+        <Navigation />
         <div className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
-            {/* header goes here */}
             <Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
             <main>
                 <div className="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">

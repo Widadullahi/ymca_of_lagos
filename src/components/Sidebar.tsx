@@ -69,6 +69,8 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
     setSidebarOpen(false);
   };
 
+  console.log(sidebarOpen)
+
   return (
     <aside
       ref={sidebar}
@@ -123,12 +125,8 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                 label="Members A" 
                 subItems={[
                   { to: "/admin/users", label: "Members List" },
-                  // { to: "/admin/quiz-create", label: "Create Quiz" },
-                  // { to: "/admin/quiz-results", label: "Quiz Results" }
                 ]}
               />
-              
-  
               {/* Logout button */}
               <li>
                 <button 
