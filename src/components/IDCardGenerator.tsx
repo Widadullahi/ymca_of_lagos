@@ -1,14 +1,11 @@
 // components/IDCardGenerator.tsx
 import React, { useState } from 'react';
-// import { User } from '../types';
 import IDCardPreview from './IDCardPreview';
-import { User } from '../types/types';
 
-interface IDCardGeneratorProps {
-  user: User;
-}
 
-const IDCardGenerator: React.FC<IDCardGeneratorProps> = ({ user }) => {
+
+const IDCardGenerator: React.FC= () => {
+  
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
 
@@ -57,7 +54,7 @@ const IDCardGenerator: React.FC<IDCardGeneratorProps> = ({ user }) => {
         ) : (
           <div className="flex flex-col items-center">
             <div className="mb-6 print:mb-0">
-              <IDCardPreview user={user} />
+              <IDCardPreview />
             </div>
             <div className="text-center mb-4 print:hidden">
               <p className="text-gray-700 mb-4">

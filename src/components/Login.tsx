@@ -19,9 +19,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
       return;
     }
     
+    const navLink = email === 'olakay@gmail.com' ? '/admin/dashboard' : '/dashboard';
     // In a real app, this would validate credentials against a backend
     onLogin(email, password);
-    navigate('/dashboard');
+    navigate(navLink);
+    // window.location.pathname = 
   };
 
   return (

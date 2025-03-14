@@ -1,23 +1,14 @@
 // pages/DashboardPage.tsx
 import React from 'react';
-import { Navigate } from 'react-router-dom';
 import IDCardGenerator from '../components/IDCardGenerator';
-import { AuthState } from '../types/types';
-// import { AuthState } from '../types';
 
-interface DashboardPageProps {
-  auth: AuthState;
-  logout: () => void;
-}
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ auth, logout }) => {
-  if (!auth.isAuthenticated || !auth.user) {
-    return <Navigate to="/login" />;
-  }
+const DashboardPage: React.FC = () => {
+
 
   return (
     <div className="min-h-screen bg-gray-100 ">
-      <header className="bg-white shadow">
+      {/* <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center">
             <div className="mr-2">
@@ -39,10 +30,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ auth, logout }) => {
             </button>
           </div>
         </div>
-      </header>
+      </header> */}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <IDCardGenerator user={auth.user} />
+        <IDCardGenerator />
       </main>
     </div>
   );

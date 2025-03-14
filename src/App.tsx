@@ -5,6 +5,9 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import { AuthState } from './types/types';
+import PrivateRoute from './components/PrivateRoute';
+import UserListingPage from './pages/admin/UserListingPage';
+import MemberDashboard from './pages/admin/MemberDashboard';
 // import { AuthState } from './types';
 
 const App: React.FC = () => {
@@ -13,20 +16,17 @@ const App: React.FC = () => {
     isAuthenticated: false
   });
 
-  const handleLogout = () => {
-    setAuth({
-      user: null,
-      isAuthenticated: false
-    });
-  };
+
 
   return (
     <Router>
       <Routes>
-        <Route path="/login" element={<LoginPage setAuth={setAuth} />} />
+        <Route path="/login" element={<LoginPage  />} />
         <Route path="/register" element={<RegisterPage setAuth={setAuth} />} />
-        <Route path="/dashboard" element={<DashboardPage auth={auth} logout={handleLogout} />} />
-        <Route path="*" element={<Navigate to={auth.isAuthenticated ? "/dashboard" : "/login"} />} />
+        <Route path="/dashboard" element={<PrivateRoute element={<DashboardPage />} />} />
+        <Route path="/admin-dashboard" element={<PrivateRoute element={<MemberDashboard />} />} />
+        <Route path="/admin/users" element={<PrivateRoute element={<UserListingPage />} />} />
+        <Route path="*" element={<Navigate to={auth.isAuthenticated ? "/dashboard" : "/admin-dashboard"} />} />
       </Routes>
     </Router>
   );

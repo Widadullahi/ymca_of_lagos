@@ -1,12 +1,9 @@
 import React from 'react';
-import { User } from '../types/types';
-// import { User } from '../types';
+import { useAuth } from '../context/AuthContext';
+import avatar from '../assets/images/widad.jpeg'
 
-interface IDCardPreviewProps {
-  user: User;
-}
-
-const IDCardPreview: React.FC<IDCardPreviewProps> = ({ user }) => {
+const IDCardPreview: React.FC = () => {
+  const { currentUser } = useAuth();
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="bg-white rounded-lg overflow-hidden shadow-lg mb-4">
@@ -47,38 +44,43 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ user }) => {
             <div className="flex mb-4">
               {/* Photo */}
               <div className="mr-4 border-2 border-red-600 w-24 h-32 flex-shrink-0">
-                {user.photo && (
+                {/* {currentUser?.photo && (
                   <img 
-                    src={'https://avatars.githubusercontent.com/u/95700260?s=400&u=8a038fc4fa00588887195b84026eb610c9213b4f&v=4'} 
+                    src={avatar}
                     alt="Member" 
                     className="w-full h-full object-cover"
                   />
-                )}
+                )} */}
+                <img 
+                  src={avatar}
+                  alt="Member" 
+                  className="w-full h-full object-cover"
+                />
               </div>
               
               {/* Info */}
               <div className="flex-grow text-gray-700">
-                <h2 className="text-3xl font-bold">{user.lastName.toUpperCase()}</h2>
-                <h3 className="text-2xl mb-2">{user.firstName.toUpperCase()}</h3>
+                <h2 className="text-3xl font-bold">{currentUser?.lastName.toUpperCase()}</h2>
+                <h3 className="text-2xl mb-2">{currentUser?.firstName.toUpperCase()}</h3>
                 
                 <div className="grid grid-cols-2 gap-1 text-sm">
                   <div className="font-semibold">Registration No.:</div>
-                  <div className="text-red-600 font-bold">{user.registrationNumber}</div>
+                  <div className="text-red-600 font-bold">{currentUser?.registrationNumber}</div>
                   
                   <div className="font-semibold">Category:</div>
-                  <div className="text-red-600 font-bold">{user.category}</div>
+                  <div className="text-red-600 font-bold">{currentUser?.category}</div>
                   
                   <div className="font-semibold">Reg. Period Ending:</div>
-                  <div className="text-red-600 font-bold">{user.registrationEndDate}</div>
+                  <div className="text-red-600 font-bold">{currentUser?.registrationEndDate}</div>
                   
                   <div className="font-semibold mt-2">Holder's Signature:</div>
                 </div>
                 
                 {/* Signature */}
                 <div className="h-10 mt-1">
-                  {user.signature ? (
+                  {currentUser?.signature ? (
                     <img 
-                      src={user.signature} 
+                      src={currentUser?.signature} 
                       alt="Signature" 
                       className="h-full object-contain"
                     />
