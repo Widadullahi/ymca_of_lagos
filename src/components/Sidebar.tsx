@@ -3,8 +3,6 @@ import { NavLink, useLocation } from 'react-router-dom';
 import SideNavbarItem from './SideNavbarItem';
 import { GoHome } from "react-icons/go";
 import { 
-  MdOutlineQuiz, 
-  MdOutlineManageAccounts, 
   MdOutlinePeopleAlt,
 } from "react-icons/md";
 
