@@ -52,7 +52,7 @@ const LoginForm: React.FC= () => {
       localStorage.setItem('tokens', JSON.stringify(response?.data.tokens));
       setAuthToken(response?.data.tokens);
       setUser(response?.data.user)
-      if (response?.data.user.role === 'Admin') {
+      if (response?.data.user.role == 'Admin') {
         navigate('/admin/dashboard');
       } else {
         navigate('/dashboard');

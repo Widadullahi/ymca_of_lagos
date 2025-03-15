@@ -33,10 +33,10 @@ const App: React.FC = () => {
         <Route path="/myid" element={<PrivateRoute element={<DashboardPage />} />} />
         <Route path="/payment" element={<PrivateRoute element={<TransactionValidation />} />} />
         <Route path="/updates" element={<PrivateRoute element={<UpdatesPage />} />} />
-        <Route path="/dashboard" element={<RoleBasedRoute element={<MemberDashboard />} requiredRole="Admin" />} />
+        <Route path="/admin/dashboard" element={<RoleBasedRoute element={<MemberDashboard />} requiredRole="Admin" />} />
         <Route path="/admin/users" element={<RoleBasedRoute element={<UserListingPage />}  requiredRole="Admin"/>} />
         <Route path="/admin/updates" element={<RoleBasedRoute element={<AdminUpdatesPage />}  requiredRole="Admin"/>} />
-        <Route path="*" element={<Navigate to={user ? "/dashboard" : "/dashboard"} />} />
+        <Route path="*" element={<Navigate to={user?.role == "Admin" ? "/admin/dashboard" : "/dashboard"} />} />
       </Routes>
     </Router>
     
