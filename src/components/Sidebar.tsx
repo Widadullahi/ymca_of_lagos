@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import {NavLink, useLocation, useNavigate } from 'react-router-dom';
 import SideNavbarItem from './SideNavbarItem';
 import { GoHome } from "react-icons/go";
 import { 
@@ -13,7 +13,7 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
