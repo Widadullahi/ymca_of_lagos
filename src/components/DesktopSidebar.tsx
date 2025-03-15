@@ -24,7 +24,7 @@ const DesktopSidebar = () => {
       {/* Sidebar Header */}
       <div className="flex items-center px-6 py-6">
         <NavLink to="/" className="text-xl font-bold">
-        <svg id="Group_5836" data-name="Group 5836" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="102.432" height="40" viewBox="0 0 102.432 40">
+        <svg id="Group_5836" data-name="Group 5836" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" width="102.432" height="40" viewBox="0 0 102.432 40">
           <path id="Path_5700" data-name="Path 5700" d="M9.356,1.17,7.093,6.55,6.727,1.17H4.863L2.578,6.55l-.4-5.38H.581l.588,7.388H3.2L5.473,3.089l.344,5.469H7.9L10.986,1.17Z" transform="translate(-0.526 -1.059)" fill="red"></path>
           <g id="Group_3969" data-name="Group 3969">
             <g id="Group_3968" data-name="Group 3968">
