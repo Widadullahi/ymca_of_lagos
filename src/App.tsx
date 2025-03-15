@@ -1,5 +1,5 @@
 // App.tsx (continued)
-import React, { useState } from 'react';
+import React from 'react';
 import { ToastContainer } from 'react-toastify';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';

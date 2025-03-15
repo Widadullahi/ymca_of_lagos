@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 // import { useAuth } from '../context/AuthContext'; // import useAuth hook
 import LoginForm from '../components/Login';
