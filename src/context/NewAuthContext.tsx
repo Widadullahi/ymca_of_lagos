@@ -32,12 +32,11 @@ export const useAuth = (): AuthContextType => {
 
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // const BACKEND_URL = 'http://127.0.0.1:8000/api/v1';
+  const BACKEND_URL = 'http://127.0.0.1:8000/api/v1';
+  const FRONTEND_URL = 'http://localhost:5173';
 
-  // const FRONTEND_URL = 'http://localhost:5173'
-
-  const BACKEND_URL = 'https://ymca-api.onrender.com/api/v1';
-  const FRONTEND_URL = 'https://ymca-two.vercel.app'
+  // const BACKEND_URL = 'https://ymca-api.onrender.com/api/v1';
+  // const FRONTEND_URL = 'https://ymca-two.vercel.app'
 
   const [user, setUser] = useState<any>(null);
   const [authToken, setAuthToken] = useState<any>(() => JSON.parse(localStorage.getItem('tokens') || 'null'));
@@ -175,11 +174,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const query = new URLSearchParams(queryParams).toString();
       url = `${url}?${query}`;
     }
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
+    const headers: Record<string, string> = {}
+    if (!isFormData){
+      headers['Content-Type']= 'application/json';
+    }
+    
     // Include the access token in the Authorization header if available
     if (accessToken) {
       headers['Authorization'] = `Bearer ${accessToken}`;

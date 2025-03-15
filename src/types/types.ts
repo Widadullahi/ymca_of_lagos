@@ -35,3 +35,10 @@ export interface Member {
     status: 'Active' | 'Inactive' | 'On Leave';
     joinDate: string;
 }
+
+
+export interface PasswordReset {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}

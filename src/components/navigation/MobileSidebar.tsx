@@ -2,9 +2,9 @@
 import { useRef, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { GoHome } from "react-icons/go";
-import { MdOutlinePeopleAlt ,MdOutlineNewspaper} from "react-icons/md";
+import { MdOutlinePeopleAlt ,MdOutlineNewspaper, MdOutlineManageAccounts} from "react-icons/md";
 import NavItem from './NavItem';
-import { useAuth } from '../context/NewAuthContext';
+import { useAuth } from '../../context/NewAuthContext';
 
 interface MobileSidebarProps {
   isOpen: boolean;
@@ -146,6 +146,7 @@ const MobileSidebar = ({ isOpen, setIsOpen }: MobileSidebarProps) => {
                 <>
                 <NavItem to="/dashboard" icon={<GoHome />} label="Home" />
                 <NavItem to="/updates" icon={<MdOutlineNewspaper />} label="Updates" />
+                
                 </>
               ): (
                 <>
@@ -154,6 +155,7 @@ const MobileSidebar = ({ isOpen, setIsOpen }: MobileSidebarProps) => {
                 <NavItem to="/admin/updates" icon={<MdOutlineNewspaper />} label="Updates" />
                 </>
               )}
+              <NavItem to="/account" icon={<MdOutlineManageAccounts />} label="Account" />
               {/* Collapsible menu */}
               {/* <NavItem 
                 icon={<MdOutlinePeopleAlt />} 

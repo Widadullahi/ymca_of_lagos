@@ -2,9 +2,9 @@
 // DesktopSidebar.tsx
 import { NavLink, useNavigate } from 'react-router-dom';
 import { GoHome } from "react-icons/go";
-import { MdOutlinePeopleAlt ,MdOutlineNewspaper} from "react-icons/md";
+import { MdOutlinePeopleAlt ,MdOutlineNewspaper,MdOutlineManageAccounts} from "react-icons/md";
 import NavItem from './NavItem';
-import { useAuth } from '../context/NewAuthContext';
+import { useAuth } from '../../context/NewAuthContext';
 
 const DesktopSidebar = () => {
 
@@ -57,7 +57,7 @@ const DesktopSidebar = () => {
             <NavItem to="/admin/updates" icon={<MdOutlineNewspaper />} label="Updates" />
             </>
           )}
-          
+          <NavItem to="/account" icon={<MdOutlineManageAccounts />} label="Account" />
           
           {/* Collapsible menu */}
           {/* <NavItem 

@@ -1,7 +1,7 @@
 // components/Layout.tsx
 import React, { JSX, useState } from 'react';
 import Header from './Header';
-import Navigation from './Navigation';
+import Navigation from './navigation/Navigation';
 
 
 interface LayoutProps {
