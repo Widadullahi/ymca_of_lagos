@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import {NavLink, useLocation, useNavigate } from 'react-router-dom';
-import SideNavbarItem from './SideNavbarItem';
 import { GoHome } from "react-icons/go";
 import { 
   MdOutlinePeopleAlt,
 } from "react-icons/md";
-import { useAuth } from '../context/NewAuthContext';
+import { useAuth } from '../../context/NewAuthContext';
+import SideNavbarItem from './SideNavbarItem';
 
 interface SidebarProps {
   sidebarOpen: boolean;
