@@ -269,8 +269,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Logout function
   const logout = () => {
     localStorage.removeItem('tokens');
+    setAuthToken(null)
     setUser(null);
     displayNotification('success', 'Logged out successfully');
+    window.location.pathname = '/login'
   };
 
   // Check if user has required role
