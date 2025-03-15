@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import SideNavbarItem from './SideNavbarItem';
 import { GoHome } from "react-icons/go";
 import { 
   MdOutlinePeopleAlt,
 } from "react-icons/md";
+import { useAuth } from '../context/NewAuthContext';
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -12,6 +13,8 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
 
   const trigger = useRef<any>(null);
@@ -67,6 +70,8 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
   // Handle logout with sidebar closing
   const handleLogout = () => {
     setSidebarOpen(false);
+    logout()
+    navigate('/login');
   };
 
   console.log(sidebarOpen)

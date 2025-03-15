@@ -4,8 +4,11 @@ import { NavLink } from 'react-router-dom';
 import { GoHome } from "react-icons/go";
 import { MdOutlinePeopleAlt ,MdOutlineNewspaper} from "react-icons/md";
 import NavItem from './NavItem';
+import { useAuth } from '../context/NewAuthContext';
 
 const DesktopSidebar = () => {
+
+  const { user } = useAuth();
   // Handle logout
   const handleLogout = () => {
     // Your logout logic here
@@ -19,18 +22,26 @@ const DesktopSidebar = () => {
       {/* Sidebar Header */}
       <div className="flex items-center px-6 py-6">
         <NavLink to="/" className="text-xl font-bold">
-          YMCA
+          YMCA {user?.role}
         </NavLink>
       </div>
 
       {/* Navigation Items */}
       <nav className="mt-9 px-6 flex-1">
         <ul className="flex flex-col gap-1.5">
-          <NavItem to="/dashboard" icon={<GoHome />} label="Home" />
-          <NavItem to="/updates" icon={<MdOutlineNewspaper />} label="Updates" />
-          <NavItem to="/admin-dashboard" icon={<GoHome />} label="Home A" />
-          <NavItem to="/admin/users" icon={<MdOutlinePeopleAlt />} label="Members A" />
-          <NavItem to="/admin/updates" icon={<MdOutlineNewspaper />} label="Updates A" />
+          {user?.role == "Member" ? (
+            <>
+            <NavItem to="/dashboard" icon={<GoHome />} label="Home" />
+            <NavItem to="/updates" icon={<MdOutlineNewspaper />} label="Updates" />
+            </>
+          ):(
+            <>
+            <NavItem to="/admin/dashboard" icon={<GoHome />} label="Home A" />
+            <NavItem to="/admin/users" icon={<MdOutlinePeopleAlt />} label="Members A" />
+            <NavItem to="/admin/updates" icon={<MdOutlineNewspaper />} label="Updates A" />
+            </>
+          )}
+          
           
           {/* Collapsible menu */}
           {/* <NavItem 

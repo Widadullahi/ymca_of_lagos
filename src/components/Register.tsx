@@ -1,28 +1,52 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User } from '../types/types';
+import { useAuth } from '../context/NewAuthContext';
+import FormInput from './forms/FormInput';
+import FormSelect from './forms/FormSelect';
 
-interface RegisterFormProps {
-  onRegister: (user: Omit<User, 'id'>) => void;
-}
 
-const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister }) => {
+const RegisterForm: React.FC= () => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
+    phoneNumber: '',
+    gender: '',
+    unit: '',
+    church: '',
+    youthCouncilGroup: '',
     password: '',
     confirmPassword: '',
-    category: '',
   });
-  const [error, setError] = useState('');
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
-  const [dragActive, setDragActive] = useState({ photo: false, signature: false });
+
+  const [churches, setChurches] = useState<{value: string, label: string}[]>([]);
+  const [youthGroups, setYouthGroups] = useState<{value: string, label: string}[]>([]);
+  const [loading, setLoading] = useState(false);
   
-  const photoInputRef = useRef<HTMLInputElement>(null);
-  const signatureInputRef = useRef<HTMLInputElement>(null);
+  const unitOptions = [
+    { value: 'Council of Church', label: 'Council of Church' },
+    { value: 'Youth Council', label: 'Youth Council' },
+    { value: 'Y\'s Men', label: 'Y\'s Men' },
+    { value: 'Central Club', label: 'Central Club' }
+  ];
+  
+  const genderOptions = [
+    { value: 'Male', label: 'Male' },
+    { value: 'Female', label: 'Female' },
+    { value: 'Other', label: 'Other' }
+  ];
+  
+  const { fetchWithAuth, displayNotification , setUser , setAuthToken } = useAuth();
+
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Fetch youth groups when component mounts
+    fetchYouthGroups();
+    fetchChurches();
+  }, []);
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -30,98 +54,164 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister }) => {
       ...prev,
       [name]: value
     }));
-  };
 
-  const handleFileChange = (type: 'photo' | 'signature', file: File) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (type === 'photo') {
-        setPhotoPreview(reader.result as string);
-      } else {
-        setSignaturePreview(reader.result as string);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileChange('photo', file);
+    // Reset dependent fields when unit changes
+    if (name === 'unit') {
+      setFormData(prev => ({
+        ...prev,
+        church: '',
+        youthCouncilGroup: ''
+      }));
     }
   };
 
-  const handleSignatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileChange('signature', file);
+  async function fetchChurches() {
+    try {
+      const data = await fetchWithAuth({
+        method: 'GET',
+        path: `/churches`,
+      });
+      
+      // Transform the API response to our form format
+      const formattedChurches = data?.data?.map((church: any) => ({
+        value: church.id,
+        label: church.name
+      }));
+      
+      setChurches(formattedChurches);
+    } catch (error) {
+      console.error('Error fetching churches:', error);
+      displayNotification('Failed to load churches', 'error');
     }
-  };
+  }
 
-  const handleDragOver = (e: React.DragEvent, type: 'photo' | 'signature') => {
-    e.preventDefault();
-    setDragActive({ ...dragActive, [type]: true });
-  };
+  async function fetchYouthGroups() {
+    try {
+      const data = await fetchWithAuth({
+        method: 'GET',
+        path: `/youth-groups`,
+      });
+      
+      console.log(data)
+      console.log(data)
+      // Transform the API response to our form format
+      const formattedGroups = data?.data?.map((group: any) => ({
+        value: group.id,
+        label: group.name
+      }));
+      
+      setYouthGroups(formattedGroups);
+    } catch (error) {
+      console.error('Error fetching youth groups:', error);
+      displayNotification('Failed to load youth groups', 'error');
+    }
+  }
 
-  const handleDragLeave = (e: React.DragEvent, type: 'photo' | 'signature') => {
-    e.preventDefault();
-    setDragActive({ ...dragActive, [type]: false });
-  };
-
-  const handleDrop = (e: React.DragEvent, type: 'photo' | 'signature') => {
-    e.preventDefault();
-    setDragActive({ ...dragActive, [type]: false });
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
     
-    const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      handleFileChange(type, file);
-    }
-  };
-
-  const handleRemoveFile = (type: 'photo' | 'signature') => {
-    if (type === 'photo') {
-      setPhotoPreview(null);
-      if (photoInputRef.current) photoInputRef.current.value = '';
-    } else {
-      setSignaturePreview(null);
-      if (signatureInputRef.current) signatureInputRef.current.value = '';
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    if (!formData.firstName.trim()) errors.firstName = 'First name is required';
+    if (!formData.lastName.trim()) errors.lastName = 'Last name is required';
+    if (!formData.email.trim()) errors.email = 'Email is required';
+    if (!formData.phoneNumber?.trim()) errors.phoneNumber = 'Phone number is required';
+    if (!formData.gender) errors.gender = 'Gender is required';
+    if (!formData.unit) errors.unit = 'Unit is required';
     
+    if (formData.unit === 'Council of Church' && !formData.church) {
+      errors.church = 'Please select a church';
+    }
+    
+    if (formData.unit === 'Youth Council' && !formData.youthCouncilGroup) {
+      errors.youthCouncilGroup = 'Please select a youth council group';
+    }
+    
+    if (!formData.password) errors.password = 'Password is required';
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
+      errors.confirmPassword = 'Passwords do not match';
     }
-
-    if (!photoPreview) {
-      setError('Please upload a photo');
-      return;
-    }
-
-    // Generate registration number (in a real app this would come from the backend)
-    const regNumber = `LYA ${Math.floor(100 + Math.random() * 900)}`;
     
-    // Calculate registration end date (6 months from now)
-    const endDate = new Date();
-    endDate.setMonth(endDate.getMonth() + 6);
-    const formattedEndDate = `${endDate.getDate().toString().padStart(2, '0')}/${(endDate.getMonth() + 1).toString().padStart(2, '0')}/${endDate.getFullYear().toString().slice(2)}`;
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
-    const newUser: Omit<User, 'id'> = {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      registrationNumber: regNumber,
-      category: formData.category,
-      registrationEndDate: formattedEndDate,
-      photo: photoPreview,
-      signature: signaturePreview || '',
-    };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
 
-    onRegister(newUser);
-    navigate('/dashboard');
+    setLoading(true);
+
+    try {
+      // Prepare user data for API request based on the serializer fields
+      const userData = {
+        email: formData.email,
+        password: formData.password,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        phone_number: formData.phoneNumber,
+        gender: formData.gender,
+        unit: formData.unit,
+        church: formData.unit === 'Council of Church' ? formData.church : null,
+        youth_council_group: formData.unit === 'Youth Council' ? formData.youthCouncilGroup : null,
+      };
+
+      // Make API call to register the user
+      const response = await fetchWithAuth({
+        method: 'POST',
+        path: '/register/',
+        body: userData,
+      });
+
+      // Handle successful registration
+      displayNotification('success','Registration successful!',);
+      
+      localStorage.setItem('tokens', JSON.stringify(response?.data.tokens));
+      setAuthToken(response?.data.tokens);
+      setUser(response?.data.user)
+      navigate('/dashboard');
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      
+      // Handle field-specific errors from the backend
+      if (error.response?.data) {
+        const serverErrors = error.response.data;
+        const fieldErrorMessages: Record<string, string> = {};
+        
+        // Map backend field names to frontend field names
+        const fieldMapping: Record<string, string> = {
+          'first_name': 'firstName',
+          'last_name': 'lastName',
+          'phone_number': 'phoneNumber',
+          'youth_council_group': 'youthCouncilGroup',
+          // Add other fields as needed
+        };
+        
+        // Process each error from the server
+        Object.keys(serverErrors).forEach(field => {
+          const frontendField = fieldMapping[field] || field;
+          fieldErrorMessages[frontendField] = Array.isArray(serverErrors[field]) 
+            ? serverErrors[field][0] 
+            : String(serverErrors[field]);
+        });
+        
+        setFieldErrors(fieldErrorMessages);
+        displayNotification('error','Please correct the errors in the form' );
+      } else {
+        displayNotification('error','Registration failed. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -132,243 +222,138 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister }) => {
       >
         <h2 className="text-2xl font-bold mb-6 text-center">Register</h2>
         
-        {error && (
+        {Object.keys(fieldErrors).length > 0 && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
+            Please correct the errors in the form.
           </div>
         )}
         
         <div className="flex flex-wrap -mx-3 mb-4">
           <div className="w-full md:w-1/2 px-3 mb-4 md:mb-0">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="firstName">
-              First Name
-            </label>
-            <input
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              id="firstName"
+            <FormInput
+              label="First Name"
               name="firstName"
               type="text"
               placeholder="First Name"
               value={formData.firstName}
               onChange={handleInputChange}
+              error={fieldErrors.firstName}
               required
+              wrapperClass=""
             />
           </div>
           <div className="w-full md:w-1/2 px-3">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="lastName">
-              Last Name
-            </label>
-            <input
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              id="lastName"
+            <FormInput
+              label="Last Name"
               name="lastName"
               type="text"
               placeholder="Last Name"
               value={formData.lastName}
               onChange={handleInputChange}
+              error={fieldErrors.lastName}
               required
+              wrapperClass=""
             />
           </div>
         </div>
+
+        <FormSelect
+          label="Gender"
+          name="gender"
+          options={genderOptions}
+          value={formData.gender}
+          onChange={handleInputChange}
+          error={fieldErrors.gender}
+          required
+        />
         
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-            Email
-          </label>
-          <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="email"
-            name="email"
-            type="email"
-            placeholder="Email"
-            value={formData.email}
+        <FormInput
+          label="Email"
+          name="email"
+          type="email"
+          placeholder="Email"
+          value={formData.email}
+          onChange={handleInputChange}
+          error={fieldErrors.email}
+          required
+        />
+
+        <FormInput
+          label="Phone Number"
+          name="phoneNumber"
+          type="tel"
+          placeholder="Phone Number"
+          value={formData.phoneNumber}
+          onChange={handleInputChange}
+          error={fieldErrors.phoneNumber}
+          required
+        />
+
+        <FormSelect
+          label="Unit"
+          name="unit"
+          options={unitOptions}
+          value={formData.unit}
+          onChange={handleInputChange}
+          error={fieldErrors.unit}
+          required
+        />
+
+        {/* Conditional rendering based on unit selection */}
+        {formData.unit === 'Council of Church' && (
+          <FormSelect
+            label="Name of Church"
+            name="church"
+            options={churches}
+            value={formData.church}
             onChange={handleInputChange}
+            error={fieldErrors.church}
             required
           />
-        </div>
-        
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="category">
-            Membership Category
-          </label>
-          <select
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="category"
-            name="category"
-            value={formData.category}
+        )}
+
+        {formData.unit === 'Youth Council' && (
+          <FormSelect
+            label="Youth Council Group"
+            name="youthCouncilGroup"
+            options={youthGroups}
+            value={formData.youthCouncilGroup}
             onChange={handleInputChange}
-          >
-            <option value="ADULT MEMBER">Adult Member</option>
-            <option value="YOUTH MEMBER">Youth Member</option>
-            <option value="SENIOR MEMBER">Senior Member</option>
-          </select>
-        </div>
-        
-        {/* Fancy Photo Upload */}
-        <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2">
-            Photo Upload
-          </label>
-          <div 
-            className={`w-full border-2 ${dragActive.photo ? 'border-red-500' : 'border-dashed border-gray-300'} rounded-lg p-4 transition-all duration-200 bg-gray-50 hover:bg-gray-100`}
-            onDragOver={(e) => handleDragOver(e, 'photo')}
-            onDragLeave={(e) => handleDragLeave(e, 'photo')}
-            onDrop={(e) => handleDrop(e, 'photo')}
-          >
-            <div className="flex flex-col items-center">
-              {!photoPreview ? (
-                <>
-                  <div className="mb-3 text-red-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                  <p className="text-xs text-gray-500">PNG, JPG, or GIF (MAX. 800x800px)</p>
-                  <button
-                    type="button"
-                    onClick={() => photoInputRef.current?.click()}
-                    className="mt-4 bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                  >
-                    Select Photo
-                  </button>
-                </>
-              ) : (
-                <div className="relative">
-                  <img 
-                    src={photoPreview} 
-                    alt="Preview" 
-                    className="w-32 h-40 object-cover rounded-md"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveFile('photo')}
-                    className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 focus:outline-none"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                ref={photoInputRef}
-                onChange={handlePhotoChange}
-              />
-            </div>
-          </div>
-        </div>
-        
-        {/* Fancy Signature Upload */}
-        <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2">
-            Signature Upload
-          </label>
-          <div 
-            className={`w-full border-2 ${dragActive.signature ? 'border-red-500' : 'border-dashed border-gray-300'} rounded-lg p-4 transition-all duration-200 bg-gray-50 hover:bg-gray-100`}
-            onDragOver={(e) => handleDragOver(e, 'signature')}
-            onDragLeave={(e) => handleDragLeave(e, 'signature')}
-            onDrop={(e) => handleDrop(e, 'signature')}
-          >
-            <div className="flex flex-col items-center">
-              {!signaturePreview ? (
-                <>
-                  <div className="mb-3 text-red-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  </div>
-                  <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                  <p className="text-xs text-gray-500">PNG, JPG, or GIF (Recommended: black signature on white background)</p>
-                  <button
-                    type="button"
-                    onClick={() => signatureInputRef.current?.click()}
-                    className="mt-4 bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                  >
-                    Select Signature
-                  </button>
-                </>
-              ) : (
-                <div className="relative">
-                  <img 
-                    src={signaturePreview} 
-                    alt="Signature" 
-                    className="h-20 object-contain rounded-md"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveFile('signature')}
-                    className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 focus:outline-none"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                ref={signatureInputRef}
-                onChange={handleSignatureChange}
-              />
-            </div>
-          </div>
-        </div>
-        
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-            Password
-          </label>
-          <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="password"
-            name="password"
-            type="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleInputChange}
+            error={fieldErrors.youthCouncilGroup}
             required
           />
-        </div>
-        
+        )}
+
+        <FormInput
+          label="Password"
+          name="password"
+          type="password"
+          placeholder="Password"
+          value={formData.password}
+          onChange={handleInputChange}
+          error={fieldErrors.password}
+          required
+        />
+
+        <FormInput
+          label="Confirm Password"
+          name="confirmPassword"
+          type="password"
+          placeholder="Confirm Password"
+          value={formData.confirmPassword}
+          onChange={handleInputChange}
+          error={fieldErrors.confirmPassword}
+          required
+        />
+
         <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="confirmPassword">
-            Confirm Password
-          </label>
-          <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="confirmPassword"
-            name="confirmPassword"
-            type="password"
-            placeholder="Confirm Password"
-            value={formData.confirmPassword}
-            onChange={handleInputChange}
-            required
-          />
-        </div>
-        
-        <div className="flex items-center justify-between">
           <button
-            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200"
             type="submit"
+            disabled={loading}
+            className={`w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            Register
+            {loading ? 'Registering...' : 'Register'}
           </button>
-          <a 
-            className="inline-block align-baseline font-bold text-sm text-red-600 hover:text-red-800 transition duration-200"
-            href="/login"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate('/login');
-            }}
-          >
-            Already have an account? Login
-          </a>
         </div>
       </form>
     </div>

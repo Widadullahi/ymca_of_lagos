@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import ClickOutside from '../ClickOutside';
+import { useAuth } from '../../context/NewAuthContext';
+
+import avatar from '../../assets/images/default.jpg'
 
 
 const DropdownUser = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
-  const { currentUser, logout } = useAuth();
+  const { user, logout } = useAuth();
 
   return (
     <ClickOutside onClick={() => setDropdownOpen(false)} className="relative">
@@ -18,13 +20,13 @@ const DropdownUser = () => {
       >
         <span className="hidden text-right lg:block">
           <span className="block text-sm font-medium text-black">
-            {currentUser?.firstName} {currentUser?.lastName}
+            {user?.first_name} {user?.last_name}
           </span>
-          <span className="block text-xs">{currentUser?.email}</span>
+          <span className="block text-xs">{user?.email}</span>
         </span>
 
         <span className="h-12 w-12 rounded-full">
-          <img src={currentUser?.photo || 'https://avatars.githubusercontent.com/u/95700260?s=400&u=8a038fc4fa00588887195b84026eb610c9213b4f&v=4'} alt="User" className="h-12 w-12 rounded-full" />
+          <img src={user?.image || avatar} alt="User" className="h-12 w-12 rounded-full" />
         </span>
 
       </Link>

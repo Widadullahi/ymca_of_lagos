@@ -1,27 +1,11 @@
 // pages/RegisterPage.tsx
 import React from 'react';
-import { AuthState, User } from '../types/types';
 import RegisterForm from '../components/Register';
 
 
-interface RegisterPageProps {
-  setAuth: React.Dispatch<React.SetStateAction<AuthState>>;
-}
 
-const RegisterPage: React.FC<RegisterPageProps> = ({ setAuth }) => {
-  const handleRegister = (userData: Omit<User, 'id'>) => {
-    // In a real app, this would send data to a backend
-    // For demo purposes, we'll just set the user
-    const newUser: User = {
-      ...userData,
-      id: Math.random().toString(36).substr(2, 9),
-    };
+const RegisterPage: React.FC= () => {
 
-    setAuth({
-      user: newUser,
-      isAuthenticated: true
-    });
-  };
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center px-4 py-12">
@@ -39,7 +23,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setAuth }) => {
         </div>
       </div>
       
-      <RegisterForm onRegister={handleRegister} />
+      <RegisterForm />
     </div>
   );
 };

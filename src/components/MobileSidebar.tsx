@@ -4,6 +4,7 @@ import { NavLink } from 'react-router-dom';
 import { GoHome } from "react-icons/go";
 import { MdOutlinePeopleAlt ,MdOutlineNewspaper} from "react-icons/md";
 import NavItem from './NavItem';
+import { useAuth } from '../context/NewAuthContext';
 
 interface MobileSidebarProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface MobileSidebarProps {
 const MobileSidebar = ({ isOpen, setIsOpen }: MobileSidebarProps) => {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const { user } = useAuth();
 
   // Handle logout
   const handleLogout = () => {
@@ -126,12 +128,18 @@ const MobileSidebar = ({ isOpen, setIsOpen }: MobileSidebarProps) => {
           {/* Navigation Items */}
           <nav className="px-4 py-6">
             <ul className="flex flex-col gap-1">
-              <NavItem to="/dashboard" icon={<GoHome />} label="Home" />
-              <NavItem to="/updates" icon={<MdOutlineNewspaper />} label="Updates" />
-              <NavItem to="/admin-dashboard" icon={<GoHome />} label="Home A" />
-              <NavItem to="/admin/users" icon={<MdOutlinePeopleAlt />} label="Members A" />
+              {user?.role == "Member" ? (
+                <>
+                <NavItem to="/dashboard" icon={<GoHome />} label="Home" />
+                <NavItem to="/updates" icon={<MdOutlineNewspaper />} label="Updates" />
+                </>
+              ): (
+                <>
+                <NavItem to="/admin/dashboard" icon={<GoHome />} label="Home A" />
+                <NavItem to="/admin/users" icon={<MdOutlinePeopleAlt />} label="Members A" />
                 <NavItem to="/admin/updates" icon={<MdOutlineNewspaper />} label="Updates A" />
-              
+                </>
+              )}
               {/* Collapsible menu */}
               {/* <NavItem 
                 icon={<MdOutlinePeopleAlt />} 

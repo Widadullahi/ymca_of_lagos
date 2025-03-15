@@ -1,31 +1,19 @@
 import React, { JSX} from 'react';
-// import { Navigate } from 'react-router-dom';
-// import { useAuth } from '../context/AuthContext';
 import Layout from './Layout';
+import { useAuth } from '../context/NewAuthContext';
+import { Navigate } from 'react-router-dom';
 
 interface PrivateRouteProps {
   element: JSX.Element;
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ element }) => {
-  // const { currentUser, setCurrentUser } = useAuth();
-  
-  // // Optional: You can handle setting the current user in case it's null
-  // useEffect(() => {
-  //   const storedUser = localStorage.getItem('user');
-  //   console.log(storedUser)
-  //   if (storedUser && !currentUser) {
-  //     setCurrentUser(JSON.parse(storedUser));
-  //   }
-  // }, [currentUser, setCurrentUser]);
+  const { authToken } = useAuth();
 
-  // console.log(currentUser)
-  // console.log(currentUser)
-  // console.log(currentUser)
-  // // If no user is found in the context, redirect to login
-  // if (!currentUser) {
-  //   return <Navigate to="/login" />;
-  // }
+  console.log(authToken)
+  if (!authToken) {
+    return <Navigate to="/login" />;
+  }
 
   return (
     <Layout>
