@@ -21,7 +21,11 @@ const MemberDashboardMember: React.FC = () => {
     else greetingMessage = 'Good Evening';
     
     setGreeting(greetingMessage);
-    
+
+    if (user?.role == 'Admin'){
+      navigate('/admin/dashboard');
+    }
+    console.log(user?.role)
   }, []);
 
 

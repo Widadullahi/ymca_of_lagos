@@ -1,27 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import avatar from '../../assets/images/thumbnail-im.jpg';
+import avatar from '../../assets/images/default.jpg';
 import BulkUploadModal from '../../components/modals/admin/BulkUploadModal';
 import AddUserModal from '../../components/modals/admin/AddUserModal';
 import MemberViewModal from '../../components/modals/admin/MemberViewModal';
-
-// Updated Types
-interface Member {
-  id: string;
-  firstName: string;
-  lastName: string;
-  profileImage: string;
-  signature: string;
-  gender: 'Male' | 'Female' | 'Other';
-  unit: 'Council of Church' | 'Youth Council' | "Y's Men" | 'Central Club';
-  churchName?: string; // Only when unit is 'Council of Church'
-  youthCouncilType?: 'Hi-Y' | 'Y-Elite'; // Only when unit is 'Youth Council'
-  email: string;
-  phoneNumber: string;
-  category: 'Adult Member' | 'Youth Member' | 'Senior Member';
-  status: 'Active' | 'Inactive' | 'On Leave';
-  joinDate: string;
-}
-
+import { useAuth } from '../../context/NewAuthContext';
+import { Member } from '../../types/types';
 
 
 
@@ -29,6 +12,7 @@ interface Member {
 
 const UserListingPage: React.FC = () => {
   // State
+  const { fetchWithAuth} = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [filteredMembers, setFilteredMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,96 +22,101 @@ const UserListingPage: React.FC = () => {
   const [unitFilter, setUnitFilter] = useState<string>('');
   const [genderFilter, setGenderFilter] = useState<string>('');
   const [viewingMember, setViewingMember] = useState<Member | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [hasNextPage, setHasNextPage] = useState<boolean>(false);
+
+
+  const [churches, setChurches] = useState<{value: string, label: string}[]>([]);
+  const [youthGroups, setYouthGroups] = useState<{value: string, label: string}[]>([]);
 
 
   // New state for modals
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
 
-  // Mock data - In a real application, this would come from an API
-  useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const mockMembers: Member[] = [
-        {
-          id: '1',
-          firstName: 'John',
-          lastName: 'Smith',
-          profileImage: avatar,
-          signature: '',
-          gender: 'Male',
-          unit: 'Council of Church',
-          churchName: 'St. Mary\'s Church',
-          email: 'john.smith@example.com',
-          phoneNumber: '123-456-7890',
-          category: 'Adult Member',
-          status: 'Active',
-          joinDate: '2023-09-01T00:00:00Z',
-        },
-        {
-          id: '2',
-          firstName: 'Maria',
-          lastName: 'Rodriguez',
-          profileImage: avatar,
-          signature: '',
-          gender: 'Female',
-          unit: 'Youth Council',
-          youthCouncilType: 'Y-Elite',
-          email: 'maria.rodriguez@example.com',
-          phoneNumber: '234-567-8901',
-          category: 'Youth Member',
-          status: 'Active',
-          joinDate: '2024-01-15T00:00:00Z',
-        },
-        {
-          id: '3',
-          firstName: 'David',
-          lastName: 'Johnson',
-          profileImage: avatar,
-          signature: '',
-          gender: 'Male',
-          unit: "Y's Men",
-          email: 'david.johnson@example.com',
-          phoneNumber: '345-678-9012',
-          category: 'Senior Member',
-          status: 'On Leave',
-          joinDate: '2022-07-22T00:00:00Z',
-        },
-        {
-          id: '4',
-          firstName: 'Priya',
-          lastName: 'Patel',
-          profileImage: avatar,
-          signature: '',
-          gender: 'Female',
-          unit: 'Central Club',
-          email: 'priya.patel@example.com',
-          phoneNumber: '456-789-0123',
-          category: 'Adult Member',
-          status: 'Active',
-          joinDate: '2023-11-10T00:00:00Z',
-        },
-        {
-          id: '5',
-          firstName: 'Thomas',
-          lastName: 'Lee',
-          profileImage: avatar,
-          signature: '',
-          gender: 'Male',
-          unit: 'Youth Council',
-          youthCouncilType: 'Hi-Y',
-          email: 'thomas.lee@example.com',
-          phoneNumber: '567-890-1234',
-          category: 'Youth Member',
-          status: 'Active',
-          joinDate: '2024-02-05T00:00:00Z',
-        },
-      ];
 
-      setMembers(mockMembers);
-      setFilteredMembers(mockMembers);
+  async function fetchMembers(page = 1, append = false) {
+    setIsLoadingMore(append);
+    if (!append) setIsLoading(true);
+    
+    try {
+      const response = await fetchWithAuth({
+        method: 'GET',
+        path: `/admin/members/?page_size=10&page=${page}`,
+      });
+
+      if (append) {
+        setMembers(prev => [...prev, ...response?.results]);
+      } else {
+        setMembers(response?.results);
+      }
+      setIsLoading(false)
+      setHasNextPage(!!response.metadata.next);
+      setCurrentPage(page)
+    } catch (error) {
+      console.error('Error fetching members:', error);
+    }finally{
       setIsLoading(false);
-    }, 1000);
+      setIsLoadingMore(false);
+    }
+  }
+
+  const loadMoreMembers = () => {
+    if (hasNextPage && !isLoadingMore) {
+      fetchMembers(currentPage + 1, true);
+    }
+  };
+
+
+  async function fetchChurches() {
+    if (!fetchWithAuth) return;
+    
+    try {
+      const data = await fetchWithAuth({
+        method: 'GET',
+        path: `/churches`,
+      });
+      
+      // Transform the API response to our form format
+      const formattedChurches = data?.data?.map((church: any) => ({
+        value: church.id,
+        label: church.name
+      }));
+      
+      setChurches(formattedChurches);
+    } catch (error) {
+      console.error('Error fetching churches:', error);
+    }
+  }
+
+  async function fetchYouthGroups() {
+    if (!fetchWithAuth) return;
+    
+    try {
+      const data = await fetchWithAuth({
+        method: 'GET',
+        path: `/youth-groups`,
+      });
+      
+      // Transform the API response to our form format
+      const formattedGroups = data?.data?.map((group: any) => ({
+        value: group.id,
+        label: group.name
+      }));
+      
+      setYouthGroups(formattedGroups);
+    } catch (error) {
+      console.error('Error fetching youth groups:', error);
+    }
+  }
+
+
+
+  useEffect(() => {
+      fetchMembers()
+      fetchYouthGroups();
+      fetchChurches();
   }, []);
 
   // Apply filters
@@ -138,10 +127,10 @@ const UserListingPage: React.FC = () => {
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       result = result.filter(member => 
-        member.firstName.toLowerCase().includes(term) || 
-        member.lastName.toLowerCase().includes(term) || 
-        member.email.toLowerCase().includes(term) ||
-        member.phoneNumber.toLowerCase().includes(term)
+        member?.first_name.toLowerCase().includes(term) || 
+        member?.last_name.toLowerCase().includes(term) || 
+        member?.email.toLowerCase().includes(term) ||
+        member?.phone_number.toLowerCase().includes(term)
       );
     }
 
@@ -152,7 +141,13 @@ const UserListingPage: React.FC = () => {
 
     // Apply status filter
     if (statusFilter) {
-      result = result.filter(member => member.status === statusFilter);
+      result = result.filter(member => {
+        if (statusFilter === 'Active') {
+          return member.is_active;
+          } else if (statusFilter === 'Inactive') {
+            return !member.is_active;
+          }
+      });
     }
 
     // Apply unit filter
@@ -169,12 +164,15 @@ const UserListingPage: React.FC = () => {
   }, [members, searchTerm, categoryFilter, statusFilter, unitFilter, genderFilter]);
 
   // Format date
+
+
 // Format date
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: string): string => {
+  if (!dateString) return 'N/A';
   const date = new Date(dateString);
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
-    month: 'short',
+    month: 'long',
     day: 'numeric'
   }).format(date);
 };
@@ -206,16 +204,16 @@ const AddUserButtonSection = () => (
 );
 
 // Handle member status change
-const handleStatusChange = (memberId: string, newStatus: 'Active' | 'Inactive') => {
+const handleStatusChange = (memberId: string) => {
   const updatedMembers = members.map(member => 
     member.id === memberId 
-      ? { ...member, status: newStatus } 
+      ? { ...member, is_active: !member.is_active } 
       : member
   );
   
   setMembers(updatedMembers);
   // In a real app, you would make an API call here to update the member's status
-  console.log(`Member ${memberId} status changed to ${newStatus}`);
+  // console.log(`Member ${memberId} status changed to ${newStatus}`);
 };
 
 // Handle member deletion
@@ -237,28 +235,6 @@ const closeMemberView = () => {
   setViewingMember(null);
 };
 
-const handleAddMember = (newMember: Omit<Member, 'id'>) => {
-  const memberWithId = {
-    ...newMember,
-    id: `${members.length + 1}`, // In a real app, this would be generated by the server
-  };
-  
-  setMembers([...members, memberWithId]);
-  // In a real app, you would make an API call to save the new member
-  console.log('New member added:', memberWithId);
-};
-
-// Handle bulk upload
-const handleBulkUpload = (newMembers: Omit<Member, 'id'>[]) => {
-  const membersWithIds = newMembers.map((member, index) => ({
-    ...member,
-    id: `${members.length + index + 1}`, // In a real app, IDs would be generated by the server
-  }));
-  
-  setMembers([...members, ...membersWithIds]);
-  // In a real app, you would make an API call to save the new members
-  console.log(`${membersWithIds.length} new members added`);
-};
 
 return (
   <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
@@ -338,7 +314,6 @@ return (
             <option value="">All Statuses</option>
             <option value="Active">Active</option>
             <option value="Inactive">Inactive</option>
-            <option value="On Leave">On Leave</option>
           </select>
         </div>
 
@@ -390,10 +365,10 @@ return (
                   Member
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                  Unit
+                  Category/Unit
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                  Category
+                  Gender
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                   Status
@@ -412,37 +387,35 @@ return (
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10">
-                        <img className="h-10 w-10 rounded-full" src={member.profileImage || avatar} alt="" />
+                        <img className="h-10 w-10 rounded-full" src={member?.image || avatar} alt="" />
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{member.firstName} {member.lastName}</div>
+                        <div className="text-sm font-medium text-gray-900">{member.first_name} {member.last_name}</div>
                         <div className="text-sm text-gray-500">{member.email}</div>
-                        <div className="text-sm text-gray-500 md:hidden">{member.phoneNumber}</div>
+                        <div className="text-sm text-gray-500 md:hidden">{member.phone_number}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
                     <div className="text-sm text-gray-900">{member.unit}</div>
-                    {member.unit === 'Council of Church' && member.churchName && (
-                      <div className="text-xs text-gray-500">{member.churchName}</div>
+                    {member.unit === 'Council of Church' && member?.church && (
+                      <div className="text-xs text-gray-500">{member?.church?.name}</div>
                     )}
-                    {member.unit === 'Youth Council' && member.youthCouncilType && (
-                      <div className="text-xs text-gray-500">{member.youthCouncilType}</div>
+                    {member.unit === 'Youth Council' && member?.youth_council_group && (
+                      <div className="text-xs text-gray-500">{member.youth_council_group?.name}</div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
-                    <div className="text-sm text-gray-900">{member.category}</div>
+                    <div className="text-sm text-gray-900">{member?.gender}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                      ${member.status === 'Active' ? 'bg-green-100 text-green-800' : 
-                        member.status === 'Inactive' ? 'bg-red-100 text-red-800' : 
-                        'bg-yellow-100 text-yellow-800'}`}>
-                      {member.status}
+                      ${member.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      {member.is_active ? "Active" : "In Active"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
-                    {formatDate(member.joinDate)}
+                    {formatDate(member?.created_at)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
@@ -460,6 +433,23 @@ return (
       </div>
     )}
 
+      {filteredMembers.length > 0 && (
+        <button 
+            onClick={loadMoreMembers}
+            disabled={isLoadingMore}
+            className="w-full mt-4 text-indigo-600 font-medium py-2 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-50">
+            {isLoadingMore ? (
+              <span className="flex items-center justify-center">
+                <span className="animate-spin h-4 w-4 mr-2 border-t-2 border-b-2 border-indigo-600 rounded-full"></span>
+                Loading...
+              </span>
+            ) : (
+              "Load More Videos"
+            )}
+      </button>
+      )}
+      
+
     {/* Member View Modal with Account Management */}
     {viewingMember && (
       <MemberViewModal 
@@ -474,14 +464,18 @@ return (
     <AddUserModal
         isOpen={showAddUserModal}
         closeModal={() => setShowAddUserModal(false)}
-        onAddMember={handleAddMember}
+        onAddMember={fetchMembers}
+        churches={churches}
+        youthGroups={youthGroups}
+
+        
       />
 
       {/* Bulk Upload Modal */}
       <BulkUploadModal
         isOpen={showBulkUploadModal}
         closeModal={() => setShowBulkUploadModal(false)}
-        onUploadMembers={handleBulkUpload}
+        onUploadMembers={fetchMembers}
       />
   </div>
 );

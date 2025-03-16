@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Member } from "../../../types/types";
 import avatar from '../../../assets/images/thumbnail-im.jpg';
 import ConfirmationModal from "./ConfirmationModal";
+import { useAuth } from "../../../context/NewAuthContext";
 
 
 
@@ -9,35 +10,63 @@ import ConfirmationModal from "./ConfirmationModal";
 const MemberViewModal: React.FC<{
     member: Member | null;
     closeModal: () => void;
-    onStatusChange: (memberId: string, newStatus: 'Active' | 'Inactive') => void;
+    onStatusChange: (memberId: string) => void;
     onDeleteMember: (memberId: string) => void;
   }> = ({ member, closeModal, onStatusChange, onDeleteMember }) => {
+
+    const { fetchWithAuth, displayNotification } = useAuth();
     const [showStatusConfirmation, setShowStatusConfirmation] = useState(false);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   
     if (!member) return null;
   
-    const handleStatusChange = () => {
-      const newStatus = member.status === 'Active' ? 'Inactive' : 'Active';
-      onStatusChange(member.id, newStatus);
-      setShowStatusConfirmation(false);
-      closeModal();
+    const handleStatusChange = async () => {
+      const payload = {
+        is_active : !member.is_active
+      }
+      try {
+        const response = await fetchWithAuth({
+          method: 'PATCH',
+          path: `/admin/members/${member?.id}`,
+          body:payload
+        });
+        console.log(response)
+        displayNotification('success', 'Member status updated successfully');
+        onStatusChange(member.id);
+        setShowStatusConfirmation(false);
+        closeModal();
+      } catch (error) {
+        console.error('Error fetching churches:', error);
+      }
+
+      
     };
   
-    const handleDeleteMember = () => {
-      onDeleteMember(member.id);
-      setShowDeleteConfirmation(false);
-      closeModal();
+    const handleDeleteMember = async() => {
+      try {
+        const response = await fetchWithAuth({
+          method: 'DELETE',
+          path: `/admin/members/${member?.id}`,
+        });
+        console.log(response)
+        displayNotification('success', response?.message || 'Member status updated successfully');
+        onDeleteMember(member.id);
+        setShowDeleteConfirmation(false);
+        closeModal();
+      } catch (error) {
+        console.error('Error fetching churches:', error);
+      }
+      
     };
   
-    const isActive = member.status === 'Active';
+    const isActive = member.is_active;
   
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
           <div className="p-6">
             <div className="flex justify-between items-start">
-              <h2 className="text-2xl font-bold">{member.firstName} {member.lastName}</h2>
+              <h2 className="text-2xl font-bold">{member.first_name} {member.last_name}</h2>
               <button
                 onClick={closeModal}
                 className="text-gray-500 hover:text-gray-700 focus:outline-none"
@@ -51,18 +80,16 @@ const MemberViewModal: React.FC<{
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="md:col-span-1">
                 <img 
-                  src={member.profileImage || avatar} 
-                  alt={`${member.firstName} ${member.lastName}`} 
+                  src={member.image || avatar} 
+                  alt={`${member.first_name} ${member.last_name}`} 
                   className="h-48 w-48 rounded-full mx-auto object-cover" 
                 />
                 
                 <div className="mt-4 text-center">
                   <span className={`px-3 py-1 inline-flex text-sm font-medium rounded-full 
-                    ${member.status === 'Active' ? 'bg-green-100 text-green-800' : 
-                      member.status === 'Inactive' ? 'bg-red-100 text-red-800' : 
-                      'bg-yellow-100 text-yellow-800'}`}
+                    ${member.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
                   >
-                    {member.status}
+                    {member.is_active ? "Active" : "In Active"}
                   </span>
                 </div>
               </div>
@@ -78,7 +105,7 @@ const MemberViewModal: React.FC<{
                   
                   <div>
                     <p className="text-sm text-gray-500">Phone Number</p>
-                    <p className="font-medium">{member.phoneNumber}</p>
+                    <p className="font-medium">{member.phone_number}</p>
                   </div>
                   
                   <div>
@@ -88,7 +115,7 @@ const MemberViewModal: React.FC<{
                   
                   <div>
                     <p className="text-sm text-gray-500">Category</p>
-                    <p className="font-medium">{member.category}</p>
+                    <p className="font-medium">{member?.category?.name}</p>
                   </div>
                   
                   <div>
@@ -96,23 +123,23 @@ const MemberViewModal: React.FC<{
                     <p className="font-medium">{member.unit}</p>
                   </div>
                   
-                  {member.unit === 'Council of Church' && member.churchName && (
+                  {member.unit === 'Council of Church' && member.church && (
                     <div>
                       <p className="text-sm text-gray-500">Church Name</p>
-                      <p className="font-medium">{member.churchName}</p>
+                      <p className="font-medium">{member.church?.name}</p>
                     </div>
                   )}
                   
-                  {member.unit === 'Youth Council' && member.youthCouncilType && (
+                  {member.unit === 'Youth Council' && member.youth_council_group && (
                     <div>
                       <p className="text-sm text-gray-500">Youth Council Type</p>
-                      <p className="font-medium">{member.youthCouncilType}</p>
+                      <p className="font-medium">{member.youth_council_group?.name}</p>
                     </div>
                   )}
                   
                   <div>
                     <p className="text-sm text-gray-500">Join Date</p>
-                    <p className="font-medium">{new Date(member.joinDate).toLocaleDateString()}</p>
+                    <p className="font-medium">{new Date(member.created_at).toLocaleDateString()}</p>
                   </div>
                 </div>
   
@@ -141,7 +168,7 @@ const MemberViewModal: React.FC<{
               <button
                 onClick={() => setShowStatusConfirmation(true)}
                 className={`px-4 py-2 text-white rounded-md ${
-                  isActive ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-500 hover:bg-green-600'
+                  isActive ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-500 hover:bg-green-600'
                 }`}
               >
                 {isActive ? 'Disable Account' : 'Enable Account'}
@@ -161,12 +188,12 @@ const MemberViewModal: React.FC<{
           isOpen={showStatusConfirmation}
           title={isActive ? 'Disable Member Account' : 'Enable Member Account'}
           message={isActive 
-            ? `Are you sure you want to disable ${member.firstName} ${member.lastName}'s account? They will no longer be able to access the system.`
-            : `Are you sure you want to enable ${member.firstName} ${member.lastName}'s account? They will regain access to the system.`
+            ? `Are you sure you want to disable ${member.first_name} ${member.last_name}'s account? They will no longer be able to access the system.`
+            : `Are you sure you want to enable ${member.first_name} ${member.last_name}'s account? They will regain access to the system.`
           }
           confirmText={isActive ? 'Disable Account' : 'Enable Account'}
           cancelText="Cancel"
-          confirmButtonClass={isActive ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-500 hover:bg-green-600'}
+          confirmButtonClass={isActive ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-500 hover:bg-green-600'}
           onConfirm={handleStatusChange}
           onCancel={() => setShowStatusConfirmation(false)}
         />
@@ -175,7 +202,7 @@ const MemberViewModal: React.FC<{
         <ConfirmationModal
           isOpen={showDeleteConfirmation}
           title="Delete Member Account"
-          message={`Are you sure you want to permanently delete ${member.firstName} ${member.lastName}'s account? This action cannot be undone.`}
+          message={`Are you sure you want to permanently delete ${member.first_name} ${member.last_name}'s account? This action cannot be undone.`}
           confirmText="Delete Account"
           cancelText="Cancel"
           confirmButtonClass="bg-red-600 hover:bg-red-700"

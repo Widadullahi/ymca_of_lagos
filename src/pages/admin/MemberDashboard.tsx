@@ -1,9 +1,27 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { useAuth } from '../../context/NewAuthContext';
 
 const MemberDashboard = () => {
+  const { fetchWithAuth} = useAuth();
   const [isLoading, setIsLoading] = useState(true);
+  const [memberMainStats, setMemberMainStats] = useState({})
+  const [memberMonthStats, setMemberMonthStats] = useState([
+    { month: 'Jan', members: 0 },
+    { month: 'Feb', members: 0 },
+    { month: 'Mar', members: 0 },
+    { month: 'Apr', members: 0 },
+    { month: 'May', members: 0 },
+    { month: 'Jun', members: 0 },
+    { month: 'Jul', members: 0 },
+    { month: 'Aug', members: 0 }
+  ])
+  const [memberGenderStats, setMemberGenderStats] = useState([
+    { name: 'Male', value: 0 },
+    { name: 'Female', value: 0 },
+    { name: 'Other', value: 0 }
+  ]);
   const [memberStats, setMemberStats] = useState({
     totalMembers: 0,
     activeMembers: 0,
@@ -15,6 +33,41 @@ const MemberDashboard = () => {
     membersByGender: [],
     membershipTrend: []
   });
+
+
+  async function fetchGenderOverview() {
+    try {
+      const response = await fetchWithAuth({
+        method: 'GET',
+        path: `/admin/members/overview?overview=gender`,
+      });
+      setMemberGenderStats(response?.data || [])
+    } catch (error) {
+      console.error('Error fetching churches:', error);
+    }
+  }
+  async function fetchMainOverview() {
+    try {
+      const response = await fetchWithAuth({
+        method: 'GET',
+        path: `/admin/members/overview`,
+      });
+      setMemberMainStats(response?.data || memberMainStats)
+    } catch (error) {
+      console.error('Error fetching churches:', error);
+    }
+  }
+  async function fetchMonthOverview() {
+    try {
+      const response = await fetchWithAuth({
+        method: 'GET',
+        path: `/admin/members/overview?overview=month`,
+      });
+      setMemberMonthStats(response?.data || memberMonthStats)
+    } catch (error) {
+      console.error('Error fetching churches:', error);
+    }
+  }
 
   useEffect(() => {
     // Simulate API call to fetch member statistics
@@ -56,6 +109,10 @@ const MemberDashboard = () => {
       setMemberStats(stats);
       setIsLoading(false);
     }, 1000);
+
+    fetchMainOverview()
+    fetchMonthOverview()
+    fetchGenderOverview()
   }, []);
 
   // Colors for charts
@@ -112,25 +169,25 @@ const MemberDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard 
           title="Total Members" 
-          value={memberStats.totalMembers} 
+          value={memberMainStats?.total} 
           icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>} 
           color="bg-blue-500" 
         />
         <StatCard 
           title="Active Members" 
-          value={memberStats.activeMembers} 
+          value={memberMainStats.active} 
           icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>} 
           color="bg-green-500" 
         />
         <StatCard 
           title="Inactive Members" 
-          value={memberStats.inactiveMembers} 
+          value={memberMainStats.inactive} 
           icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>} 
           color="bg-red-500" 
         />
         <StatCard 
           title="New This Month" 
-          value={memberStats.newMembersThisMonth} 
+          value={memberMainStats.new} 
           icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>} 
           color="bg-purple-500" 
         />
@@ -139,7 +196,7 @@ const MemberDashboard = () => {
       {/* Distribution Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Member Distribution by Category */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        {/* <div className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="text-lg font-semibold mb-4">Member Distribution by Category</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -163,10 +220,10 @@ const MemberDashboard = () => {
               </PieChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </div> */}
 
         {/* Member Distribution by Unit */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        {/* <div className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="text-lg font-semibold mb-4">Member Distribution by Unit</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -187,7 +244,7 @@ const MemberDashboard = () => {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Second Row of Charts */}
@@ -198,7 +255,7 @@ const MemberDashboard = () => {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={memberStats.membershipTrend}
+                data={memberMonthStats}
                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
@@ -219,7 +276,7 @@ const MemberDashboard = () => {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={memberStats.membersByGender}
+                  data={memberGenderStats}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -228,7 +285,7 @@ const MemberDashboard = () => {
                   dataKey="value"
                   label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                 >
-                  {memberStats.membersByGender.map((entry, index) => (
+                  {memberGenderStats.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={GENDER_COLORS[entry.name] || COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

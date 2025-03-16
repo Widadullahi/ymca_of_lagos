@@ -20,20 +20,20 @@ export interface AuthState {
 
 // Updated Types
 export interface Member {
-    id: string;
-    firstName: string;
-    lastName: string;
-    profileImage: string;
-    signature: string;
-    gender: 'Male' | 'Female' | 'Other';
-    unit: 'Council of Church' | 'Youth Council' | "Y's Men" | 'Central Club';
-    churchName?: string; // Only when unit is 'Council of Church'
-    youthCouncilType?: 'Hi-Y' | 'Y-Elite'; // Only when unit is 'Youth Council'
-    email: string;
-    phoneNumber: string;
-    category: 'Adult Member' | 'Youth Member' | 'Senior Member';
-    status: 'Active' | 'Inactive' | 'On Leave';
-    joinDate: string;
+  id: string;
+  first_name: string;
+  last_name: string;
+  image: string;
+  signature: string;
+  gender: 'Male' | 'Female' | 'Other';
+  unit: 'Council of Church' | 'Youth Council' | "Y's Men" | 'Central Club';
+  church?: any; 
+  youth_council_group?: any;
+  email: string;
+  phone_number: string;
+  category: any;
+  is_active: boolean;
+  created_at: any;
 }
 
 
