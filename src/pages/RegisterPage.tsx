@@ -13,14 +13,7 @@ const RegisterPage: React.FC= () => {
       <div className="w-full max-w-lg mb-8">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-2">
-            <div className="w-12 h-12 bg-red-600 flex items-center justify-center">
-              <div className="w-8 h-8 bg-white flex items-center justify-center">
-                <div className="w-6 h-6 bg-red-600 rotate-45"></div>
-              </div>
-            </div>
-          </div>
-          <h1 className="text-3xl font-bold">YMCA OF LAGOS</h1>
-          <NavLink to="/" className="text-xl font-bold">
+          <NavLink to="/" className="text-xl font-bold text-center">
             <svg id="Group_5836" data-name="Group 5836" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" width="102.432" height="40" viewBox="0 0 102.432 40">
               <path id="Path_5700" data-name="Path 5700" d="M9.356,1.17,7.093,6.55,6.727,1.17H4.863L2.578,6.55l-.4-5.38H.581l.588,7.388H3.2L5.473,3.089l.344,5.469H7.9L10.986,1.17Z" transform="translate(-0.526 -1.059)" fill="red"></path>
               <g id="Group_3969" data-name="Group 3969">
@@ -37,6 +30,9 @@ const RegisterPage: React.FC= () => {
               </g>
             </svg>
             </NavLink>
+          </div>
+          {/* <h1 className="text-3xl font-bold">YMCA OF LAGOS</h1> */}
+          
           <p className="text-gray-600">ID Card Management System</p>
         </div>
       </div>
