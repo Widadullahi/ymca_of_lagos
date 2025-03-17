@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.0.14",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.5.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.0",
     "react": "^19.0.0",

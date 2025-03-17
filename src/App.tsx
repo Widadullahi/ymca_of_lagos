@@ -15,6 +15,7 @@ import { useAuth } from './context/NewAuthContext';
 import TransactionValidation from './pages/TransactionValidation';
 import DashboardPage from './pages/DashboardPage';
 import ProfileManagementPage from './components/ProfileManagementPage';
+import HomePage from './pages/HomePage';
 // import { AuthState } from './types';
 
 const App: React.FC = () => {
@@ -27,7 +28,7 @@ const App: React.FC = () => {
     <ToastContainer />
     <Router>
       <Routes>
-        <Route path="/" element={<LoginPage  />} />
+        <Route path="/" element={<HomePage  />} />
         <Route path="/login" element={<LoginPage  />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/dashboard" element={<PrivateRoute element={<MemberDashboardMember />} />} />
