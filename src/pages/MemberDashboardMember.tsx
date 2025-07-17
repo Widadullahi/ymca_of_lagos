@@ -30,6 +30,22 @@ const MemberDashboardMember: React.FC = () => {
 
 
   async function handleRenewSubscription(renew:boolean){
+
+    try {
+        const response = await fetchWithAuth({
+          method: 'POST',
+          path: `/membership/demo`,
+          body: {}
+        });
+        console.log(response)
+        // refresh window
+        window.location.reload();
+      } catch (error) {
+        console.error('Error fetching churches:', error);
+        displayNotification('error','Failed to load churches', );
+      }
+
+
     // navigate('/payment');
     const payload  = {
       redirect_url : FRONTEND_URL + '/payment',
