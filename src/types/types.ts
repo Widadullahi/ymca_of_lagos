@@ -20,6 +20,22 @@ export interface AuthState {
 
 // Updated Types
 export interface Member {
+  profession: string;
+  religion: string;
+  was_referred: boolean;
+  referrer_name: string;
+  next_of_kin_phone: string;
+  next_of_kin_name: string;
+  academic_qualification: string;
+  denomination: string;
+  nationality: string;
+  state_of_origin: string;
+  office_address: string;
+  home_address: string;
+  date_of_birth: string;
+  marital_status: string;
+  other_names: string;
+  membership_category: string;
   id: string;
   first_name: string;
   last_name: string;
