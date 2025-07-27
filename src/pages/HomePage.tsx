@@ -32,7 +32,7 @@ const HomePage: React.FC = () => {
   const [selectedUpdate, setSelectedUpdate] = useState<Update | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const navigate = useNavigate()
-  const { user,fetchWithAuth ,FRONTEND_URL, displayNotification} = useAuth();
+  const { fetchWithAuth ,FRONTEND_URL, displayNotification} = useAuth();
   const [isDonationModalOpen, setIsDonationModalOpen] = useState<boolean>(false);
   const [donationForm, setDonationForm] = useState({
     name: '',

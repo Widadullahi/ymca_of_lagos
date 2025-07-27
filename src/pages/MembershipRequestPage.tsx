@@ -152,7 +152,7 @@ const RequestForm: React.FC = () => {
         requestData.append('passport_photo', formData.passportPhoto);
       }
 
-      const response = await fetchWithAuth({
+      await fetchWithAuth({
         method: 'POST',
         path: '/requests/',
         body: requestData,
