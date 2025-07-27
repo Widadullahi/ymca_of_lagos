@@ -292,13 +292,13 @@ const HomePage: React.FC = () => {
             
             <div className="flex flex-wrap justify-center gap-4">
               <motion.button
-                onClick={()=> {navigate('/login')}}
+                onClick={()=> {navigate('/membership-request')}}
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
                 className="bg-white text-red-700 font-bold py-3 px-6 rounded-full shadow-lg"
               >
-                Membership Login
+                Membership Request
               </motion.button>
               
               <motion.button

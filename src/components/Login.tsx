@@ -102,7 +102,7 @@ const LoginForm: React.FC= () => {
           >
             {loading ? 'Authenticating...' : 'Sign In'}
           </button>
-          <a 
+          {/* <a 
             className="inline-block align-baseline font-bold text-sm text-red-600 hover:text-red-800"
             href="/register"
             onClick={(e) => {
@@ -111,7 +111,7 @@ const LoginForm: React.FC= () => {
             }}
           >
             Register
-          </a>
+          </a> */}
         </div>
       </form>
     </div>

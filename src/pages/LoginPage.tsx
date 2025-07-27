@@ -54,7 +54,7 @@ const LoginPage: React.FC = () => {
                 </g>
               </svg>
               </NavLink>
-            </div>
+          </div>
           <p className="text-gray-600">ID Card Management System</p>
         </div>
       </div>

@@ -16,6 +16,9 @@ import TransactionValidation from './pages/TransactionValidation';
 import DashboardPage from './pages/DashboardPage';
 import ProfileManagementPage from './components/ProfileManagementPage';
 import HomePage from './pages/HomePage';
+import RequestForm from './pages/MembershipRequestPage';
+import MemberRequestListing from './pages/admin/MemberRequestListing';
+import QRVerificationPage from './pages/QRVerificationPage';
 // import { AuthState } from './types';
 
 const App: React.FC = () => {
@@ -31,6 +34,8 @@ const App: React.FC = () => {
         <Route path="/" element={<HomePage  />} />
         <Route path="/login" element={<LoginPage  />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/membership-request" element={<RequestForm />} />
+        <Route path="/verify" element={<QRVerificationPage />} />
         <Route path="/dashboard" element={<PrivateRoute element={<MemberDashboardMember />} />} />
         <Route path="/account" element={<PrivateRoute element={<ProfileManagementPage />} />} />
         <Route path="/myid" element={<PrivateRoute element={<DashboardPage />} />} />
@@ -38,6 +43,7 @@ const App: React.FC = () => {
         <Route path="/updates" element={<PrivateRoute element={<UpdatesPage />} />} />
         <Route path="/admin/dashboard" element={<RoleBasedRoute element={<MemberDashboard />} requiredRole="Admin" />} />
         <Route path="/admin/users" element={<RoleBasedRoute element={<UserListingPage />}  requiredRole="Admin"/>} />
+        <Route path="/admin/membership-request" element={<RoleBasedRoute element={<MemberRequestListing />}  requiredRole="Admin"/>} />
         <Route path="/admin/updates" element={<RoleBasedRoute element={<AdminUpdatesPage />}  requiredRole="Admin"/>} />
         <Route path="/admin/account" element={<RoleBasedRoute element={<ProfileManagementPage />}  requiredRole="Admin"/>} />
         <Route path="*" element={<Navigate to={user?.role == "Admin" ? "/admin/dashboard" : "/dashboard"} />} />

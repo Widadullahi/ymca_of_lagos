@@ -132,6 +132,13 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                   { to: "/admin/users", label: "Members List" },
                 ]}
               />
+              <SideNavbarItem 
+                icon={<MdOutlinePeopleAlt />} 
+                label="Membership Requests" 
+                subItems={[
+                  { to: "/admin/membership-request", label: "Membership Requests" },
+                ]}
+              />
               {/* Logout button */}
               <li>
                 <button 

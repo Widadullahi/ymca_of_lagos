@@ -20,6 +20,12 @@ export interface AuthState {
 
 // Updated Types
 export interface Member {
+  status_display: string;
+  address: string;
+  valid_id_type: string;
+  valid_id_number: string;
+  passport_photo: any;
+  status: string;
   profession: string;
   religion: string;
   was_referred: boolean;
