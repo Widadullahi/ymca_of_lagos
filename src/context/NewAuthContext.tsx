@@ -34,7 +34,7 @@ export const useAuth = (): AuthContextType => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 
-  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || ''; 
   const FRONTEND_URL = window.location.origin
 
   const [user, setUser] = useState<any>(null);
