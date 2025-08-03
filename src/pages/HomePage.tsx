@@ -5,6 +5,7 @@ import { useAuth } from '../context/NewAuthContext';
 import CoreValue from '../components/CoreValue.js';
 import LatestUpdate from '../components/LatestUpdate.js';
 import Programme from '../components/Programme.js';
+import ymca from '../assets/images/image.png'
 
 
 
@@ -172,8 +173,12 @@ const HomePage: React.FC = () => {
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-red-700">YMCA Lagos</h1>
-            </div>
+            <img 
+              src={ymca} 
+              alt="YMCA Lagos Logo" 
+              className="h-10 w-auto object-contain" 
+            />
+          </div>
             
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
