@@ -349,7 +349,7 @@ const AboutUsPage: React.FC = () => {
               <h3 className="text-xl font-bold mb-4">Visit Us</h3>
               <p className="text-gray-400">
                 YMCA Lagos<br />
-                Lagos, Nigeria
+                77Awolowo road, Ikoyi, Lagos, Nigeria
               </p>
             </div>
             <div>
@@ -363,8 +363,8 @@ const AboutUsPage: React.FC = () => {
             <div>
               <h3 className="text-xl font-bold mb-4">Contact Us</h3>
               <p className="text-gray-400">
-                Email: info@ymcalagos.org<br />
-                Phone: +234 (0) XXX XXX XXXX
+                Email:  info@ymcaoflagos.org<br />
+                Phone: Hostel 08102977099 Admin: 09026802928 Programmes: 09026114628
               </p>
             </div>
           </div>

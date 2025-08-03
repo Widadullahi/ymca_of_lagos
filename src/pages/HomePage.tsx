@@ -443,8 +443,8 @@ const HomePage: React.FC = () => {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <h3 className="text-xl font-bold mb-4">Chemin de Mouille-Galand 1</h3>
-              <p className="text-gray-400">1214 Vernier<br />Geneva - Switzerland</p>
+              <h3 className="text-xl font-bold mb-4"></h3>
+              <p className="text-gray-400">77Awolowo road, Ikoyi, Lagos, Nigeria</p>
             </div>
             <div>
               {/* <h3 className="text-xl font-bold mb-4">Service Times</h3>
@@ -452,7 +452,7 @@ const HomePage: React.FC = () => {
             </div>
             <div>
               <h3 className="text-xl font-bold mb-4">Contact Us</h3>
-              <p className="text-gray-400">Email: office@ymca.int<br />Phone: +41228495100</p>
+              <p className="text-gray-400">Email: info@ymcaoflagos.org<br />Phone: Hostel 08102977099 Admin: 09026802928 Programmes: 09026114628</p>
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-700 text-center text-gray-400">
