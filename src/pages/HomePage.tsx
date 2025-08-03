@@ -1,37 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format, formatDistance } from 'date-fns';
-import thumbnail from '../assets/images/thumbnail-im.jpg'
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/NewAuthContext';
+import CoreValue from '../components/CoreValue.js';
+import LatestUpdate from '../components/LatestUpdate.js';
+import Programme from '../components/Programme.js';
 
-// Type definitions
-interface Attachment {
-  name: string;
-  url: string;
-  type: string;
-}
 
-interface Update {
+
+interface Quote {
   id: string;
-  title: string;
-  content: string;
-  category: string;
-  imageUrl?: string;
-  postedBy: string;
-  postedAt: Date;
-  attachments?: Array<Attachment>;
+  text: string;
+  author: string;
 }
 
 const HomePage: React.FC = () => {
-
-
-  const [updates, setUpdates] = useState<Update[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [selectedUpdate, setSelectedUpdate] = useState<Update | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const navigate = useNavigate()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const { fetchWithAuth ,FRONTEND_URL, displayNotification} = useAuth();
   const [isDonationModalOpen, setIsDonationModalOpen] = useState<boolean>(false);
   const [donationForm, setDonationForm] = useState({
@@ -40,6 +25,44 @@ const HomePage: React.FC = () => {
     email: '',
     redirect_url : FRONTEND_URL + '',
   });
+
+
+  // Quotes data
+  const [quotes] = useState<Quote[]>([
+    {
+      id: '1',
+      text: 'You will never know the fullness of Christ until you know the emptiness of everything else but Christ',
+      author: 'Charles Spurgeon'
+    },
+    {
+      id: '2',
+      text: 'Until the lions have their own historians, the history of the hunt will always glorify the hunter.',
+      author: 'Chinua Achebe'
+    },
+    {
+      id: '3',
+      text: 'To accomplish great things, we must not only act, but also dream, not only plan, but also believe.',
+      author: 'Anatole France'
+    },
+    {
+      id: '4',
+      text: 'Good things come to people who wait, but better things come to those who go out and get them.',
+      author: 'Anonymous'
+    }
+  ]);
+
+  const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
+
+
+
+  // Auto-advance quotes
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentQuoteIndex((prev) => (prev + 1) % quotes.length);
+    }, 8000); // Change quote every 8 seconds
+
+    return () => clearInterval(timer);
+  }, [quotes.length]);
 
   const openDonationModal = () => {
     setIsDonationModalOpen(true);
@@ -51,9 +74,6 @@ const HomePage: React.FC = () => {
     setDonationForm({ name: '', amount: '', email: '',redirect_url : FRONTEND_URL + '', });
     document.body.style.overflow = 'auto';
   };
-
-
-
 
   const handleDonationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,122 +89,25 @@ const HomePage: React.FC = () => {
         console.error('Error fetching churches:', error);
         displayNotification('error','Failed to load churches', );
       }
-
-      // // Here you would typically send the data to your backend
-      // console.log('Donation submitted:', donationForm);
-      // alert(`Thank you ${donationForm.name} for your donation of $${donationForm.amount}!`);
-      // closeDonationModal();
     }
+  };
+
+
+
+  // Quote navigation functions
+  const goToQuote = (index: number) => {
+    setCurrentQuoteIndex(index);
   };
 
   useEffect(() => {
     // Simulating API fetch with the provided data
     const fetchUpdates = async () => {
-      // In a real app, you would fetch from an API
       setTimeout(() => {
-        // Note: In a real implementation, we'd use actual images
-        const thumbnailPlaceholder = thumbnail;
-        
-        setUpdates([
-          {
-            id: '1',
-            title: 'Sunday Service Time Change',
-            content: 'Starting next week, our Sunday service will begin at 10:00 AM instead of 9:30 AM. Please make note of this change and plan accordingly.',
-            category: 'Announcements',
-            postedBy: 'Pastor Johnson',
-            postedAt: new Date('2025-03-10T12:00:00'),
-            imageUrl: thumbnailPlaceholder,
-          },
-          {
-            id: '2',
-            title: 'Youth Group Retreat',
-            content: 'Our annual youth retreat is scheduled for April 18-20. Registration is now open! Please register by March 25th to secure your spot.',
-            category: 'Events',
-            postedBy: 'Youth Ministry Team',
-            postedAt: new Date('2025-03-08T09:15:00'),
-            attachments: [
-              {
-                name: 'Retreat Schedule',
-                url: '#',
-                type: 'pdf'
-              },
-              {
-                name: 'Permission Form',
-                url: '#',
-                type: 'docx'
-              }
-            ]
-          },
-          {
-            id: '3',
-            title: 'Prayer Request for the Smith Family',
-            content: 'Please keep the Smith family in your prayers as they navigate a difficult health situation with their daughter Sarah.',
-            category: 'Prayer Requests',
-            postedBy: 'Prayer Team',
-            postedAt: new Date('2025-03-07T16:30:00'),
-          },
-          {
-            id: '4',
-            title: 'Women\'s Bible Study Series',
-            content: 'Join us for our new women\'s Bible study series "Walking in Faith" every Wednesday at 7:00 PM starting March 19th.',
-            category: 'Ministries',
-            postedBy: 'Women\'s Ministry',
-            postedAt: new Date('2025-03-06T14:45:00'),
-            imageUrl: thumbnailPlaceholder,
-          },
-          {
-            id: '5',
-            title: 'Last Week\'s Sermon: "Grace in Action"',
-            content: 'Pastor Johnson\'s sermon on "Grace in Action" is now available for streaming and download. Explore how we can demonstrate God\'s grace in our daily lives.',
-            category: 'Sermons',
-            postedBy: 'Media Team',
-            postedAt: new Date('2025-03-04T08:30:00'),
-            attachments: [
-              {
-                name: 'Audio Recording',
-                url: '#',
-                type: 'mp3'
-              },
-              {
-                name: 'Sermon Notes',
-                url: '#',
-                type: 'pdf'
-              }
-            ]
-          }
-        ]);
-        setIsLoading(false);
       }, 1000);
     };
 
     fetchUpdates();
   }, []);
-
-  const categories = ['All', ...Array.from(new Set(updates.map(update => update.category)))];
-  
-  const filteredUpdates = selectedCategory === 'All' 
-    ? updates 
-    : updates.filter(update => update.category === selectedCategory);
-
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { 
-      opacity: 1,
-      transition: { 
-        staggerChildren: 0.3
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { 
-      y: 0, 
-      opacity: 1,
-      transition: { type: "spring", stiffness: 100 }
-    }
-  };
 
   const buttonVariants = {
     hover: { 
@@ -220,64 +143,132 @@ const HomePage: React.FC = () => {
     }
   };
 
-  const formatDate = (date: Date) => {
-    return format(date, 'MMMM do, yyyy');
-  };
-
-  const getCategoryColor = (category: string) => {
-    switch(category) {
-      case 'Announcements': return 'bg-blue-100 text-blue-800';
-      case 'Events': return 'bg-green-100 text-green-800';
-      case 'Prayer Requests': return 'bg-purple-100 text-purple-800';
-      case 'Ministries': return 'bg-yellow-100 text-yellow-800';
-      case 'Sermons': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const openModal = (update: Update) => {
-    setSelectedUpdate(update);
-    setIsModalOpen(true);
-    document.body.style.overflow = 'hidden'; // Prevent scrolling when modal is open
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    document.body.style.overflow = 'auto'; // Re-enable scrolling
-  };
-
-  // Function to render attachment icon based on file type
-  const getAttachmentIcon = (type: string) => {
-    switch (type) {
-      case 'pdf':
-        return (
-          <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-          </svg>
-        );
-      case 'docx':
-        return (
-          <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-          </svg>
-        );
-      case 'mp3':
-        return (
-          <svg className="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-          </svg>
-        );
-      default:
-        return (
-          <svg className="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-            <path fillRule="evenodd" d="M8 4a3 3 0 00-3 3v4a3 3 0 006 0V7a1 1 0 112 0v4a5 5 0 01-10 0V7a5 5 0 0110 0v1.5a.5.5 0 01-1 0V7a4 4 0 00-8 0v4a4 4 0 008 0v-1.5a.5.5 0 011 0V11a5 5 0 01-5 5z" clipRule="evenodd" />
-          </svg>
-        );
+  const quoteVariants = {
+    enter: {
+      opacity: 0,
+      y: 20,
+    },
+    center: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.8,
+        ease: "easeOut"
+      }
+    },
+    exit: {
+      opacity: 0,
+      y: -20,
+      transition: {
+        duration: 0.5,
+        ease: "easeIn"
+      }
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <nav className="bg-white shadow-md sticky top-0 z-40">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold text-red-700">YMCA Lagos</h1>
+            </div>
+            
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-8">
+              <button 
+                onClick={() => navigate('/')}
+                className="text-gray-700 hover:text-red-700 font-medium transition-colors"
+              >
+                Home
+              </button>
+              <button 
+                onClick={() => navigate('/about-us')}
+                className="text-gray-700 hover:text-red-700 font-medium transition-colors"
+              >
+                About Us
+              </button>
+              <button 
+                onClick={() => navigate('/membership-request')}
+                className="text-gray-700 hover:text-red-700 font-medium transition-colors"
+              >
+                Membership
+              </button>
+              <button 
+                onClick={openDonationModal}
+                className="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition-colors"
+              >
+                Donate
+              </button>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="text-gray-700 hover:text-red-700 focus:outline-none"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Navigation Menu */}
+          <AnimatePresence>
+            {isMobileMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="md:hidden border-t border-gray-200 py-4"
+              >
+                <div className="flex flex-col space-y-4">
+                  <button 
+                    onClick={() => {
+                      navigate('/');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="text-gray-700 hover:text-red-700 font-medium transition-colors text-left"
+                  >
+                    Home
+                  </button>
+                  <button 
+                    onClick={() => {
+                      navigate('/about-us');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="text-gray-700 hover:text-red-700 font-medium transition-colors text-left"
+                  >
+                    About Us
+                  </button>
+                  <button 
+                    onClick={() => {
+                      navigate('/membership-request');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="text-gray-700 hover:text-red-700 font-medium transition-colors text-left"
+                  >
+                    Membership
+                  </button>
+                  <button 
+                    onClick={() => {
+                      openDonationModal();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition-colors text-left w-fit"
+                  >
+                    Donate
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </nav>
+      
       {/* Hero Section */}
       <section className="bg-red-700 text-white">
         <div className="container mx-auto px-4 py-20">
@@ -315,116 +306,106 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Updates Section */}
-      <section className="py-16 container mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h2 className="text-3xl font-bold text-center mb-12">Latest Updates</h2>
-          
-          {/* Category Filters */}
-          <div className="flex flex-wrap justify-center gap-2 mb-8">
-            {categories.map((category) => (
-              <motion.button
-                key={category}
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedCategory === category 
-                    ? 'bg-red-600 text-white' 
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                {category}
-              </motion.button>
-            ))}
-          </div>
+      <CoreValue />
 
-          {isLoading ? (
-            <div className="flex justify-center">
-              <div className="w-16 h-16 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          ) : (
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-            >
-              {filteredUpdates.map((update) => (
+      {/* Inspirational Quotes Section */}
+      <section className="py-16 bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl font-bold text-gray-800 mb-4">Words of Wisdom</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Inspiring thoughts and reflections to guide our journey
+            </p>
+          </motion.div>
+
+          <div className="relative max-w-4xl mx-auto">
+            {/* Quote Display */}
+            <div className="relative h-64 flex items-center justify-center">
+              <AnimatePresence mode="wait">
                 <motion.div
-                  key={update.id}
-                  variants={itemVariants}
-                  className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300"
+                  key={currentQuoteIndex}
+                  variants={quoteVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  className="text-center px-8"
                 >
-                  {update.imageUrl && (
-                    <div className="relative h-48 w-full overflow-hidden">
-                      <img 
-                        src={update.imageUrl} 
-                        alt={update.title} 
-                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                      />
+                  <div className="relative">
+                    {/* Quote Mark */}
+                    <div className="absolute -top-6 -left-4 text-6xl text-red-300 font-serif">"</div>
+                    
+                    <blockquote className="text-lg md:text-xl text-gray-700 italic mb-6 leading-relaxed">
+                      {quotes[currentQuoteIndex].text}
+                    </blockquote>
+                    
+                    <div className="flex items-center justify-center">
+                      <div className="h-px bg-gradient-to-r from-transparent via-red-400 to-transparent w-16 mr-4"></div>
+                      <cite className="text-red-600 font-semibold text-sm tracking-wide uppercase">
+                        {quotes[currentQuoteIndex].author}
+                      </cite>
+                      <div className="h-px bg-gradient-to-r from-transparent via-red-400 to-transparent w-16 ml-4"></div>
                     </div>
-                  )}
-                  
-                  <div className="p-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className={`text-xs font-bold px-3 py-1 rounded-full ${getCategoryColor(update.category)}`}>
-                        {update.category}
-                      </span>
-                      <span className="text-xs text-gray-500">{formatDate(update.postedAt)}</span>
-                    </div>
-                    
-                    <h3 className="text-xl font-bold mb-2">{update.title}</h3>
-                    <p className="text-gray-600 mb-4 line-clamp-3">{update.content}</p>
-                    
-                    {update.attachments && update.attachments.length > 0 && (
-                      <div className="mb-4">
-                        <p className="text-sm font-medium text-gray-700 mb-2">Attachments:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {update.attachments.map((attachment, index) => (
-                            <a 
-                              key={index} 
-                              href={attachment.url}
-                              className="inline-flex items-center text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-3 py-1 text-gray-700"
-                            >
-                              {attachment.name}
-                              <span className="ml-1 uppercase text-gray-500">({attachment.type})</span>
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center mt-4">
-                      <div className="bg-gray-200 rounded-full h-8 w-8 flex items-center justify-center mr-2">
-                      <span className="text-xs font-bold">
-                          {update.postedBy.split(' ')[0][0]}{update.postedBy.split(' ')[1]?.[0] || ''}
-                        </span>
-                      </div>
-                      <span className="text-sm text-gray-700">{update.postedBy}</span>
-                    </div>
-                    
-                    <motion.button
-                      variants={buttonVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      onClick={() => openModal(update)}
-                      className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm font-medium"
-                    >
-                      Read More
-                    </motion.button>
                   </div>
                 </motion.div>
+              </AnimatePresence>
+            </div>
+
+            {/* Quote Navigation Dots */}
+            <div className="flex justify-center space-x-3 mt-8">
+              {quotes.map((_, index) => (
+                <motion.button
+                  key={index}
+                  onClick={() => goToQuote(index)}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                    index === currentQuoteIndex 
+                      ? 'bg-red-600 scale-125' 
+                      : 'bg-red-300 hover:bg-red-400'
+                  }`}
+                  whileHover={{ scale: 1.2 }}
+                  whileTap={{ scale: 0.9 }}
+                />
               ))}
-            </motion.div>
-          )}
-        </motion.div>
+            </div>
+
+            {/* Navigation Arrows */}
+            <div className="absolute inset-y-0 left-0 flex items-center">
+              <motion.button
+                onClick={() => setCurrentQuoteIndex(prev => prev === 0 ? quotes.length - 1 : prev - 1)}
+                className="p-2 rounded-full bg-white shadow-lg text-gray-600 hover:text-red-600 transition-colors"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                </svg>
+              </motion.button>
+            </div>
+
+            <div className="absolute inset-y-0 right-0 flex items-center">
+              <motion.button
+                onClick={() => setCurrentQuoteIndex(prev => (prev + 1) % quotes.length)}
+                className="p-2 rounded-full bg-white shadow-lg text-gray-600 hover:text-red-600 transition-colors"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </motion.button>
+            </div>
+          </div>
+        </div>
       </section>
+
+      {/* Updates Section */}
+      <LatestUpdate />
+
+      <Programme />
 
       {/* Call to Action */}
       <section className="bg-gray-100 py-16">
@@ -443,6 +424,7 @@ const HomePage: React.FC = () => {
               variants={buttonVariants}
               whileHover="hover"
               whileTap="tap"
+              onClick={() => navigate('/about-us')}
               className="bg-red-700 text-white font-bold py-3 px-8 rounded-full shadow-lg"
             >
               Learn More About Us
@@ -460,7 +442,6 @@ const HomePage: React.FC = () => {
               <p className="text-gray-400">1214 Vernier<br />Geneva - Switzerland</p>
             </div>
             <div>
-
               {/* <h3 className="text-xl font-bold mb-4">Service Times</h3>
               <p className="text-gray-400">Sunday: 10:00 AM<br />Wednesday: 7:00 PM</p> */}
             </div>
@@ -475,12 +456,14 @@ const HomePage: React.FC = () => {
         </div>
       </footer>
 
-      {/* Modal */}
+     
+
+      {/* Donation Modal */}
       <AnimatePresence>
-        {isModalOpen && selectedUpdate && (
+        {isDonationModalOpen && (
           <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
             <motion.div 
-              className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-auto"
+              className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-auto"
               initial="hidden"
               animate="visible"
               exit="exit"
@@ -488,207 +471,96 @@ const HomePage: React.FC = () => {
             >
               {/* Close button */}
               <button
-                onClick={closeModal}
+                onClick={closeDonationModal}
                 className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 focus:outline-none"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
               </button>
               
-              {/* Modal header with image if available */}
-              {selectedUpdate.imageUrl && (
-                <div className="relative h-56 w-full">
-                  <img 
-                    src={selectedUpdate.imageUrl} 
-                    alt={selectedUpdate.title} 
-                    className="w-full h-full object-cover rounded-t-lg"
-                  />
-                </div>
-              )}
-              
               {/* Modal content */}
-              <div className="px-4 py-5 sm:p-6">
-                {/* Category tag */}
-                <div className="mb-4">
-                  <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium
-                    ${selectedUpdate.category === 'Announcements' ? 'bg-blue-100 text-blue-800' : ''}
-                    ${selectedUpdate.category === 'Events' ? 'bg-green-100 text-green-800' : ''}
-                    ${selectedUpdate.category === 'Prayer Requests' ? 'bg-yellow-100 text-yellow-800' : ''}
-                    ${selectedUpdate.category === 'Ministries' ? 'bg-purple-100 text-purple-800' : ''}
-                    ${selectedUpdate.category === 'Sermons' ? 'bg-red-100 text-red-800' : ''}
-                  `}>
-                    {selectedUpdate.category}
-                  </span>
+              <div className="px-6 py-8">
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Make a Donation</h3>
+                  <p className="text-gray-600">Your generosity helps us serve our community better</p>
                 </div>
                 
-                <h3 className="text-xl leading-6 font-bold text-gray-900 mb-2">{selectedUpdate.title}</h3>
-                <p className="text-gray-500 text-sm mb-4">
-                  Posted by {selectedUpdate.postedBy} · {formatDistance(selectedUpdate.postedAt, new Date(), { addSuffix: true })}
-                </p>
-                <p className="text-gray-700 mb-5 whitespace-pre-line">{selectedUpdate.content}</p>
-                
-                {/* Attachments */}
-                {selectedUpdate.attachments && selectedUpdate.attachments.length > 0 && (
-                  <div className="mt-6">
-                    <h4 className="text-sm font-medium text-gray-900 mb-3">Attachments</h4>
-                    <div className="space-y-2">
-                      {selectedUpdate.attachments.map((attachment, index) => (
-                        <a 
-                          key={index}
-                          href={attachment.url}
-                          className="flex items-center p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition"
-                        >
-                          {getAttachmentIcon(attachment.type)}
-                          <span className="ml-2 text-sm font-medium text-gray-700">{attachment.name}</span>
-                        </a>
-                      ))}
-                    </div>
+                <form onSubmit={handleDonationSubmit}>
+                  <div className="mb-4">
+                    <label htmlFor="donorName" className="block text-sm font-medium text-gray-700 mb-2">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      id="donorName"
+                      value={donationForm.name}
+                      onChange={(e) => setDonationForm({ ...donationForm, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="Enter your full name"
+                      required
+                    />
                   </div>
-                )}
-              </div>
-              
-              {/* Modal footer */}
-              <div className="px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse bg-gray-50 rounded-b-lg">
-                <motion.button
-                  variants={buttonVariants}
-                  whileHover="hover"
-                  whileTap="tap"
-                  type="button"
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm"
-                  onClick={closeModal}
-                >
-                  Close
-                </motion.button>
-                {/* {selectedUpdate.category === 'Events' && (
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    type="button"
-                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                  >
-                    Register
-                  </motion.button>
-                )}
-                {selectedUpdate.category === 'Prayer Requests' && (
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    type="button"
-                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                  >
-                    Submit Prayer
-                  </motion.button>
-                )} */}
+                  <div className="mb-4">
+                    <label htmlFor="donorEmail" className="block text-sm font-medium text-gray-700 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      id="donorEmail"
+                      value={donationForm.email}
+                      onChange={(e) => setDonationForm({ ...donationForm, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="Enter your email address"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="mb-6">
+                    <label htmlFor="donationAmount" className="block text-sm font-medium text-gray-700 mb-2">
+                      Donation Amount (₦)
+                    </label>
+                    <input
+                      type="number"
+                      id="donationAmount"
+                      value={donationForm.amount}
+                      onChange={(e) => setDonationForm({ ...donationForm, amount: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="Enter amount"
+                      min="1"
+                      step="0.01"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="flex space-x-3">
+                    <motion.button
+                      type="button"
+                      onClick={closeDonationModal}
+                      variants={buttonVariants}
+                      whileHover="hover"
+                      whileTap="tap"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none"
+                    >
+                      Cancel
+                    </motion.button>
+                    
+                    <motion.button
+                      type="submit"
+                      variants={buttonVariants}
+                      whileHover="hover"
+                      whileTap="tap"
+                      className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    >
+                      Donate
+                    </motion.button>
+                  </div>
+                </form>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-      <AnimatePresence>
-  {isDonationModalOpen && (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <motion.div 
-        className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-auto"
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-        variants={modalVariants}
-      >
-        {/* Close button */}
-        <button
-          onClick={closeDonationModal}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 focus:outline-none"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
-        
-        {/* Modal content */}
-        <div className="px-6 py-8">
-          <div className="text-center mb-6">
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">Make a Donation</h3>
-            <p className="text-gray-600">Your generosity helps us serve our community better</p>
-          </div>
-          
-          <form onSubmit={handleDonationSubmit}>
-            <div className="mb-4">
-              <label htmlFor="donorName" className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name
-              </label>
-              <input
-                type="text"
-                id="donorName"
-                value={donationForm.name}
-                onChange={(e) => setDonationForm({ ...donationForm, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                placeholder="Enter your full name"
-                required
-              />
-            </div>
-            <div className="mb-4">
-              <label htmlFor="donorName" className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                id="donorName"
-                value={donationForm.email}
-                onChange={(e) => setDonationForm({ ...donationForm, email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                placeholder="Enter your email address"
-                required
-              />
-            </div>
-            
-            <div className="mb-6">
-              <label htmlFor="donationAmount" className="block text-sm font-medium text-gray-700 mb-2">
-                Donation Amount (₦)
-              </label>
-              <input
-                type="number"
-                id="donationAmount"
-                value={donationForm.amount}
-                onChange={(e) => setDonationForm({ ...donationForm, amount: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                placeholder="Enter amount"
-                min="1"
-                step="0.01"
-                required
-              />
-            </div>
-            
-            <div className="flex space-x-3">
-              <motion.button
-                type="button"
-                onClick={closeDonationModal}
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none"
-              >
-                Cancel
-              </motion.button>
-              
-              <motion.button
-                type="submit"
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
-                className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-              >
-                Donate
-              </motion.button>
-            </div>
-          </form>
-        </div>
-      </motion.div>
-    </div>
-  )}
-</AnimatePresence>
     </div>
   );
 };
