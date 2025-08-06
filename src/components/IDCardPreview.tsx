@@ -86,17 +86,17 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ forwardedRef }) => {
                           <span className="text-red-600 font-medium text-xs break-all">{user?.card?.id_number || ''}</span>
                         </div>
                         
-                        <div className="flex flex-row gap-1">
+                        <div className="flex flex-row gap-1 items-center">
                           <span className="font-normal text-xs whitespace-nowrap">Category:</span>
                           <span className="text-red-600 font-medium text-xs">{user?.category?.name || 'FULL MEMBER'}</span>
                         </div>
                         
-                        <div className="flex flex-row gap-1">
+                        <div className="flex flex-row gap-1 items-center">
                           <span className="font-normal text-xs whitespace-nowrap">Expired At:</span>
                           <span className="text-red-600 font-medium text-xs">{user?.card?.expired_at || ''}</span>
                         </div>
                         
-                        <div className="mt-1 flex gap-1">
+                        <div className="mt-1 flex gap-1 items-center">
                           <div className="font-normal text-xs mb-1">Holder's Signature:</div>
                           <div className="h-3 sm:h-6">
                             {user?.card?.signature ? (
@@ -106,7 +106,7 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ forwardedRef }) => {
                                 className="h-full object-contain"
                               />
                             ) : (
-                              <div className="border-b border-gray-400 h-full w-16"></div>
+                              <div className="border-b border-gray-400 h-full w-16"></div> 
                             )}
                           </div>
                         </div>
