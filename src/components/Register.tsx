@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/NewAuthContext';
 import FormInput from './forms/FormInput';
 import FormSelect from './forms/FormSelect';
+import { nigerianStates } from '../constants/utils';
 
 const RegisterForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -63,46 +64,6 @@ const RegisterForm: React.FC = () => {
     { value: 'No', label: 'No' }
   ];
 
-  const nigerianStates = [
-    { value: 'Abia', label: 'Abia' },
-    { value: 'Adamawa', label: 'Adamawa' },
-    { value: 'Akwa Ibom', label: 'Akwa Ibom' },
-    { value: 'Anambra', label: 'Anambra' },
-    { value: 'Bauchi', label: 'Bauchi' },
-    { value: 'Bayelsa', label: 'Bayelsa' },
-    { value: 'Benue', label: 'Benue' },
-    { value: 'Borno', label: 'Borno' },
-    { value: 'Cross River', label: 'Cross River' },
-    { value: 'Delta', label: 'Delta' },
-    { value: 'Ebonyi', label: 'Ebonyi' },
-    { value: 'Edo', label: 'Edo' },
-    { value: 'Ekiti', label: 'Ekiti' },
-    { value: 'Enugu', label: 'Enugu' },
-    { value: 'Gombe', label: 'Gombe' },
-    { value: 'Imo', label: 'Imo' },
-    { value: 'Jigawa', label: 'Jigawa' },
-    { value: 'Kaduna', label: 'Kaduna' },
-    { value: 'Kano', label: 'Kano' },
-    { value: 'Katsina', label: 'Katsina' },
-    { value: 'Kebbi', label: 'Kebbi' },
-    { value: 'Kogi', label: 'Kogi' },
-    { value: 'Kwara', label: 'Kwara' },
-    { value: 'Lagos', label: 'Lagos' },
-    { value: 'Nasarawa', label: 'Nasarawa' },
-    { value: 'Niger', label: 'Niger' },
-    { value: 'Ogun', label: 'Ogun' },
-    { value: 'Ondo', label: 'Ondo' },
-    { value: 'Osun', label: 'Osun' },
-    { value: 'Oyo', label: 'Oyo' },
-    { value: 'Plateau', label: 'Plateau' },
-    { value: 'Rivers', label: 'Rivers' },
-    { value: 'Sokoto', label: 'Sokoto' },
-    { value: 'Taraba', label: 'Taraba' },
-    { value: 'Yobe', label: 'Yobe' },
-    { value: 'Zamfara', label: 'Zamfara' },
-    { value: 'FCT', label: 'FCT (Abuja)' }
-  ];
-  
   const { fetchWithAuth, displayNotification, setUser, setAuthToken } = useAuth();
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});

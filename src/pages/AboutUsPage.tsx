@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import CoreValue from '../components/CoreValue';
 import ymca from '../assets/images/image.png'
+import { useAuth } from '../context/NewAuthContext';
 
 const AboutUsPage: React.FC = () => {
 
+  const { fetchWithAuth} = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+    const [membersCount, setMembersCount] = useState<number>(0);
     const navigate = useNavigate()
   const fadeInUp = {
     hidden: { opacity: 0, y: 60 },
@@ -69,6 +72,26 @@ const AboutUsPage: React.FC = () => {
       icon: "🏛️"
     }
   ];
+
+
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const response = await fetchWithAuth({
+          method: 'GET',
+          path: `/total-members-count`,
+          isAthenticated:false
+        });
+        // handle response (e.g., set state)
+        setMembersCount(response?.data?.count || 0)
+      } catch (error) {
+        console.error('Failed to fetch members:', error);
+      }
+    };
+
+    fetchMembers();
+  }, []); // rerun when `page` changes
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -246,20 +269,8 @@ const AboutUsPage: React.FC = () => {
                 <h3 className="text-2xl font-bold mb-6">Our Impact</h3>
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <span className="text-lg">Years of Service</span>
-                    <span className="text-3xl font-bold">120+</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg">Annual Beneficiaries</span>
-                    <span className="text-3xl font-bold">2,000+</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg">Active Committees</span>
-                    <span className="text-3xl font-bold">7</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg">Key Facilities</span>
-                    <span className="text-3xl font-bold">4</span>
+                    <span className="text-lg">Members count</span>
+                    <span className="text-3xl font-bold">{membersCount}</span>
                   </div>
                 </div>
               </div>

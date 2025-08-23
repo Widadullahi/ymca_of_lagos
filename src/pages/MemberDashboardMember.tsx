@@ -12,21 +12,21 @@ const MemberDashboardMember: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set greeting based on time of day
-    const hour = new Date().getHours();
-    let greetingMessage = '';
-    
-    if (hour < 12) greetingMessage = 'Good Morning';
-    else if (hour < 17) greetingMessage = 'Good Afternoon';
-    else greetingMessage = 'Good Evening';
-    
-    setGreeting(greetingMessage);
+  const hour = new Date().getHours();
+  let greetingMessage = '';
+  
+  if (hour < 12) greetingMessage = 'Good Morning';
+  else if (hour < 17) greetingMessage = 'Good Afternoon';
+  else greetingMessage = 'Good Evening';
 
-    if (user?.role == 'Admin'){
-      navigate('/admin/dashboard');
-    }
-    console.log(user?.role)
-  }, []);
+  setGreeting(greetingMessage);
+
+  if (user?.role === 'Admin') {
+    navigate('/admin/dashboard');
+  }
+
+}, [user]); // 👈 Add user here
+
 
 
   async function handleRenewSubscription(renew:boolean){
@@ -130,7 +130,7 @@ const MemberDashboardMember: React.FC = () => {
               </div>
               
               <div className="mt-4 space-y-1 text-sm">
-                <p>ID: {user?.card?.id_number || 'N/A'}</p>
+                <p>Member ID: {user?.card?.id_number || 'N/A'}</p>
                 <p>Email: {user?.email}</p>
                 {user?.card?.first_time}
                 {user?.card?.expired}
@@ -282,7 +282,7 @@ const MemberDashboardMember: React.FC = () => {
       </div>
       
       {/* Quick Actions Section */}
-      <div className="mt-8">
+      {/* <div className="mt-8">
         <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <button 
@@ -301,7 +301,7 @@ const MemberDashboardMember: React.FC = () => {
             <span className="text-sm font-medium">Help</span>
           </button>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

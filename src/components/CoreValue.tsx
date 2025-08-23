@@ -80,6 +80,9 @@ export default function CoreValue() {
                 </motion.div>
                 </div>
             </section>
+
+
+            
         </>
     )
 }

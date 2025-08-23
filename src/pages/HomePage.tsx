@@ -53,6 +53,7 @@ const HomePage: React.FC = () => {
   ]);
 
   const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
+  const [isMembershipDropdownOpen, setIsMembershipDropdownOpen] = useState<boolean>(false);
 
 
 
@@ -109,6 +110,23 @@ const HomePage: React.FC = () => {
 
     fetchUpdates();
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.relative')) {
+        setIsMembershipDropdownOpen(false);
+      }
+    };
+
+    if (isMembershipDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMembershipDropdownOpen]);
 
   const buttonVariants = {
     hover: { 
@@ -181,32 +199,73 @@ const HomePage: React.FC = () => {
           </div>
             
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-8">
+            <button 
+              onClick={() => navigate('/')}
+              className="text-gray-700 hover:text-red-700 font-medium transition-colors"
+            >
+              Home
+            </button>
+            <button 
+              onClick={() => navigate('/about-us')}
+              className="text-gray-700 hover:text-red-700 font-medium transition-colors"
+            >
+              About Us
+            </button>
+            
+            {/* Membership Dropdown */}
+            <div className="relative">
               <button 
-                onClick={() => navigate('/')}
-                className="text-gray-700 hover:text-red-700 font-medium transition-colors"
+                onClick={() => setIsMembershipDropdownOpen(!isMembershipDropdownOpen)}
+                className="text-gray-700 hover:text-red-700 font-medium transition-colors flex items-center space-x-1"
               >
-                Home
+                <span>Membership</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
               </button>
-              <button 
-                onClick={() => navigate('/about-us')}
-                className="text-gray-700 hover:text-red-700 font-medium transition-colors"
-              >
-                About Us
-              </button>
-              <button 
-                onClick={() => navigate('/membership-request')}
-                className="text-gray-700 hover:text-red-700 font-medium transition-colors"
-              >
-                Membership
-              </button>
-              <button 
-                onClick={openDonationModal}
-                className="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition-colors"
-              >
-                Donate
-              </button>
+              
+              <AnimatePresence>
+                {isMembershipDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+                  >
+                    <div className="py-2">
+                      <button
+                        onClick={() => {
+                          navigate('/membership-request');
+                          setIsMembershipDropdownOpen(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors"
+                      >
+                        Membership Request
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/membership-login');
+                          setIsMembershipDropdownOpen(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors"
+                      >
+                        Membership Login
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
+            
+            <button 
+              onClick={openDonationModal}
+              className="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition-colors"
+            >
+              Donate
+            </button>
+          </div>
+
 
             {/* Mobile Menu Button */}
             <div className="md:hidden">
@@ -249,15 +308,32 @@ const HomePage: React.FC = () => {
                   >
                     About Us
                   </button>
-                  <button 
-                    onClick={() => {
-                      navigate('/membership-request');
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="text-gray-700 hover:text-red-700 font-medium transition-colors text-left"
-                  >
-                    Membership
-                  </button>
+                  
+                  {/* Mobile Membership Options */}
+                  <div className="pl-2">
+                    <div className="text-gray-700 font-medium mb-2">Membership</div>
+                    <div className="pl-4 space-y-2">
+                      <button 
+                        onClick={() => {
+                          navigate('/membership-request');
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="block text-gray-600 hover:text-red-700 transition-colors text-left"
+                      >
+                        Membership Request
+                      </button>
+                      <button 
+                        onClick={() => {
+                          navigate('/membership-login');
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="block text-gray-600 hover:text-red-700 transition-colors text-left"
+                      >
+                        Membership Login
+                      </button>
+                    </div>
+                  </div>
+                  
                   <button 
                     onClick={() => {
                       openDonationModal();
@@ -447,8 +523,6 @@ const HomePage: React.FC = () => {
               <p className="text-gray-400">77Awolowo road, Ikoyi, Lagos, Nigeria</p>
             </div>
             <div>
-              {/* <h3 className="text-xl font-bold mb-4">Service Times</h3>
-              <p className="text-gray-400">Sunday: 10:00 AM<br />Wednesday: 7:00 PM</p> */}
             </div>
             <div>
               <h3 className="text-xl font-bold mb-4">Contact Us</h3>
@@ -456,7 +530,7 @@ const HomePage: React.FC = () => {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-700 text-center text-gray-400">
-            <p>© 2025 Worldwide YMCA Movement. All rights reserved.</p>
+            <p>© 2025 YMCA Lagos. All rights reserved.</p>
           </div>
         </div>
       </footer>

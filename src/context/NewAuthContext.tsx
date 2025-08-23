@@ -34,6 +34,7 @@ export const useAuth = (): AuthContextType => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 
+  // const BACKEND_URL = 'http://127.0.0.1:8000/api/v1'; 
   const BACKEND_URL = 'https://api-ymca.onrender.com/api/v1'; 
   const FRONTEND_URL = window.location.origin
 
@@ -156,12 +157,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     queryParams = {},
     body = null,
     isFormData = false,
+    isAthenticated=true,
   }: {
     method?: string;
     path: string;
     queryParams?: Record<string, any>;
     body?: any;
     isFormData?: boolean;
+    isAthenticated?:boolean
   }) {
     const accessToken = authToken?.access_token;
     const refreshToken = authToken?.refresh_token;
@@ -179,7 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     // Include the access token in the Authorization header if available
-    if (accessToken) {
+    if (isAthenticated && accessToken) {
       headers['Authorization'] = `Bearer ${accessToken}`;
     }
 
