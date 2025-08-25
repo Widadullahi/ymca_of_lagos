@@ -96,38 +96,12 @@ export const createPostsApi = (fetchWithAuth: any) => ({
   },
 
   // Create new post
-  async createPost(postData: {
-    title: string;
-    content: string;
-    category?: string;
-    image?: File;
-    attachments?: File[];
-  }): Promise<any> {
-    const requestBody: any = {
-      title: postData.title,
-      content: postData.content,
-    };
-    
-    // Convert image to base64 if provided
-    if (postData.image) {
-      requestBody.image_base64 = await fileToBase64(postData.image);
-      requestBody.image_name = postData.image.name;
-    }
-
-    // Convert attachments to base64 if provided
-    if (postData.attachments && postData.attachments.length > 0) {
-      requestBody.attachments = await Promise.all(
-        postData.attachments.map(async (file) => ({
-          file_base64: await fileToBase64(file),
-          file_name: file.name,
-        }))
-      );
-    }
+  async createPost(postData: any): Promise<any> {
 
     const data: PostResponse = await fetchWithAuth({
       method: 'POST',
       path: '/posts/',
-      body: requestBody,
+      body: postData,
     });
 
     return transformPostToUpdate(data);

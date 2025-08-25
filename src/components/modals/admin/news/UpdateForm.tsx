@@ -290,6 +290,9 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
       attachments: attachments.length > 0 ? attachments : undefined
     };
 
+
+    console.log(updateData)
+
     onSave(updateData);
   };
 
