@@ -3,9 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/NewAuthContext';
 import CoreValue from '../components/CoreValue.js';
-import LatestUpdate from '../components/LatestUpdate.js';
 import Programme from '../components/Programme.js';
 import ymca from '../assets/images/image.png'
+import ymcaHeroImage from '../assets/images/ymca-world.png';
+import LatestNews from '../components/LatestNews.js';
+import HeroSectionS2 from '../components/HeroSectionS2';
+import WhoAreWe from '../components/WhoAreWe.js';
 
 
 
@@ -350,42 +353,53 @@ const HomePage: React.FC = () => {
         </div>
       </nav>
       
-      {/* Hero Section */}
-      <section className="bg-red-700 text-white">
-        <div className="container mx-auto px-4 py-20">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center"
-          >
-            <h1 className="text-5xl font-bold mb-4">Welcome to Worldwide YMCA Movement</h1>
-            <p className="text-xl mb-8">Growing in faith, serving in love, living in hope</p>
+      {/* Hero Section S2 */}
+      <HeroSectionS2 
+        title="Welcome to Worldwide YMCA Movement"
+        subtitle="A statewide alliance offering access to cutting-edge cancer research prevention, treatment, and care right in your community."
+        primaryButtonText="Membership Request"
+        secondaryButtonText="Make Donation"
+        primaryButtonLink="/membership-request"
+        secondaryButtonAction={openDonationModal}
+        imageSrc={ymcaHeroImage}
+        imageAlt="Patient with healthcare provider"
+      />
+
+      {/* Who We Are Section */}
+      {/* <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            <div className="md:w-2/5">
+              <div className="rounded-lg overflow-hidden shadow-xl">
+                <img 
+                  src="https://images.unsplash.com/photo-1551601651-2a8555f1a136?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80" 
+                  alt="Healthcare professionals" 
+                  className="w-full h-auto" 
+                />
+              </div>
+            </div>
             
-            <div className="flex flex-wrap justify-center gap-4">
+            <div className="md:w-3/5">
+              <h2 className="text-3xl font-bold text-gray-800 mb-6">Who we are</h2>
+              <p className="text-gray-600 mb-6 leading-relaxed max-w-xl">
+                The YMCA movement is dedicated to empowering youth and communities worldwide to build a just, sustainable, and inclusive world.
+              </p>
               <motion.button
-                onClick={()=> {navigate('/membership-request')}}
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
-                className="bg-white text-red-700 font-bold py-3 px-6 rounded-full shadow-lg"
+                className="text-red-700 border border-red-700 px-6 py-2 rounded-full font-medium hover:bg-red-50 transition-colors"
               >
-                Membership Request
-              </motion.button>
-              
-              <motion.button
-                onClick={openDonationModal}
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
-                className="bg-yellow-500 text-white font-bold py-3 px-6 rounded-full shadow-lg"
-              >
-                Make a Donation
+                Read more
               </motion.button>
             </div>
-          </motion.div>
+          </div>
         </div>
-      </section>
+      </section> */}
+      <WhoAreWe buttonVariants={buttonVariants}/>
+
+
+
 
       <CoreValue />
 
@@ -484,8 +498,11 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* Updates Section */}
-      <LatestUpdate />
+      {/* <LatestUpdate /> */}
 
+      {/* Latest News Section */}
+      <LatestNews />
+      
       <Programme />
 
       {/* Call to Action */}

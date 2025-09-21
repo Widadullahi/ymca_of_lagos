@@ -3,7 +3,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FormInput from './forms/FormInput';
 import { useAuth } from '../context/NewAuthContext';
-
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import ymca from '../assets/images/image.png'
 
 
 const LoginForm: React.FC= () => {
@@ -65,10 +67,28 @@ const LoginForm: React.FC= () => {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="w-full max-w-md mx-auto bg-white ">
+      <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="py-6 "
+        >
+          <div className="text-center">
+            <div className="flex justify-center">
+            <Link to={'/'} >
+                <img 
+                    src={ymca} 
+                    alt="YMCA Lagos Logo" 
+                    className="h-10 w-auto object-contain" 
+                  />
+              </Link>
+            </div>
+          </div>
+        </motion.div>
       <form 
         onSubmit={handleSubmit} 
-        className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
+        className="shadow-md rounded px-8 pt-6 pb-8 mb-4"
       >
         <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
 
