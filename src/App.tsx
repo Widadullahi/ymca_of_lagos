@@ -20,6 +20,7 @@ import RequestForm from './pages/MembershipRequestPage';
 import MemberRequestListing from './pages/admin/MemberRequestListing';
 import QRVerificationPage from './pages/QRVerificationPage';
 import AboutUsPage from './pages/AboutUsPage';
+import AboutMeV2 from './components/AboutMeV2';
 // import { AuthState } from './types';
 
 const App: React.FC = () => {
@@ -38,6 +39,7 @@ const App: React.FC = () => {
         <Route path="/membership-request" element={<RequestForm />} />
         <Route path="/verify" element={<QRVerificationPage />} />
         <Route path="/about-us" element={<AboutUsPage />} /> 
+        <Route path="/about-v2" element={<AboutMeV2 />} />
         <Route path="/dashboard" element={<PrivateRoute element={<MemberDashboardMember />} />} />
         <Route path="/account" element={<PrivateRoute element={<ProfileManagementPage />} />} />
         <Route path="/myid" element={<PrivateRoute element={<DashboardPage />} />} />

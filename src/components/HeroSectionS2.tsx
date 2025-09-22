@@ -19,7 +19,6 @@ export default function HeroSectionS2({
   primaryButtonText = "CONTACT NOW",
   secondaryButtonText = "ROOMS & SUITES",
   primaryButtonLink = "#contact",
-  secondaryButtonLink = "#rooms",
   secondaryButtonAction,
   imageSrc,
   imageAlt = "Hero Image",
@@ -36,6 +35,7 @@ export default function HeroSectionS2({
       transition: { type: "spring", stiffness: 400 }
     }
   };
+
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
@@ -81,7 +81,7 @@ export default function HeroSectionS2({
             variants={buttonVariants}
             whileHover="hover"
             whileTap="tap"
-            className="px-6 py-3 bg-[#6b5b35] text-white font-medium rounded-sm hover:bg-[#7d6b3e] transition-colors flex items-center justify-center"
+            className="px-6 py-3  text-white bg-red-700 font-medium rounded-sm hover:bg-[#7d6b3e] transition-colors flex items-center justify-center"
           >
             {primaryButtonText} 
             <span className="ml-2">→</span>
@@ -92,7 +92,7 @@ export default function HeroSectionS2({
             variants={buttonVariants}
             whileHover="hover"
             whileTap="tap"
-            className="px-6 py-3 bg-transparent border border-white text-white font-medium rounded-sm hover:bg-white/10 transition-colors flex items-center justify-center"
+            className="px-6 py-3 bg-white border border-red-500 text-red-500 font-medium rounded-sm hover:bg-white/10 transition-colors flex items-center justify-center"
           >
             {secondaryButtonText}
             <span className="ml-2">→</span>

@@ -69,6 +69,24 @@ const transformPostToUpdate = (post: PostResponse): any => {
 
 // API functions factory - accepts fetchWithAuth function
 export const createPostsApi = (fetchWithAuth: any) => ({
+  // Fetch units
+  async getUnits(): Promise<any[]> {
+    try {
+      const response = await fetchWithAuth({
+        method: 'GET',
+        path: '/youth-groups',
+      });
+      
+      // Transform the API response to option format
+      return response?.data?.map((unit: any) => ({
+        value: unit.id,
+        label: unit.name
+      })) || [];
+    } catch (error) {
+      console.error('Error fetching units:', error);
+      return [];
+    }
+  },
   // Fetch all posts
   async getPosts(params?: {
     search?: string;

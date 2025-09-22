@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format, formatDistance } from 'date-fns';
+import { format } from 'date-fns';
 import { useAuth } from '../context/NewAuthContext.js';
 
 interface Attachment {
@@ -26,12 +26,10 @@ export default function LatestNews() {
 
   const [updates, setUpdates] = useState<Update[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedUpdate, setSelectedUpdate] = useState<Update | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  const categories = ['All', ...Array.from(new Set(updates.map(u => u.category)))];
 
   useEffect(() => {
     const fetchUpdates = async () => {
@@ -134,10 +132,7 @@ export default function LatestNews() {
     }
   };
 
-  const filteredUpdates =
-    selectedCategory === 'All'
-      ? updates
-      : updates.filter((u) => u.category === selectedCategory);
+
 
 
   const buttonVariants = {
@@ -210,7 +205,7 @@ export default function LatestNews() {
               <div className="flex flex-col space-y-6">
                 {/* News Items from backend */}
                 {updates.slice(1, 3).map((update, index) => (
-                  <div key={update.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                  <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden">
                     <div className="flex flex-col h-full">
                       <div className="relative">
                         <img 
