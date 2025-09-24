@@ -5,6 +5,7 @@ import FormSelect from '../components/forms/FormSelect';
 import { Link, useNavigate } from 'react-router-dom';
 import ymca from '../assets/images/image.png'
 import { nigerianStates,ymcaUnits } from '../constants/utils';
+import Select from 'react-select';
 // Mock data for dropdowns - replace with actual API calls or data source
 const countries = [
   { value: 'NG', label: 'Nigeria' },
@@ -33,11 +34,16 @@ const RequestForm: React.FC = () => {
     office_address: '',
     profession: '',
     religion: '',
+    churchName: '',
     occupation: '',
     marital_status: '',
     validIdType: '',
     validIdFile: null as File | null,
     passportPhoto: null as File | null,
+    nextOfKin: '',
+    referralSource: '',
+    referralName: '',
+    referredBy: 'no',
   });
 
   const [loading, setLoading] = useState(false);
@@ -60,6 +66,7 @@ const RequestForm: React.FC = () => {
     // { value: 'voters_card', label: 'Voter\'s Card' },
     { value: 'nin_slip', label: 'NIN Slip' },
   ];
+
 
 
 
@@ -282,6 +289,11 @@ const RequestForm: React.FC = () => {
           validIdType: '',
           validIdFile: null,
           passportPhoto: null,
+          nextOfKin: '',
+          referralSource: '',
+          referralName: '',
+          referredBy: 'no',
+          churchName: '',
         });
         setPhotoPreview(null);
         setIdPreview(null);
@@ -446,15 +458,18 @@ const RequestForm: React.FC = () => {
             />
 
             {formData.citizen === 'Nigerian' ? (
-              <FormSelect
-                label="State"
-                name="state"
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+              <Select
                 options={nigerianStates}
-                value={formData.state}
-                onChange={handleInputChange}
-                error={fieldErrors.state}
-                required
+                value={nigerianStates.find(option => option.value === formData.state) || null}
+                onChange={(selectedOption) => setFormData({ ...formData, state: selectedOption ? selectedOption.value : '' })}
+                placeholder="Select State"
+                isSearchable
+                noOptionsMessage={() => "No state found"}
               />
+            </div>
             ) : (
               <FormInput
                 label="State/Province"
@@ -469,16 +484,6 @@ const RequestForm: React.FC = () => {
             )}
 
             {formData.citizen === 'Nigerian' && (
-              // <FormSelect
-              //   label="LGA"
-              //   name="lga"
-              //   options={formData.state ? lgas[formData.state as keyof typeof lgas] || [] : []}
-              //   value={formData.lga}
-              //   onChange={handleInputChange}
-              //   error={fieldErrors.lga}
-              //   required
-              //   disabled={!formData.state}
-              // />
               <FormInput
                 label="LGA"
                 name="lga"
@@ -491,15 +496,49 @@ const RequestForm: React.FC = () => {
               />
             )}
           
-            {/* <FormSelect
-              label="Profession"
-              name="profession"
-              options={professions}
-              value={formData.profession}
+            {/* <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Religion <span className="text-red-500">*</span></label>
+              <select
+                name="religion"
+                value={formData.religion}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                required
+              >
+                <option value="">Select Religion</option>
+                <option value="Christian">Christian</option>
+                <option value="Other">Other</option>
+              </select>
+              {fieldErrors.religion && (
+                <p className="text-red-500 text-xs italic mt-1">{fieldErrors.religion}</p>
+              )}
+            </div> */}
+            <FormSelect
+              label="Religion"
+              name="religion"
+              options={[
+                { value: 'Christian', label: 'Christian' },
+                { value: 'Other', label: 'Other' },
+              ]}
+              value={formData.religion}
               onChange={handleInputChange}
-              error={fieldErrors.profession}
+              error={fieldErrors.religion}
               required
-            /> */}
+            />
+            
+            {formData.religion === 'Christian' && (
+              <FormInput
+                label="Church Name"
+                name="churchName"
+                type="text"
+                placeholder="Enter your church name"
+                value={formData.churchName}
+                onChange={handleInputChange}
+                error={fieldErrors.churchName}
+                required
+              />
+            )}
+            
             <FormInput
                 label="Profession"
                 name="profession"
@@ -522,17 +561,58 @@ const RequestForm: React.FC = () => {
             />
 
             {availableClubs.length > 0 && (
-              <FormSelect
-                label="Club"
-                name="club"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Club</label>
+              <Select
                 options={availableClubs}
-                value={formData.club}
-                onChange={handleInputChange}
-                error={fieldErrors.club}
-                required
+                value={availableClubs.find(option => option.value === formData.club) || null}
+                onChange={(selectedOption) => setFormData({ ...formData, club: selectedOption ? selectedOption.value : '' })}
+                placeholder="Select club"
+                isSearchable
+                noOptionsMessage={() => "No club found"}
               />
+            </div>
             )}
           </div>
+
+
+          {/* add next of kin field */}
+          <FormInput
+            label="Next of Kin"
+            name="nextOfKin"
+            type="text"
+            placeholder="Enter your next of kin"
+            value={formData.nextOfKin}
+            onChange={handleInputChange}
+            error={fieldErrors.nextOfKin}
+            required
+          />
+
+          {/* add were you refered by something this should be a yes or no */}
+          <FormSelect
+            label="Were you referred by someone?"
+            name="referredBy"
+            options={[
+              { value: 'yes', label: 'Yes' },
+              { value: 'no', label: 'No' },
+            ]}
+            value={formData.referredBy}
+            onChange={handleInputChange}
+            error={fieldErrors.referredBy}
+            required
+          />
+
+          {/* add referela nmae optional */}
+          <FormInput
+            label="Referral Name (Optional)"
+            name="referralName"
+            type="text"
+            placeholder="Enter your referral name"
+            value={formData.referralName}
+            onChange={handleInputChange}
+            error={fieldErrors.referralName}
+          />
+
         </div>
 
         {/* Identification Section */}

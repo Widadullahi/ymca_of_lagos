@@ -56,6 +56,8 @@ export interface Member {
   category: any;
   is_active: boolean;
   created_at: any;
+  updated_at: any;
+  [key: string]: any;
 }
 
 

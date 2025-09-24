@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/NewAuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Member } from '../../types/types';
 
 const MemberRequestListing: React.FC = () => {
   // State
   const { fetchWithAuth} = useAuth();
+  const navigate = useNavigate();
   const [members, setMembers] = useState<Member[]>([]);
   const [filteredMembers, setFilteredMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,11 +22,11 @@ const MemberRequestListing: React.FC = () => {
   
   // Modal states
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
-  const [showViewModal, setShowViewModal] = useState<boolean>(false);
   const [showApproveModal, setShowApproveModal] = useState<boolean>(false);
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [reviewNotes, setReviewNotes] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  // View modal replaced with dedicated page
 
   async function fetchMembers(page = 1, append = false) {
     setIsLoadingMore(append);
@@ -125,10 +127,9 @@ const MemberRequestListing: React.FC = () => {
     }
   };
 
-  // Modal handlers
-  const openViewModal = (member: Member) => {
-    setSelectedMember(member);
-    setShowViewModal(true);
+  // Navigation handler
+  const navigateToMemberDetail = (member: Member) => {
+    navigate(`/admin/membership-request/${member.id}`);
   };
 
   const openApproveModal = (member: Member) => {
@@ -142,7 +143,6 @@ const MemberRequestListing: React.FC = () => {
   };
 
   const closeModals = () => {
-    setShowViewModal(false);
     setShowApproveModal(false);
     setShowDeleteModal(false);
     setSelectedMember(null);
@@ -325,7 +325,7 @@ const MemberRequestListing: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
-                        onClick={() => openViewModal(member)}
+                        onClick={() => navigateToMemberDetail(member)}
                         className="text-indigo-600 hover:text-indigo-900 mr-4"
                       >
                         View
@@ -370,111 +370,7 @@ const MemberRequestListing: React.FC = () => {
         </button>
       )}
 
-      {/* View Modal */}
-      {showViewModal && selectedMember && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Member Request Details</h3>
-              <button
-                onClick={closeModals}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-              </button>
-            </div>
-            <div className="space-y-6">
-              {/* Basic Information */}
-              <div>
-                <h4 className="text-md font-semibold text-gray-800 mb-3 border-b pb-2">Basic Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">First Name</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedMember.first_name}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Last Name</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedMember.last_name}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedMember.email || 'Not Provided'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedMember.phone_number || 'Not Provided'}</p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700">Address</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedMember.address || 'Not Provided'}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Identification Information */}
-              <div>
-                <h4 className="text-md font-semibold text-gray-800 mb-3 border-b pb-2">Identification</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Valid ID Type</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedMember.valid_id_type || 'Not Provided'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Valid ID Number</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedMember.valid_id_number || 'Not Provided'}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Passport Photo */}
-              {selectedMember.passport_photo && (
-                <div>
-                  <h4 className="text-md font-semibold text-gray-800 mb-3 border-b pb-2">Passport Photo</h4>
-                  <div className="flex justify-center">
-                    <img 
-                      src={selectedMember.passport_photo} 
-                      alt="Passport Photo"
-                      className="w-32 h-32 object-cover rounded-lg border border-gray-300 shadow-sm"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Request Status */}
-              <div>
-                <h4 className="text-md font-semibold text-gray-800 mb-3 border-b pb-2">Request Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Status</label>
-                    <span className={`mt-1 px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full 
-                      ${selectedMember?.status === 'approved' 
-                        ? 'bg-green-100 text-green-800' 
-                        : selectedMember?.status === 'pending'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'}`}>
-                      {selectedMember?.status_display || selectedMember?.status}
-                    </span>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Request Date</label>
-                    <p className="mt-1 text-sm text-gray-900">{formatDate(selectedMember?.created_at)}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end space-x-3">
-              <button
-                onClick={closeModals}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Member request details now handled by MemberRequestDetailPage */}
 
       {/* Approve Modal */}
       {showApproveModal && selectedMember && (

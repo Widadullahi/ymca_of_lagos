@@ -3,6 +3,7 @@ import { FaFacebook, FaInstagram, FaGithub, FaBehance, FaPinterest, FaTwitter, F
 import SocialMediaBar from '../components/navigation/SocialMediaBar';
 import MainNavigation from '../components/navigation/MainNavigation';
 import ImpactSection from './ImpactSection';
+import vission2030 from '../assets/images/Vision-2030-logos-4-1.jpg'
 
 const AboutMeV2: React.FC = () => {
   const statsRef = useRef<HTMLDivElement>(null);
@@ -243,7 +244,7 @@ const AboutMeV2: React.FC = () => {
 
 
       {/* Publications Section */}
-      <section className="py-16">
+      {/* <section className="py-16">
         <div className="container mx-auto px-4">
           <h2 className="text-4xl font-bold text-center mb-4">Publications</h2>
           <p className="text-gray-600 text-center mb-12 max-w-3xl mx-auto">
@@ -268,6 +269,55 @@ const AboutMeV2: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section> */}
+
+      {/* YMCA Vision 2030 Section */}
+      <section className="py-8 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row gap-8">
+            {/* Left column - Video and button */}
+            <div className="w-full md:w-1/2">
+              <div className="w-full">
+                <iframe 
+                  src="https://www.youtube.com/embed/KfGMl7ov2x8" 
+                  title="YMCA Vision 2030 - Stories from across the Movement"
+                  frameBorder="0" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  allowFullScreen
+                  className="w-full aspect-video"
+                ></iframe>
+              </div>
+              <div className="mt-4">
+                <a href="#" className="block w-full bg-red-600 text-white text-center py-3 rounded-none hover:bg-red-700 transition-colors">
+                  Read more about vision 2030
+                </a>
+              </div>
+            </div>
+            
+            {/* Right column - Text content */}
+            <div className="w-full md:w-1/2">
+              <div className="flex justify-start mb-4">
+                <img 
+                  src={vission2030} 
+                  alt="YMCA Vision 2030 Logo" 
+                  className="h-20"
+                />
+              </div>
+              <h2 className="text-4xl font-bold text-red-600 mb-4">YMCA Vision 2030</h2>
+              <p className="text-gray-700 mb-4 text-base">
+                In July 2022 the YMCA made history. At the 20th World Council in July 2022, 
+                YMCAs across the globe voted to adopt YMCA 2030 - the first-ever shared 
+                strategy and plan.
+              </p>
+              <p className="text-gray-700 mb-6 text-base">
+                In 2024, we made a series of films showcasing real impact across the four Pillars 
+                of YMCA Vision 2030. We screened them at the Accelerator Summit in Mombasa, 
+                and you can see them all on the Pillar pages of this website, and on our World 
+                YMCA YouTube site. And see here all 8 films rolled into one!
+              </p>
+            </div>
           </div>
         </div>
       </section>

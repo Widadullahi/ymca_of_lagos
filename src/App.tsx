@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import PrivateRoute from './components/PrivateRoute';
 import UserListingPage from './pages/admin/UserListingPage';
+import UserDetailPage from './pages/admin/UserDetailPage';
 import MemberDashboard from './pages/admin/MemberDashboard';
 import UpdatesPage from './pages/UpdatesPage';
 import AdminUpdatesPage from './pages/admin/AdminUpdatesPage';
@@ -18,6 +19,7 @@ import ProfileManagementPage from './components/ProfileManagementPage';
 import HomePage from './pages/HomePage';
 import RequestForm from './pages/MembershipRequestPage';
 import MemberRequestListing from './pages/admin/MemberRequestListing';
+import MemberRequestDetailPage from './pages/admin/MemberRequestDetailPage';
 import QRVerificationPage from './pages/QRVerificationPage';
 import AboutUsPage from './pages/AboutUsPage';
 import AboutMeV2 from './components/AboutMeV2';
@@ -38,8 +40,8 @@ const App: React.FC = () => {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/membership-request" element={<RequestForm />} />
         <Route path="/verify" element={<QRVerificationPage />} />
-        <Route path="/about-us" element={<AboutUsPage />} /> 
-        <Route path="/about-v2" element={<AboutMeV2 />} />
+        <Route path="/about-" element={<AboutUsPage />} /> 
+        <Route path="/about-us" element={<AboutMeV2 />} />
         <Route path="/dashboard" element={<PrivateRoute element={<MemberDashboardMember />} />} />
         <Route path="/account" element={<PrivateRoute element={<ProfileManagementPage />} />} />
         <Route path="/myid" element={<PrivateRoute element={<DashboardPage />} />} />
@@ -47,7 +49,9 @@ const App: React.FC = () => {
         <Route path="/updates" element={<PrivateRoute element={<UpdatesPage />} />} />
         <Route path="/admin/dashboard" element={<RoleBasedRoute element={<MemberDashboard />} requiredRole="Admin" />} />
         <Route path="/admin/users" element={<RoleBasedRoute element={<UserListingPage />}  requiredRole="Admin"/>} />
+        <Route path="/admin/users/:userId" element={<RoleBasedRoute element={<UserDetailPage />}  requiredRole="Admin"/>} />
         <Route path="/admin/membership-request" element={<RoleBasedRoute element={<MemberRequestListing />}  requiredRole="Admin"/>} />
+        <Route path="/admin/membership-request/:requestId" element={<RoleBasedRoute element={<MemberRequestDetailPage />}  requiredRole="Admin"/>} />
         <Route path="/admin/updates" element={<RoleBasedRoute element={<AdminUpdatesPage />}  requiredRole="Admin"/>} />
         <Route path="/admin/account" element={<RoleBasedRoute element={<ProfileManagementPage />}  requiredRole="Admin"/>} />
         <Route path="*" element={<Navigate to={user?.role == "Admin" ? "/admin/dashboard" : "/dashboard"} />} />

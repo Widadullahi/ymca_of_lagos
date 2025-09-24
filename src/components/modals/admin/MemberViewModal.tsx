@@ -62,8 +62,8 @@ const MemberViewModal: React.FC<{
     const isActive = member.is_active;
   
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-8">
+        <div className="bg-white rounded-lg max-w-5xl w-full my-8 max-h-[70vh] overflow-y-auto">
           <div className="p-6">
             <div className="flex justify-between items-start">
               <h2 className="text-2xl font-bold">{member.first_name} {member.last_name}</h2>
@@ -77,12 +77,12 @@ const MemberViewModal: React.FC<{
               </button>
             </div>
   
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-8">
               <div className="md:col-span-1">
                 <img 
                   src={member.image || avatar} 
                   alt={`${member.first_name} ${member.last_name}`} 
-                  className="h-48 w-48 rounded-full mx-auto object-cover" 
+                  className="h-56 w-56 rounded-full mx-auto object-cover border-4 border-indigo-100" 
                 />
                 
                 <div className="mt-4 text-center">
@@ -94,10 +94,10 @@ const MemberViewModal: React.FC<{
                 </div>
               </div>
   
-              <div className="md:col-span-2">
-                <h3 className="text-lg font-medium border-b pb-2 mb-4">Member Information</h3>
+              <div className="md:col-span-3">
+                <h3 className="text-lg font-medium border-b pb-2 mb-4">Personal Information</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Email</p>
                     <p className="font-medium">{member.email}</p>
@@ -115,12 +115,48 @@ const MemberViewModal: React.FC<{
                   
                   <div>
                     <p className="text-sm text-gray-500">Category</p>
-                    <p className="font-medium">{member?.category?.name}</p>
+                    <p className="font-medium">{member?.category?.name || 'N/A'}</p>
                   </div>
                   
                   <div>
+                    <p className="text-sm text-gray-500">Date of Birth</p>
+                    <p className="font-medium">{member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString() : 'N/A'}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm text-gray-500">Join Date</p>
+                    <p className="font-medium">{new Date(member.created_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+
+                <h3 className="text-lg font-medium border-b pb-2 mt-6 mb-4">Location Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Country</p>
+                    <p className="font-medium">{member.country || 'N/A'}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm text-gray-500">State</p>
+                    <p className="font-medium">{member.state || 'N/A'}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm text-gray-500">LGA</p>
+                    <p className="font-medium">{member.lga || 'N/A'}</p>
+                  </div>
+                  
+                  <div className="md:col-span-3">
+                    <p className="text-sm text-gray-500">Address</p>
+                    <p className="font-medium">{member.address || 'N/A'}</p>
+                  </div>
+                </div>
+                
+                <h3 className="text-lg font-medium border-b pb-2 mt-6 mb-4">Membership Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
                     <p className="text-sm text-gray-500">Unit</p>
-                    <p className="font-medium">{member.unit}</p>
+                    <p className="font-medium">{member.unit || 'N/A'}</p>
                   </div>
                   
                   {member.unit === 'Council of Church' && member.church && (
@@ -138,8 +174,36 @@ const MemberViewModal: React.FC<{
                   )}
                   
                   <div>
-                    <p className="text-sm text-gray-500">Join Date</p>
-                    <p className="font-medium">{new Date(member.created_at).toLocaleDateString()}</p>
+                    <p className="text-sm text-gray-500">Membership Type</p>
+                    <p className="font-medium">{member.membership_category || 'N/A'}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm text-gray-500">Referral</p>
+                    <p className="font-medium">{member.referral || 'N/A'}</p>
+                  </div>
+                </div>
+                
+                <h3 className="text-lg font-medium border-b pb-2 mt-6 mb-4">Next of Kin</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Name</p>
+                    <p className="font-medium">{member.next_of_kin_name || 'N/A'}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm text-gray-500">Relationship</p>
+                    <p className="font-medium">{member.next_of_kin_relationship || 'N/A'}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm text-gray-500">Phone Number</p>
+                    <p className="font-medium">{member.next_of_kin_phone || 'N/A'}</p>
+                  </div>
+                  
+                  <div className="md:col-span-3">
+                    <p className="text-sm text-gray-500">Address</p>
+                    <p className="font-medium">{member.next_of_kin_address || 'N/A'}</p>
                   </div>
                 </div>
   

@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import avatar from '../../assets/images/default.jpg';
 import BulkUploadModal from '../../components/modals/admin/BulkUploadModal';
 import AddUserModal from '../../components/modals/admin/AddUserModal';
-import MemberViewModal from '../../components/modals/admin/MemberViewModal';
 import EditMemberModal from '../../components/modals/admin/EditMemberModal';
 import { useAuth } from '../../context/NewAuthContext';
 import { Member } from '../../types/types';
 
 const UserListingPage: React.FC = () => {
   // State
+  const navigate = useNavigate();
   const { fetchWithAuth} = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [filteredMembers, setFilteredMembers] = useState<Member[]>([]);
@@ -19,7 +20,6 @@ const UserListingPage: React.FC = () => {
   const [unitFilter, setUnitFilter] = useState<string>('');
   const [genderFilter, setGenderFilter] = useState<string>('');
   const [membershipCategoryFilter, setMembershipCategoryFilter] = useState<string>('');
-  const [viewingMember, setViewingMember] = useState<Member | null>(null);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -199,26 +199,7 @@ const UserListingPage: React.FC = () => {
     </div>
   );
 
-  // Handle member status change
-  const handleStatusChange = (memberId: string) => {
-    const updatedMembers = members.map(member => 
-      member.id === memberId 
-        ? { ...member, is_active: !member.is_active } 
-        : member
-    );
-    
-    setMembers(updatedMembers);
-    // In a real app, you would make an API call here to update the member's status
-  };
 
-  // Handle member deletion
-  const handleDeleteMember = (memberId: string) => {
-    const updatedMembers = members.filter(member => member.id !== memberId);
-    
-    setMembers(updatedMembers);
-    // In a real app, you would make an API call here to delete the member
-    console.log(`Member ${memberId} deleted`);
-  };
 
   // Open member edit modal
   const openMemberEdit = (member: Member) => {
@@ -230,15 +211,6 @@ const UserListingPage: React.FC = () => {
     setEditingMember(null);
   };
 
-  // Open member view modal
-  const openMemberView = (member: Member) => {
-    setViewingMember(member);
-  };
-
-  // Close member view modal
-  const closeMemberView = () => {
-    setViewingMember(null);
-  };
 
   return (
     <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
@@ -397,6 +369,9 @@ const UserListingPage: React.FC = () => {
                     Status
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                    Membership Expiry Date
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
                     Joined
                   </th>
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -445,18 +420,15 @@ const UserListingPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
                       {formatDate(member?.created_at)}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
+                      {formatDate(member?.created_at)}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
-                        onClick={() => openMemberView(member)}
+                        onClick={() => navigate(`/admin/users/${member.id}`)}
                         className="text-indigo-600 hover:text-indigo-900 mr-4"
                       >
                         View
-                      </button>
-                      <button
-                        onClick={() => openMemberEdit(member)}
-                        className="text-green-600 hover:text-green-900 mr-4"
-                      >
-                        Edit
                       </button>
                     </td>
                   </tr>
@@ -496,15 +468,7 @@ const UserListingPage: React.FC = () => {
         />
       )}
 
-      {/* Member View Modal with Account Management */}
-      {viewingMember && (
-        <MemberViewModal 
-          member={viewingMember} 
-          closeModal={closeMemberView}
-          onStatusChange={handleStatusChange}
-          onDeleteMember={handleDeleteMember}
-        />
-      )}
+      {/* Member View now handled by UserDetailPage */}
 
       {/* Add User Modal */}
       <AddUserModal
