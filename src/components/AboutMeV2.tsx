@@ -20,32 +20,6 @@ const AboutMeV2: React.FC = () => {
     { icon: '📊', value: 5000, label: 'Annual Beneficiaries', suffix: ' +' },
   ];
 
-  const publications = [
-    {
-      id: 1,
-      title: 'Admin Panel - How To Started the Dashboard Tutorial',
-      description: 'We\'ve been focused on making the from also not been afraid to and step away been focused',
-      author: 'Jane Miller',
-      date: 'Mar 21 2021',
-      image: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      id: 2,
-      title: 'Admin Panel - How To Started the Dashboard Tutorial',
-      description: 'We\'ve been focused on making the from v4 to v5 but we have also not been afraid to step away been focused',
-      author: 'Cris Morgan',
-      date: 'Apr 14 2021',
-      image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      id: 3,
-      title: 'Admin Panel - How To Started the Dashboard Tutorial',
-      description: 'We\'ve been focused on making the from v4 to v5 but we\'ve also not been afraid to step away been focused',
-      author: 'Carles Nilson',
-      date: 'May 14 2021',
-      image: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80'
-    }
-  ];
 
   const teamMembers = [
     {

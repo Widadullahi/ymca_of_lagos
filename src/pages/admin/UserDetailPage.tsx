@@ -62,7 +62,7 @@ const UserDetailPage: React.FC = () => {
     if (!member || !formData) return;
     
     try {
-      const response = await fetchWithAuth({
+      await fetchWithAuth({
         method: 'PATCH',
         path: `/admin/members/${userId}`,
         body: formData
@@ -85,7 +85,7 @@ const UserDetailPage: React.FC = () => {
     };
     
     try {
-      const response = await fetchWithAuth({
+       await fetchWithAuth({
         method: 'PATCH',
         path: `/admin/members/${userId}`,
         body: payload

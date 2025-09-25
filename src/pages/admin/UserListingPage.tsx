@@ -200,12 +200,6 @@ const UserListingPage: React.FC = () => {
   );
 
 
-
-  // Open member edit modal
-  const openMemberEdit = (member: Member) => {
-    setEditingMember(member);
-  };
-
   // Close member edit modal
   const closeMemberEdit = () => {
     setEditingMember(null);
