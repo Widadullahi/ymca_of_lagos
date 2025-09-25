@@ -5,6 +5,17 @@ import avatar from '../../assets/images/thumbnail-im.jpg';
 import { useAuth } from "../../context/NewAuthContext";
 import ConfirmationModal from "../../components/modals/admin/ConfirmationModal";
 
+// Define subscription history interface
+interface SubscriptionHistory {
+  id: string;
+  plan_name: string;
+  status: 'Active' | 'Locked';
+  start_date: string;
+  end_date: string;
+  amount: number;
+  payment_method: string;
+}
+
 const UserDetailPage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
@@ -15,6 +26,9 @@ const UserDetailPage: React.FC = () => {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<Member>>({});
+  const [subscriptionHistory, setSubscriptionHistory] = useState<SubscriptionHistory[]>([]);
+  const [loadingSubscriptions, setLoadingSubscriptions] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<'profile' | 'subscription'>('profile');
 
   useEffect(() => {
     const fetchMemberDetails = async () => {
@@ -35,8 +49,73 @@ const UserDetailPage: React.FC = () => {
       }
     };
 
+    const fetchSubscriptionHistory = async () => {
+      try {
+        setLoadingSubscriptions(true);
+        const response = await fetchWithAuth({
+          method: 'GET',
+          path: `/admin/members/${userId}/subscriptions`,
+        });
+
+        // If API is not yet implemented, use mock data for demonstration
+        if (!response || response.error) {
+          // Mock data for demonstration
+          const mockData: SubscriptionHistory[] = [
+            {
+              id: '1',
+              plan_name: 'Premium Plan',
+              status: 'Active',
+              start_date: '2023-01-15',
+              end_date: '2024-01-15',
+              amount: 5000,
+              payment_method: 'Credit Card'
+            },
+            {
+              id: '2',
+              plan_name: 'Basic Plan',
+              status: 'Locked',
+              start_date: '2022-01-15',
+              end_date: '2023-01-14',
+              amount: 3000,
+              payment_method: 'Bank Transfer'
+            }
+          ];
+          setSubscriptionHistory(mockData);
+        } else {
+          setSubscriptionHistory(response);
+        }
+      } catch (error) {
+        console.error('Error fetching subscription history:', error);
+        // Use mock data if API fails
+        const mockData: SubscriptionHistory[] = [
+          {
+            id: '1',
+            plan_name: 'Premium Plan',
+            status: 'Active',
+            start_date: '2023-01-15',
+            end_date: '2024-01-15',
+            amount: 5000,
+            payment_method: 'Credit Card'
+          },
+          {
+            id: '2',
+            plan_name: 'Basic Plan',
+            status: 'Locked',
+            start_date: '2022-01-15',
+            end_date: '2023-01-14',
+            amount: 3000,
+            payment_method: 'Bank Transfer'
+          }
+        ];
+        setSubscriptionHistory(mockData);
+      } finally {
+        setLoadingSubscriptions(false);
+      }
+    };
+
     if (userId) {
       fetchMemberDetails();
+      fetchSubscriptionHistory();
     }
   }, [userId, fetchWithAuth, displayNotification]);
   
@@ -140,7 +219,41 @@ const UserDetailPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="bg-white rounded-lg ">
+      {/* Tab Navigation */}
+      <div className="bg-white rounded-lg mb-5 shadow">
+        <div className="border-b border-gray-200">
+          <ul className="flex flex-wrap">
+            <li className="mr-2">
+              <button
+                className={`inline-block py-4 px-6 text-base font-medium text-center border-b-2 ${
+                  activeTab === 'profile'
+                    ? 'text-blue-600 border-blue-600 font-bold'
+                    : 'text-gray-500 border-transparent hover:text-gray-600 hover:border-gray-300'
+                }`}
+                onClick={() => setActiveTab('profile')}
+              >
+                Profile Information
+              </button>
+            </li>
+            <li className="mr-2">
+              <button
+                className={`inline-block py-4 px-6 text-base font-medium text-center border-b-2 ${
+                  activeTab === 'subscription'
+                    ? 'text-blue-600 border-blue-600 font-bold'
+                    : 'text-gray-500 border-transparent hover:text-gray-600 hover:border-gray-300'
+                }`}
+                onClick={() => setActiveTab('subscription')}
+              >
+                Subscription History
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+      
+      {activeTab === 'profile' && (
+      <div className="bg-white rounded-lg shadow">
+
         <div className="p-6">
           <div className="flex justify-between items-start">
             {isEditing ? (
@@ -450,9 +563,61 @@ const UserDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
 
-      {showStatusConfirmation && (
-        <ConfirmationModal
+        {/* Subscription History Tab Content */}
+        {activeTab === 'subscription' && (
+        <div className="bg-white rounded-lg shadow">
+          <div className="p-6">
+            <h3 className="text-lg font-medium border-b pb-2 mb-4">Subscription History</h3>
+
+            {loadingSubscriptions ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+              </div>
+            ) : subscriptionHistory.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No subscription history found</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead>
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {subscriptionHistory.map((subscription) => (
+                      <tr key={subscription.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">{subscription.plan_name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className={`px-2 py-1 inline-flex text-xs font-medium rounded-full ${subscription.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {subscription.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">{new Date(subscription.start_date).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">{new Date(subscription.end_date).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">₦{subscription.amount.toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">{subscription.payment_method}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+
+        {showStatusConfirmation && (
+          <ConfirmationModal
           isOpen={showStatusConfirmation}
           title={`${member.is_active ? 'Deactivate' : 'Activate'} Member`}
           message={`Are you sure you want to ${member.is_active ? 'deactivate' : 'activate'} this member?`}

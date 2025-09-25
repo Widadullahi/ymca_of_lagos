@@ -3,6 +3,7 @@ import React from 'react';
 import { ToastContainer } from 'react-toastify';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
+import MetronicLoginPage from './pages/MetronicLoginPage';
 import RegisterPage from './pages/RegisterPage';
 import PrivateRoute from './components/PrivateRoute';
 import UserListingPage from './pages/admin/UserListingPage';
@@ -18,6 +19,7 @@ import DashboardPage from './pages/DashboardPage';
 import ProfileManagementPage from './components/ProfileManagementPage';
 import HomePage from './pages/HomePage';
 import RequestForm from './pages/MembershipRequestPage';
+import MetronicMembershipRequestPage from './pages/MetronicMembershipRequestPage';
 import MemberRequestListing from './pages/admin/MemberRequestListing';
 import MemberRequestDetailPage from './pages/admin/MemberRequestDetailPage';
 import QRVerificationPage from './pages/QRVerificationPage';
@@ -37,8 +39,10 @@ const App: React.FC = () => {
       <Routes>
         <Route path="/" element={<HomePage  />} />
         <Route path="/login" element={<LoginPage  />} />
+        <Route path="/login-metronic" element={<MetronicLoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/membership-request" element={<RequestForm />} />
+        <Route path="/membership-request-metronic" element={<MetronicMembershipRequestPage />} />
         <Route path="/verify" element={<QRVerificationPage />} />
         <Route path="/about-" element={<AboutUsPage />} /> 
         <Route path="/about-us" element={<AboutMeV2 />} />
