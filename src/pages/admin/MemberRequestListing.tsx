@@ -66,7 +66,7 @@ const MemberRequestListing: React.FC = () => {
     
     setIsProcessing(true);
     try {
-      await fetchWithAuth({
+      const response = await fetchWithAuth({
         method: 'PATCH',
         path: `/admin/requests/${selectedMember.id}/status/`,
         body: {
@@ -86,11 +86,21 @@ const MemberRequestListing: React.FC = () => {
       setSelectedMember(null);
       setReviewNotes('');
       
-      // Show success message (you can implement toast notification here)
-      alert('Request approved successfully!');
-    } catch (error) {
+      // Show success message with user creation info if applicable
+      if (response?.data?.user_created) {
+        alert(`Request approved successfully! User profile created for ${response.data.user_email} with default password 'member12345'`);
+      } else {
+        alert('Request approved successfully!');
+      }
+    } catch (error: any) {
       console.error('Error approving request:', error);
-      alert('Failed to approve request. Please try again.');
+      
+      // Handle specific error messages from backend
+      if (error?.response?.data?.message) {
+        alert(error.response.data.message);
+      } else {
+        alert('Failed to approve request. Please try again.');
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -175,13 +185,7 @@ const MemberRequestListing: React.FC = () => {
 
     // Apply status filter
     if (statusFilter) {
-      result = result.filter(member => {
-        if (statusFilter === 'Active') {
-          return member.is_active;
-          } else if (statusFilter === 'Inactive') {
-            return !member.is_active;
-          }
-      });
+      result = result.filter(member => member.status === statusFilter);
     }
 
     // Apply unit filter
@@ -232,6 +236,71 @@ const MemberRequestListing: React.FC = () => {
         </div>
       </div>
 
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+              </svg>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Total Requests</p>
+              <p className="text-2xl font-semibold text-gray-900">{members.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-yellow-100 rounded-lg">
+              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Pending</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {members.filter(m => m.status === 'pending' || !m.status).length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Approved</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {members.filter(m => m.status === 'approved').length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Rejected</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {members.filter(m => m.status === 'rejected').length}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Filters section */}
       <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
@@ -247,6 +316,58 @@ const MemberRequestListing: React.FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md"
             />
+          </div>
+          
+          <div>
+            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+              Status
+            </label>
+            <select
+              id="status"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            >
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="unit" className="block text-sm font-medium text-gray-700 mb-1">
+              Unit
+            </label>
+            <select
+              id="unit"
+              value={unitFilter}
+              onChange={(e) => setUnitFilter(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            >
+              <option value="">All Units</option>
+              <option value="Council of Church">Council of Church</option>
+              <option value="Youth Council">Youth Council</option>
+              <option value="Y's Men">Y's Men</option>
+              <option value="Central Club">Central Club</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
+              Gender
+            </label>
+            <select
+              id="gender"
+              value={genderFilter}
+              onChange={(e) => setGenderFilter(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            >
+              <option value="">All Genders</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
         </div>
 
@@ -276,22 +397,46 @@ const MemberRequestListing: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Name
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
                     Email
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                    Phone Number
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                    Phone
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
+                    Age
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                    Gender
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
+                    Unit
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
+                    Location
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
+                    Profession
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
+                    Marital Status
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
+                    Religion
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
+                    Referral
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                     Status
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                    Joined
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                    Submitted
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -299,41 +444,81 @@ const MemberRequestListing: React.FC = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredMembers.map((member) => (
                   <tr key={member.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{member.first_name} {member.last_name}</div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {member.first_name} {member.last_name}
+                          </div>
+                          <div className="text-sm text-gray-500 lg:hidden">
+                            {member.email || 'No email'}
+                          </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {member.email || 'Not Provided'}
-                      </span>
+                    <td className="px-4 py-4 whitespace-nowrap hidden lg:table-cell">
+                      <div className="text-sm text-gray-900">{member.email || 'Not Provided'}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
+                    <td className="px-4 py-4 whitespace-nowrap hidden md:table-cell">
                       <div className="text-sm text-gray-900">{member.phone_number || 'Not Provided'}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
+                    <td className="px-4 py-4 whitespace-nowrap hidden xl:table-cell">
+                      <div className="text-sm text-gray-900">{member.age || 'N/A'}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap hidden lg:table-cell">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${member?.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {member?.status}
+                        ${member.gender === 'Male' ? 'bg-blue-100 text-blue-800' : 
+                          member.gender === 'Female' ? 'bg-pink-100 text-pink-800' : 'bg-gray-100 text-gray-800'}`}>
+                        {member.gender || 'N/A'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
+                    <td className="px-4 py-4 whitespace-nowrap hidden xl:table-cell">
+                      <div className="text-sm text-gray-900">{member.unit || 'N/A'}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap hidden xl:table-cell">
+                      <div className="text-sm text-gray-900">
+                        {member.state ? `${member.state}${member.country ? `, ${member.country}` : ''}` : 'N/A'}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap hidden xl:table-cell">
+                      <div className="text-sm text-gray-900">{member.profession || 'N/A'}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap hidden xl:table-cell">
+                      <div className="text-sm text-gray-900">{member.marital_status || 'N/A'}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap hidden xl:table-cell">
+                      <div className="text-sm text-gray-900">{member.religion || 'N/A'}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap hidden xl:table-cell">
+                      <div className="text-sm text-gray-900">
+                        {member.referral_source ? (
+                          <span className="text-green-600">Yes</span>
+                        ) : (
+                          <span className="text-gray-500">No</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap hidden md:table-cell">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                        ${member?.status === 'approved' ? 'bg-green-100 text-green-800' : 
+                          member?.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                        {member?.status || 'pending'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
                       {formatDate(member?.created_at)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
                         onClick={() => navigateToMemberDetail(member)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-4"
+                        className="text-indigo-600 hover:text-indigo-900 mr-3"
                       >
                         View
                       </button>
                       {member?.status !== 'approved' && (
                         <button
                           onClick={() => openApproveModal(member)}
-                          className="text-green-600 hover:text-green-900 mr-4"
+                          className="text-green-600 hover:text-green-900 mr-3"
                         >
                           Approve
                         </button>

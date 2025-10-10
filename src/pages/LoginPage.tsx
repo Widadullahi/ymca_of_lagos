@@ -25,7 +25,7 @@ const LoginPage: React.FC = () => {
       registrationEndDate: '31/05/24',
       photo: 'https://via.placeholder.com/150',
       signature: '',
-      role: userRole, // Set the role here based on the email
+      role: 'admin', // Set the role here based on the email
     };
 
     // Store the user in localStorage

@@ -5,6 +5,8 @@ import MainNavigation from '../components/navigation/MainNavigation';
 import ImpactSection from './ImpactSection';
 import vission2030 from '../assets/images/Vision-2030-logos-4-1.jpg'
 
+
+
 const AboutMeV2: React.FC = () => {
   const statsRef = useRef<HTMLDivElement>(null);
   const hasAnimated = useRef(false);
@@ -21,24 +23,87 @@ const AboutMeV2: React.FC = () => {
   ];
 
 
-  const teamMembers = [
+  // Leadership Team
+  const leadershipTeam = [
     {
       id: 1,
-      name: 'Anne Clarc',
-      position: 'Project Manager',
-      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&h=300&q=80'
+      name: 'Engr. R.A. Oyeniran',
+      position: 'Chairman, YMCA Of Lagos',
+      image: '/src/assets/images/teams/Engr. R.A. Oyeniran.PNG'
     },
     {
       id: 2,
-      name: 'Ricky Hunt',
-      position: 'Art Director',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&h=300&q=80'
+      name: 'Adetitun Oluwasegun Adetitun',
+      position: 'Treasurer',
+      image: '/src/assets/images/teams/Adetitun Oluwasegun Adetitun.PNG'
+    }
+  ];
+
+  // Principal Officers
+  const principalOfficers = [
+    {
+      id: 1,
+      name: 'Engr. Raphael Oyeniran',
+      position: 'Chairman',
+      image: '/api/placeholder/300/300'
+    },
+    {
+      id: 2,
+      name: 'Bro Dolapo Ajuwon',
+      position: 'Vice Chairman',
+      image: '/api/placeholder/300/300'
     },
     {
       id: 3,
-      name: 'Alice Wayde',
-      position: 'Marketing Manager',
-      image: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&h=300&q=80'
+      name: 'Mr. Segun Adetitun',
+      position: 'Treasurer',
+      image: '/api/placeholder/300/300'
+    }
+  ];
+
+  // Management Staff
+  const managementStaff = [
+    {
+      id: 1,
+      name: 'Queen Obamina',
+      position: 'Senior Programmes Officer',
+      image: '/src/assets/images/teams/Queen Obamina.jpg'
+    },
+    {
+      id: 2,
+      name: 'Mr. Stephen Togun',
+      position: 'Admin/Human Resource Manager',
+      image: '/src/assets/images/teams/Mr. Stephen Togun.JPG'
+    },
+    {
+      id: 3,
+      name: 'Mrs. Esther Agofure',
+      position: 'Account Officer',
+      image: '/src/assets/images/teams/Mrs Agofure Esther.JPG'
+    },
+    {
+      id: 4,
+      name: 'Mrs Sarah Aladeloba',
+      position: 'Protocol/Admin Officer',
+      image: '/src/assets/images/teams/Mrs. Aladeloba Sarah.JPG'
+    },
+    {
+      id: 5,
+      name: 'Mr. Bernard Akaachir',
+      position: 'Programmes/Procurement Officer',
+      image: '/src/assets/images/teams/Mr. Akaachir Bernard.JPG'
+    },
+    {
+      id: 6,
+      name: 'Ms Funke Hanson',
+      position: 'Programmes/Business Officer',
+      image: '/src/assets/images/teams/Ms Oluwafunke Hanson.png'
+    },
+    {
+      id: 7,
+      name: 'Mr. Ezeibe A. Hope',
+      position: 'Programmes Associate/ICT Officer',
+      image: '/src/assets/images/teams/Mr. Ezeibe Akudike Hope.jpg'
     }
   ];
   
@@ -301,25 +366,17 @@ const AboutMeV2: React.FC = () => {
         <div className="container mx-auto px-4">
           <h2 className="text-4xl font-bold text-center mb-4">Our Great Team</h2>
           <p className="text-gray-600 text-center mb-12 max-w-3xl mx-auto">
-            It's no doubt that when a development takes longer to complete, additional costs to
-            integrate and test each extra feature creeps up and haunts most of us.
+            Meet the dedicated leaders and professionals who drive our mission forward at YMCA of Lagos.
           </p>
           
-          <div className="relative">
-            {/* Navigation Arrows */}
-            <button className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-md z-10">
-              <span className="text-2xl">&lt;</span>
-            </button>
-            <button className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-md z-10">
-              <span className="text-2xl">&gt;</span>
-            </button>
-            
-            {/* Team Members */}
-            <div className="flex justify-center gap-8 overflow-hidden">
-              {teamMembers.map(member => (
-                <div key={member.id} className="text-center w-64">
-                  <div className="mb-4 relative">
-                    <div className="w-48 h-48 mx-auto rounded-full overflow-hidden bg-gray-200 border-4 border-white shadow-lg">
+          {/* Leadership Team */}
+          <div className="mb-16">
+            <h3 className="text-3xl font-bold text-center mb-8 text-blue-800">Leadership</h3>
+            <div className="flex justify-center gap-8 flex-wrap">
+              {leadershipTeam.map(member => (
+                <div key={member.id} className="text-center w-80 mb-8">
+                  <div className="mb-6 relative">
+                    <div className="w-56 h-56 mx-auto rounded-full overflow-hidden bg-gray-200 border-4 border-blue-200 shadow-xl">
                       <img 
                         src={member.image} 
                         alt={member.name}
@@ -327,8 +384,52 @@ const AboutMeV2: React.FC = () => {
                       />
                     </div>
                   </div>
-                  <h3 className="font-bold text-xl">{member.name}</h3>
-                  <p className="text-gray-500">{member.position}</p>
+                  <h4 className="font-bold text-xl mb-2">{member.name}</h4>
+                  <p className="text-blue-600 font-semibold">{member.position}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Principal Officers */}
+          <div className="mb-16">
+            <h3 className="text-3xl font-bold text-center mb-8 text-green-800">Principal Officers</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {principalOfficers.map(member => (
+                <div key={member.id} className="text-center bg-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                  <div className="mb-4 relative">
+                    <div className="w-40 h-40 mx-auto rounded-full overflow-hidden bg-gray-200 border-4 border-green-200 shadow-lg">
+                      <img 
+                        src={member.image} 
+                        alt={member.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-lg mb-2">{member.name}</h4>
+                  <p className="text-green-600 font-medium">{member.position}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Management Staff */}
+          <div className="mb-12">
+            <h3 className="text-3xl font-bold text-center mb-8 text-purple-800">Management Staff</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
+              {managementStaff.map(member => (
+                <div key={member.id} className="text-center bg-white rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow duration-300">
+                  <div className="mb-3 relative">
+                    <div className="w-32 h-32 mx-auto rounded-full overflow-hidden bg-gray-200 border-3 border-purple-200 shadow-md">
+                      <img 
+                        src={member.image} 
+                        alt={member.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-base mb-1">{member.name}</h4>
+                  <p className="text-purple-600 text-sm font-medium">{member.position}</p>
                 </div>
               ))}
             </div>
@@ -336,13 +437,13 @@ const AboutMeV2: React.FC = () => {
           
           {/* Social Media Icons */}
           <div className="flex justify-center gap-6 mt-12">
-            <a href="#" className="text-2xl text-gray-600 hover:text-blue-600"><FaFacebook /></a>
-            <a href="#" className="text-2xl text-gray-600 hover:text-pink-600"><FaInstagram /></a>
-            <a href="#" className="text-2xl text-gray-600 hover:text-gray-800"><FaGithub /></a>
-            <a href="#" className="text-2xl text-gray-600 hover:text-blue-500"><FaBehance /></a>
-            <a href="#" className="text-2xl text-gray-600 hover:text-red-600"><FaPinterest /></a>
-            <a href="#" className="text-2xl text-gray-600 hover:text-blue-400"><FaTwitter /></a>
-            <a href="#" className="text-2xl text-gray-600 hover:text-pink-500"><FaDribbble /></a>
+            <a href="#" className="text-2xl text-gray-600 hover:text-blue-600 transition-colors duration-300"><FaFacebook /></a>
+            <a href="#" className="text-2xl text-gray-600 hover:text-pink-600 transition-colors duration-300"><FaInstagram /></a>
+            <a href="#" className="text-2xl text-gray-600 hover:text-gray-800 transition-colors duration-300"><FaGithub /></a>
+            <a href="#" className="text-2xl text-gray-600 hover:text-blue-500 transition-colors duration-300"><FaBehance /></a>
+            <a href="#" className="text-2xl text-gray-600 hover:text-red-600 transition-colors duration-300"><FaPinterest /></a>
+            <a href="#" className="text-2xl text-gray-600 hover:text-blue-400 transition-colors duration-300"><FaTwitter /></a>
+            <a href="#" className="text-2xl text-gray-600 hover:text-pink-500 transition-colors duration-300"><FaDribbble /></a>
           </div>
         </div>
       </section>

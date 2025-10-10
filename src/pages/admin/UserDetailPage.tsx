@@ -9,11 +9,17 @@ import ConfirmationModal from "../../components/modals/admin/ConfirmationModal";
 interface SubscriptionHistory {
   id: string;
   plan_name: string;
-  status: 'Active' | 'Locked';
+  plan_description?: string;
+  plan_price: number;
+  status: 'pending' | 'active' | 'expired' | 'cancelled';
   start_date: string;
   end_date: string;
-  amount: number;
-  payment_method: string;
+  payment_status: 'pending' | 'completed' | 'failed' | 'refunded';
+  payment_method?: string;
+  created_at: string;
+  updated_at: string;
+  is_active: boolean;
+  days_until_expiry?: number;
 }
 
 const UserDetailPage: React.FC = () => {
@@ -28,7 +34,7 @@ const UserDetailPage: React.FC = () => {
   const [formData, setFormData] = useState<Partial<Member>>({});
   const [subscriptionHistory, setSubscriptionHistory] = useState<SubscriptionHistory[]>([]);
   const [loadingSubscriptions, setLoadingSubscriptions] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'subscription'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'subscription' | 'user_request'>('profile');
 
   useEffect(() => {
     const fetchMemberDetails = async () => {
@@ -54,60 +60,19 @@ const UserDetailPage: React.FC = () => {
         setLoadingSubscriptions(true);
         const response = await fetchWithAuth({
           method: 'GET',
-          path: `/admin/members/${userId}/subscriptions`,
+          path: `/subscriptions/user/${userId}/history/`,
         });
 
-        // If API is not yet implemented, use mock data for demonstration
-        if (!response || response.error) {
-          // Mock data for demonstration
-          const mockData: SubscriptionHistory[] = [
-            {
-              id: '1',
-              plan_name: 'Premium Plan',
-              status: 'Active',
-              start_date: '2023-01-15',
-              end_date: '2024-01-15',
-              amount: 5000,
-              payment_method: 'Credit Card'
-            },
-            {
-              id: '2',
-              plan_name: 'Basic Plan',
-              status: 'Locked',
-              start_date: '2022-01-15',
-              end_date: '2023-01-14',
-              amount: 3000,
-              payment_method: 'Bank Transfer'
-            }
-          ];
-          setSubscriptionHistory(mockData);
+        if (response && response.success && response.data) {
+          setSubscriptionHistory(response.data);
         } else {
-          setSubscriptionHistory(response);
+          // If no subscriptions found, set empty array
+          setSubscriptionHistory([]);
         }
       } catch (error) {
         console.error('Error fetching subscription history:', error);
-        // Use mock data if API fails
-        const mockData: SubscriptionHistory[] = [
-          {
-            id: '1',
-            plan_name: 'Premium Plan',
-            status: 'Active',
-            start_date: '2023-01-15',
-            end_date: '2024-01-15',
-            amount: 5000,
-            payment_method: 'Credit Card'
-          },
-          {
-            id: '2',
-            plan_name: 'Basic Plan',
-            status: 'Locked',
-            start_date: '2022-01-15',
-            end_date: '2023-01-14',
-            amount: 3000,
-            payment_method: 'Bank Transfer'
-          }
-        ];
-        setSubscriptionHistory(mockData);
+        displayNotification('error', 'Failed to load subscription history');
+        setSubscriptionHistory([]);
       } finally {
         setLoadingSubscriptions(false);
       }
@@ -245,6 +210,18 @@ const UserDetailPage: React.FC = () => {
                 onClick={() => setActiveTab('subscription')}
               >
                 Subscription History
+              </button>
+            </li>
+            <li className="mr-2">
+              <button
+                className={`inline-block py-4 px-6 text-base font-medium text-center border-b-2 ${
+                  activeTab === 'user_request'
+                    ? 'text-blue-600 border-blue-600 font-bold'
+                    : 'text-gray-500 border-transparent hover:text-gray-600 hover:border-gray-300'
+                }`}
+                onClick={() => setActiveTab('user_request')}
+              >
+                User Request Details
               </button>
             </li>
           </ul>
@@ -586,29 +563,265 @@ const UserDetailPage: React.FC = () => {
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Status</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Date</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days Left</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {subscriptionHistory.map((subscription) => (
                       <tr key={subscription.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{subscription.plan_name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{subscription.plan_name}</div>
+                            {subscription.plan_description && (
+                              <div className="text-xs text-gray-500">{subscription.plan_description}</div>
+                            )}
+                          </div>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span className={`px-2 py-1 inline-flex text-xs font-medium rounded-full ${subscription.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {subscription.status}
+                          <span className={`px-2 py-1 inline-flex text-xs font-medium rounded-full ${
+                            subscription.status === 'active' ? 'bg-green-100 text-green-800' :
+                            subscription.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            subscription.status === 'expired' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className={`px-2 py-1 inline-flex text-xs font-medium rounded-full ${
+                            subscription.payment_status === 'completed' ? 'bg-green-100 text-green-800' :
+                            subscription.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            subscription.payment_status === 'failed' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {subscription.payment_status.charAt(0).toUpperCase() + subscription.payment_status.slice(1)}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">{new Date(subscription.start_date).toLocaleDateString()}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">{new Date(subscription.end_date).toLocaleDateString()}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">₦{subscription.amount.toLocaleString()}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{subscription.payment_method}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">₦{subscription.plan_price.toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {subscription.is_active && subscription.days_until_expiry !== undefined ? (
+                            <span className={`${subscription.days_until_expiry <= 30 ? 'text-red-600' : 'text-green-600'}`}>
+                              {subscription.days_until_expiry} days
+                            </span>
+                          ) : (
+                            <span className="text-gray-500">-</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* User Request Details Tab Content */}
+      {activeTab === 'user_request' && (
+        <div className="bg-white rounded-lg shadow">
+          <div className="p-6">
+            <h3 className="text-lg font-medium border-b pb-2 mb-4">User Request Details</h3>
+
+            {member.user_request ? (
+              <div className="space-y-6">
+                {/* Personal Information Section */}
+                <div>
+                  <h4 className="text-base font-medium text-gray-900 mb-3">Personal Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500">Full Name</p>
+                      <p className="text-sm">{member.user_request.first_name} {member.user_request.last_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Email</p>
+                      <p className="text-sm">{member.user_request.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Phone Number</p>
+                      <p className="text-sm">{member.user_request.phone_number}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Gender</p>
+                      <p className="text-sm">{member.user_request.gender}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Age</p>
+                      <p className="text-sm">{member.user_request.age}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Date of Birth</p>
+                      <p className="text-sm">{member.user_request.date_of_birth ? new Date(member.user_request.date_of_birth).toLocaleDateString() : 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Place of Birth</p>
+                      <p className="text-sm">{member.user_request.place_of_birth || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Marital Status</p>
+                      <p className="text-sm">{member.user_request.marital_status || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Profession</p>
+                      <p className="text-sm">{member.user_request.profession || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Occupation</p>
+                      <p className="text-sm">{member.user_request.occupation || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Religion</p>
+                      <p className="text-sm">{member.user_request.religion || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Church Name</p>
+                      <p className="text-sm">{member.user_request.church_name || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Location Information Section */}
+                <div>
+                  <h4 className="text-base font-medium text-gray-900 mb-3">Location Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500">Citizenship</p>
+                      <p className="text-sm">{member.user_request.citizen || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Country</p>
+                      <p className="text-sm">{member.user_request.country || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">State</p>
+                      <p className="text-sm">{member.user_request.state || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">LGA</p>
+                      <p className="text-sm">{member.user_request.lga || 'N/A'}</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <p className="text-xs text-gray-500">Home Address</p>
+                      <p className="text-sm">{member.user_request.home_address || 'N/A'}</p>
+                    </div>
+                    <div className="md:col-span-3">
+                      <p className="text-xs text-gray-500">Office Address</p>
+                      <p className="text-sm">{member.user_request.office_address || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* YMCA Information Section */}
+                <div>
+                  <h4 className="text-base font-medium text-gray-900 mb-3">YMCA Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500">Unit</p>
+                      <p className="text-sm">{member.user_request.unit || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Club</p>
+                      <p className="text-sm">{member.user_request.club || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Identification Section */}
+                <div>
+                  <h4 className="text-base font-medium text-gray-900 mb-3">Identification</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500">Valid ID Number</p>
+                      <p className="text-sm">{member.user_request.valid_id_number || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Passport Photo</p>
+                      {member.user_request.passport_photo ? (
+                        <img 
+                          src={member.user_request.passport_photo} 
+                          alt="Passport" 
+                          className="h-20 w-20 object-cover rounded border"
+                        />
+                      ) : (
+                        <p className="text-sm">No photo uploaded</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Valid ID File</p>
+                      {member.user_request.valid_id_file ? (
+                        <a 
+                          href={member.user_request.valid_id_file} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-sm"
+                        >
+                          View ID Document
+                        </a>
+                      ) : (
+                        <p className="text-sm">No ID file uploaded</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Referral Information Section */}
+                <div>
+                  <h4 className="text-base font-medium text-gray-900 mb-3">Referral Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500">Next of Kin</p>
+                      <p className="text-sm">{member.user_request.next_of_kin || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Referral Source</p>
+                      <p className="text-sm">{member.user_request.referral_source || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Referral Name</p>
+                      <p className="text-sm">{member.user_request.referral_name || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Referred By</p>
+                      <p className="text-sm">{member.user_request.referred_by || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Request Status Section */}
+                <div>
+                  <h4 className="text-base font-medium text-gray-900 mb-3">Request Status</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500">Status</p>
+                      <span className={`px-2 py-1 inline-flex text-xs font-medium rounded-full ${
+                        member.user_request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        member.user_request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {member.user_request.status}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Created At</p>
+                      <p className="text-sm">{new Date(member.user_request.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Updated At</p>
+                      <p className="text-sm">{new Date(member.user_request.updated_at).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No user request information available</p>
+                <p className="text-sm text-gray-400 mt-2">This user may have been created directly by an admin</p>
               </div>
             )}
           </div>

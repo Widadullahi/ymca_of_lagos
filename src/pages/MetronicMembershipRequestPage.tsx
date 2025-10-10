@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 interface FormData {
   firstName: string;
   lastName: string;
+  email: string;
   phoneNumber: string;
   citizen: string;
   country: string;
@@ -35,6 +36,7 @@ const MetronicMembershipRequestPage = () => {
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
+    email: '',
     phoneNumber: '',
     citizen: 'Nigerian',
     country: '',
@@ -103,6 +105,17 @@ const MetronicMembershipRequestPage = () => {
                 />
               </div>
               <div className="mb-4">
+                <label className="block text-sm font-bold mb-2">Email Address *</label>
+                <input 
+                  type="email" 
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="border rounded w-full py-2 px-3" 
+                  required 
+                />
+              </div>
+              <div className="mb-4">
                 <label className="block text-sm font-bold mb-2">Phone Number *</label>
                 <input 
                   type="tel" 
@@ -112,6 +125,20 @@ const MetronicMembershipRequestPage = () => {
                   className="border rounded w-full py-2 px-3" 
                   required 
                 />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-bold mb-2">Gender *</label>
+                <select 
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  className="border rounded w-full py-2 px-3" 
+                  required 
+                >
+                  <option value="">Select Gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-bold mb-2">Country *</label>

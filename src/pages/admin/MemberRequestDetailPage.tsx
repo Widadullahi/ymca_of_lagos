@@ -12,12 +12,41 @@ interface MemberRequest {
   email: string;
   phone_number: string;
   address: string;
-  valid_id_type: string;
   valid_id_number: string;
   passport_photo: string;
+  valid_id_file: string;
   status: string;
   created_at: string;
   updated_at: string;
+  
+  // Location Information
+  citizen: string;
+  country: string;
+  state: string;
+  lga: string;
+  
+  // YMCA Information
+  unit: string;
+  club: string;
+  
+  // Additional Personal Information
+  age: string;
+  gender: string;
+  date_of_birth: string;
+  place_of_birth: string;
+  home_address: string;
+  office_address: string;
+  profession: string;
+  religion: string;
+  church_name: string;
+  occupation: string;
+  marital_status: string;
+  
+  // Referral Information
+  next_of_kin: string;
+  referral_source: string;
+  referral_name: string;
+  referred_by: string;
 }
 
 const MemberRequestDetailPage: React.FC = () => {
@@ -61,12 +90,28 @@ const MemberRequestDetailPage: React.FC = () => {
     
     setProcessingAction(true);
     try {
-      await memberRequestsApi.approveMemberRequest(memberRequest.id);
-      toast.success('Member request approved successfully');
+      const response = await memberRequestsApi.approveMemberRequest(memberRequest.id);
+      
+      // Check if user was created as part of approval
+      if (response?.data?.user_created) {
+        toast.success(
+          `Member request approved successfully! User profile created for ${response.data.user_email} with default password 'member12345'`,
+          { autoClose: 8000 }
+        );
+      } else {
+        toast.success('Member request approved successfully');
+      }
+      
       navigate('/admin/member-requests');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error approving member request:', error);
-      toast.error('Failed to approve member request');
+      
+      // Handle specific error messages from backend
+      if (error?.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Failed to approve member request');
+      }
     } finally {
       setProcessingAction(false);
       setShowApproveConfirmation(false);
@@ -175,9 +220,103 @@ const MemberRequestDetailPage: React.FC = () => {
                   <p className="text-sm">{memberRequest.phone_number || 'Not Provided'}</p>
                 </div>
                 
+                <div>
+                  <p className="text-xs text-gray-500">Age</p>
+                  <p className="text-sm">{memberRequest.age || 'Not Provided'}</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs text-gray-500">Gender</p>
+                  <p className="text-sm">{memberRequest.gender || 'Not Provided'}</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs text-gray-500">Date of Birth</p>
+                  <p className="text-sm">{memberRequest.date_of_birth ? new Date(memberRequest.date_of_birth).toLocaleDateString() : 'Not Provided'}</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs text-gray-500">Place of Birth</p>
+                  <p className="text-sm">{memberRequest.place_of_birth || 'Not Provided'}</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs text-gray-500">Marital Status</p>
+                  <p className="text-sm">{memberRequest.marital_status || 'Not Provided'}</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs text-gray-500">Profession</p>
+                  <p className="text-sm">{memberRequest.profession || 'Not Provided'}</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs text-gray-500">Occupation</p>
+                  <p className="text-sm">{memberRequest.occupation || 'Not Provided'}</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs text-gray-500">Religion</p>
+                  <p className="text-sm">{memberRequest.religion || 'Not Provided'}</p>
+                </div>
+                
+                <div className="md:col-span-2">
+                  <p className="text-xs text-gray-500">Church Name</p>
+                  <p className="text-sm">{memberRequest.church_name || 'Not Provided'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Location Information */}
+            <div className="mb-8">
+              <h3 className="text-base font-medium border-b pb-2 mb-4">Location Information</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs text-gray-500">Citizenship</p>
+                  <p className="text-sm">{memberRequest.citizen || 'Not Provided'}</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs text-gray-500">Country</p>
+                  <p className="text-sm">{memberRequest.country || 'Not Provided'}</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs text-gray-500">State</p>
+                  <p className="text-sm">{memberRequest.state || 'Not Provided'}</p>
+                </div>
+                
                 <div className="md:col-span-3">
-                  <p className="text-xs text-gray-500">Address</p>
-                  <p className="text-sm">{memberRequest.address || 'Not Provided'}</p>
+                  <p className="text-xs text-gray-500">LGA</p>
+                  <p className="text-sm">{memberRequest.lga || 'Not Provided'}</p>
+                </div>
+                
+                <div className="md:col-span-3">
+                  <p className="text-xs text-gray-500">Home Address</p>
+                  <p className="text-sm">{memberRequest.home_address || memberRequest.address || 'Not Provided'}</p>
+                </div>
+                
+                <div className="md:col-span-3">
+                  <p className="text-xs text-gray-500">Office Address</p>
+                  <p className="text-sm">{memberRequest.office_address || 'Not Provided'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* YMCA Information */}
+            <div className="mb-8">
+              <h3 className="text-base font-medium border-b pb-2 mb-4">YMCA Information</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-gray-500">Unit</p>
+                  <p className="text-sm">{memberRequest.unit || 'Not Provided'}</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs text-gray-500">Club</p>
+                  <p className="text-sm">{memberRequest.club || 'Not Provided'}</p>
                 </div>
               </div>
             </div>
@@ -188,13 +327,49 @@ const MemberRequestDetailPage: React.FC = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-gray-500">Valid ID Type</p>
-                  <p className="text-sm">{memberRequest.valid_id_type || 'Not Provided'}</p>
+                  <p className="text-xs text-gray-500">Valid ID Number</p>
+                  <p className="text-sm">{memberRequest.valid_id_number || 'Not Provided'}</p>
+                </div>
+              </div>
+              
+              {/* Valid ID File */}
+              {memberRequest.valid_id_file && (
+                <div className="mt-4">
+                  <p className="text-xs text-gray-500 mb-2">Valid ID Document</p>
+                  <div className="flex justify-start">
+                    <img 
+                      src={memberRequest.valid_id_file} 
+                      alt="Valid ID Document"
+                      className="w-32 h-20 object-contain rounded-lg border border-gray-300 shadow-sm"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Referral Information */}
+            <div className="mb-8">
+              <h3 className="text-base font-medium border-b pb-2 mb-4">Referral Information</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-gray-500">Referred By</p>
+                  <p className="text-sm">{memberRequest.referred_by === 'yes' ? 'Yes' : 'No'}</p>
                 </div>
                 
                 <div>
-                  <p className="text-xs text-gray-500">Valid ID Number</p>
-                  <p className="text-sm">{memberRequest.valid_id_number || 'Not Provided'}</p>
+                  <p className="text-xs text-gray-500">Referral Source</p>
+                  <p className="text-sm">{memberRequest.referral_source || 'Not Provided'}</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs text-gray-500">Referral Name</p>
+                  <p className="text-sm">{memberRequest.referral_name || 'Not Provided'}</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs text-gray-500">Next of Kin</p>
+                  <p className="text-sm">{memberRequest.next_of_kin || 'Not Provided'}</p>
                 </div>
               </div>
             </div>
@@ -203,11 +378,11 @@ const MemberRequestDetailPage: React.FC = () => {
             {memberRequest.passport_photo && (
               <div className="mb-8">
                 <h3 className="text-base font-medium border-b pb-2 mb-4">Passport Photo</h3>
-                <div className="flex justify-center">
+                <div className="flex justify-start">
                   <img 
                     src={memberRequest.passport_photo} 
                     alt="Passport Photo"
-                    className="w-32 h-32 object-cover rounded-lg border border-gray-300 shadow-sm"
+                    className="w-20 h-20 object-cover rounded-lg border border-gray-300 shadow-sm"
                   />
                 </div>
               </div>

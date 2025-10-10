@@ -19,6 +19,7 @@ const UserListingPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [unitFilter, setUnitFilter] = useState<string>('');
   const [genderFilter, setGenderFilter] = useState<string>('');
+  const [stateFilter, setStateFilter] = useState<string>('');
   const [membershipCategoryFilter, setMembershipCategoryFilter] = useState<string>('');
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
@@ -145,12 +146,12 @@ const UserListingPage: React.FC = () => {
 
     // Apply unit filter
     if (unitFilter) {
-      result = result.filter(member => member.unit === unitFilter);
+      result = result.filter(member => member?.user_request?.unit === unitFilter);
     }
 
     // Apply gender filter
     if (genderFilter) {
-      result = result.filter(member => member.gender === genderFilter);
+      result = result.filter(member => member?.user_request?.gender === genderFilter);
     }
 
     // Apply membership category filter
@@ -158,8 +159,13 @@ const UserListingPage: React.FC = () => {
       result = result.filter(member => member.membership_category === membershipCategoryFilter);
     }
 
+    // Apply state filter
+    if (stateFilter) {
+      result = result.filter(member => member?.user_request?.state === stateFilter);
+    }
+
     setFilteredMembers(result);
-  }, [members, searchTerm, categoryFilter, statusFilter, unitFilter, genderFilter, membershipCategoryFilter]);
+  }, [members, searchTerm, categoryFilter, statusFilter, unitFilter, genderFilter, membershipCategoryFilter, stateFilter]);
 
   // Format date
   const formatDate = (dateString: string): string => {
@@ -180,6 +186,7 @@ const UserListingPage: React.FC = () => {
     setUnitFilter('');
     setGenderFilter('');
     setMembershipCategoryFilter('');
+    setStateFilter('');
   };
 
   const AddUserButtonSection = () => (
@@ -220,7 +227,7 @@ const UserListingPage: React.FC = () => {
 
       {/* Filters section */}
       <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-6">
           <div>
             <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
               Search
@@ -315,8 +322,59 @@ const UserListingPage: React.FC = () => {
               className="w-full p-2 border border-gray-300 rounded-md"
             >
               <option value="">All Genders</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+              State
+            </label>
+            <select
+              id="state"
+              value={stateFilter}
+              onChange={(e) => setStateFilter(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            >
+              <option value="">All States</option>
+              <option value="Abia">Abia</option>
+              <option value="Adamawa">Adamawa</option>
+              <option value="Akwa Ibom">Akwa Ibom</option>
+              <option value="Anambra">Anambra</option>
+              <option value="Bauchi">Bauchi</option>
+              <option value="Bayelsa">Bayelsa</option>
+              <option value="Benue">Benue</option>
+              <option value="Borno">Borno</option>
+              <option value="Cross River">Cross River</option>
+              <option value="Delta">Delta</option>
+              <option value="Ebonyi">Ebonyi</option>
+              <option value="Edo">Edo</option>
+              <option value="Ekiti">Ekiti</option>
+              <option value="Enugu">Enugu</option>
+              <option value="FCT">FCT</option>
+              <option value="Gombe">Gombe</option>
+              <option value="Imo">Imo</option>
+              <option value="Jigawa">Jigawa</option>
+              <option value="Kaduna">Kaduna</option>
+              <option value="Kano">Kano</option>
+              <option value="Katsina">Katsina</option>
+              <option value="Kebbi">Kebbi</option>
+              <option value="Kogi">Kogi</option>
+              <option value="Kwara">Kwara</option>
+              <option value="Lagos">Lagos</option>
+              <option value="Nasarawa">Nasarawa</option>
+              <option value="Niger">Niger</option>
+              <option value="Ogun">Ogun</option>
+              <option value="Ondo">Ondo</option>
+              <option value="Osun">Osun</option>
+              <option value="Oyo">Oyo</option>
+              <option value="Plateau">Plateau</option>
+              <option value="Rivers">Rivers</option>
+              <option value="Sokoto">Sokoto</option>
+              <option value="Taraba">Taraba</option>
+              <option value="Yobe">Yobe</option>
+              <option value="Zamfara">Zamfara</option>
             </select>
           </div>
         </div>
@@ -394,7 +452,7 @@ const UserListingPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
-                      <div className="text-sm text-gray-900">{member.unit}</div>
+                      <div className="text-sm text-gray-900">{member?.user_request?.unit}</div>
                       {member.unit === 'Council of Church' && member?.church && (
                         <div className="text-xs text-gray-500">{member?.church?.name}</div>
                       )}
@@ -403,7 +461,7 @@ const UserListingPage: React.FC = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
-                      <div className="text-sm text-gray-900">{member?.gender}</div>
+                      <div className="text-sm text-gray-900">{member?.user_request?.gender}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 

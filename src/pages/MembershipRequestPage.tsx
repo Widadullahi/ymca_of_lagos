@@ -19,6 +19,7 @@ const RequestForm: React.FC = () => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
+    email: '',
     phoneNumber: '',
     citizen: 'Nigerian',
     country: '',
@@ -63,7 +64,6 @@ const RequestForm: React.FC = () => {
   const validIdOptions = [
     { value: 'national_id', label: 'National ID' },
     { value: 'international_passport', label: 'International Passport' },
-    // { value: 'voters_card', label: 'Voter\'s Card' },
     { value: 'nin_slip', label: 'NIN Slip' },
   ];
 
@@ -239,15 +239,43 @@ const RequestForm: React.FC = () => {
 
     try {
       const requestData = new FormData();
+      // Basic Information
       requestData.append('first_name', formData.firstName);
       requestData.append('last_name', formData.lastName);
+      requestData.append('email', formData.email);
       requestData.append('phone_number', formData.phoneNumber);
+      
+      // Location Information
+      requestData.append('citizen', formData.citizen);
       requestData.append('country', formData.country);
       requestData.append('state', formData.state);
       requestData.append('lga', formData.lga);
+      
+      // YMCA Information
       requestData.append('unit', formData.unit);
       requestData.append('club', formData.club);
+      
+      // Personal Information
+      requestData.append('age', formData.age);
+      requestData.append('gender', formData.gender);
+      requestData.append('date_of_birth', formData.date_of_birth);
+      requestData.append('place_of_birth', formData.place_of_birth);
+      requestData.append('home_address', formData.home_address);
+      requestData.append('office_address', formData.office_address);
+      requestData.append('profession', formData.profession);
+      requestData.append('religion', formData.religion);
+      requestData.append('church_name', formData.churchName);
+      requestData.append('occupation', formData.occupation);
+      requestData.append('marital_status', formData.marital_status);
+      
+      // ID Information
       requestData.append('valid_id_type', formData.validIdType);
+      
+      // Referral Information
+      requestData.append('next_of_kin', formData.nextOfKin);
+      requestData.append('referral_source', formData.referralSource);
+      requestData.append('referral_name', formData.referralName);
+      requestData.append('referred_by', formData.referredBy);
       
       if (formData.validIdFile) {
         requestData.append('valid_id_file', formData.validIdFile);
@@ -269,6 +297,7 @@ const RequestForm: React.FC = () => {
         setFormData({
           firstName: '',
           lastName: '',
+          email: '',
           phoneNumber: '',
           citizen: 'Nigerian',
           country: '',
@@ -402,6 +431,17 @@ const RequestForm: React.FC = () => {
             />
 
             <FormInput
+              label="Email Address"
+              name="email"
+              type="email"
+              placeholder="Enter your email address"
+              value={formData.email}
+              onChange={handleInputChange}
+              error={fieldErrors.email}
+              required
+            />
+
+            <FormInput
               label="Phone Number"
               name="phoneNumber"
               type="tel"
@@ -409,6 +449,19 @@ const RequestForm: React.FC = () => {
               value={formData.phoneNumber}
               onChange={handleInputChange}
               error={fieldErrors.phoneNumber}
+              required
+            />
+
+            <FormSelect
+              label="Gender"
+              name="gender"
+              options={[
+                { value: 'male', label: 'Male' },
+                { value: 'female', label: 'Female' },
+              ]}
+              value={formData.gender}
+              onChange={handleInputChange}
+              error={fieldErrors.gender}
               required
             />
           

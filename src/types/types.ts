@@ -18,6 +18,43 @@ export interface AuthState {
 }
 
 
+// User Request interface for detailed information
+export interface UserRequest {
+  id: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  email: string;
+  citizen: string;
+  country: string;
+  state: string;
+  lga: string;
+  unit: string;
+  club: string;
+  age: number;
+  gender: 'Male' | 'Female';
+  date_of_birth: string;
+  place_of_birth: string;
+  home_address: string;
+  office_address: string;
+  profession: string;
+  religion: string;
+  church_name: string;
+  occupation: string;
+  marital_status: string;
+  valid_id_number: string;
+  passport_photo: string;
+  valid_id_file: string;
+  next_of_kin: string;
+  referral_source: string;
+  referral_name: string;
+  referred_by: string;
+  address: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Updated Types
 export interface Member {
   status_display: string;
@@ -57,6 +94,7 @@ export interface Member {
   is_active: boolean;
   created_at: any;
   updated_at: any;
+  user_request?: UserRequest | null;
   [key: string]: any;
 }
 
