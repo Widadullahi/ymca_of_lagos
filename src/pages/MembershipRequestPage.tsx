@@ -615,12 +615,12 @@ const RequestForm: React.FC = () => {
 
             {availableClubs.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Club</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Club/Church</label>
               <Select
                 options={availableClubs}
                 value={availableClubs.find(option => option.value === formData.club) || null}
                 onChange={(selectedOption) => setFormData({ ...formData, club: selectedOption ? selectedOption.value : '' })}
-                placeholder="Select club"
+                placeholder="Select Club/Church"
                 isSearchable
                 noOptionsMessage={() => "No club found"}
               />

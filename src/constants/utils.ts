@@ -53,8 +53,8 @@ export const ymcaUnits = [
     ] 
   },
   { 
-    value: "Coundil of church", 
-    label: "Coundil of church", 
+    value: "Council of church", 
+    label: "Council of church", 
     dropDown: [
       { "METHODIST CHURCH CATHEDRAL, PALM AVENUE, LAGOS": "METHODIST CHURCH CATHEDRAL, PALM AVENUE, LAGOS" },
       { "ST. JOHN ANG. CHURCH, IJU ISHAGA, LAGOS.": "ST. JOHN ANG. CHURCH, IJU ISHAGA, LAGOS." },

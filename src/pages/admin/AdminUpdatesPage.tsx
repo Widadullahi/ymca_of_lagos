@@ -39,7 +39,7 @@ const AdminUpdatesPage = () => {
   const [updates, setUpdates] = useState<Update[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [selectedCategory, ] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [totalCount, setTotalCount] = useState(0);
 
@@ -257,7 +257,7 @@ const AdminUpdatesPage = () => {
         </div>
 
         {/* Category filter */}
-        <div className="flex-shrink-0">
+        {/* <div className="flex-shrink-0">
           <select
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={selectedCategory}
@@ -269,7 +269,7 @@ const AdminUpdatesPage = () => {
               </option>
             ))}
           </select>
-        </div>
+        </div> */}
 
         {/* Refresh button */}
         <div className="flex-shrink-0">
