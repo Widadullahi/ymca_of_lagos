@@ -6,10 +6,258 @@ import { Link, useNavigate } from 'react-router-dom';
 import ymca from '../assets/images/image.png'
 import { nigerianStates,ymcaUnits } from '../constants/utils';
 import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 // Mock data for dropdowns - replace with actual API calls or data source
 const countries = [
+  { value: 'AD', label: 'Andorra' },
+  { value: 'AE', label: 'United Arab Emirates' },
+  { value: 'AF', label: 'Afghanistan' },
+  { value: 'AG', label: 'Antigua and Barbuda' },
+  { value: 'AI', label: 'Anguilla' },
+  { value: 'AL', label: 'Albania' },
+  { value: 'AM', label: 'Armenia' },
+  { value: 'AO', label: 'Angola' },
+  { value: 'AQ', label: 'Antarctica' },
+  { value: 'AR', label: 'Argentina' },
+  { value: 'AS', label: 'American Samoa' },
+  { value: 'AT', label: 'Austria' },
+  { value: 'AU', label: 'Australia' },
+  { value: 'AW', label: 'Aruba' },
+  { value: 'AX', label: 'Åland Islands' },
+  { value: 'AZ', label: 'Azerbaijan' },
+  { value: 'BA', label: 'Bosnia and Herzegovina' },
+  { value: 'BB', label: 'Barbados' },
+  { value: 'BD', label: 'Bangladesh' },
+  { value: 'BE', label: 'Belgium' },
+  { value: 'BF', label: 'Burkina Faso' },
+  { value: 'BG', label: 'Bulgaria' },
+  { value: 'BH', label: 'Bahrain' },
+  { value: 'BI', label: 'Burundi' },
+  { value: 'BJ', label: 'Benin' },
+  { value: 'BL', label: 'Saint Barthélemy' },
+  { value: 'BM', label: 'Bermuda' },
+  { value: 'BN', label: 'Brunei Darussalam' },
+  { value: 'BO', label: 'Bolivia' },
+  { value: 'BQ', label: 'Bonaire, Sint Eustatius and Saba' },
+  { value: 'BR', label: 'Brazil' },
+  { value: 'BS', label: 'Bahamas' },
+  { value: 'BT', label: 'Bhutan' },
+  { value: 'BV', label: 'Bouvet Island' },
+  { value: 'BW', label: 'Botswana' },
+  { value: 'BY', label: 'Belarus' },
+  { value: 'BZ', label: 'Belize' },
+  { value: 'CA', label: 'Canada' },
+  { value: 'CC', label: 'Cocos (Keeling) Islands' },
+  { value: 'CD', label: 'Congo, Democratic Republic of the' },
+  { value: 'CF', label: 'Central African Republic' },
+  { value: 'CG', label: 'Congo' },
+  { value: 'CH', label: 'Switzerland' },
+  { value: 'CI', label: 'Côte d\'Ivoire' },
+  { value: 'CK', label: 'Cook Islands' },
+  { value: 'CL', label: 'Chile' },
+  { value: 'CM', label: 'Cameroon' },
+  { value: 'CN', label: 'China' },
+  { value: 'CO', label: 'Colombia' },
+  { value: 'CR', label: 'Costa Rica' },
+  { value: 'CU', label: 'Cuba' },
+  { value: 'CV', label: 'Cabo Verde' },
+  { value: 'CW', label: 'Curaçao' },
+  { value: 'CX', label: 'Christmas Island' },
+  { value: 'CY', label: 'Cyprus' },
+  { value: 'CZ', label: 'Czechia' },
+  { value: 'DE', label: 'Germany' },
+  { value: 'DJ', label: 'Djibouti' },
+  { value: 'DK', label: 'Denmark' },
+  { value: 'DM', label: 'Dominica' },
+  { value: 'DO', label: 'Dominican Republic' },
+  { value: 'DZ', label: 'Algeria' },
+  { value: 'EC', label: 'Ecuador' },
+  { value: 'EE', label: 'Estonia' },
+  { value: 'EG', label: 'Egypt' },
+  { value: 'EH', label: 'Western Sahara' },
+  { value: 'ER', label: 'Eritrea' },
+  { value: 'ES', label: 'Spain' },
+  { value: 'ET', label: 'Ethiopia' },
+  { value: 'FI', label: 'Finland' },
+  { value: 'FJ', label: 'Fiji' },
+  { value: 'FK', label: 'Falkland Islands (Malvinas)' },
+  { value: 'FM', label: 'Micronesia, Federated States of' },
+  { value: 'FO', label: 'Faroe Islands' },
+  { value: 'FR', label: 'France' },
+  { value: 'GA', label: 'Gabon' },
+  { value: 'GB', label: 'United Kingdom' },
+  { value: 'GD', label: 'Grenada' },
+  { value: 'GE', label: 'Georgia' },
+  { value: 'GF', label: 'French Guiana' },
+  { value: 'GG', label: 'Guernsey' },
+  { value: 'GH', label: 'Ghana' },
+  { value: 'GI', label: 'Gibraltar' },
+  { value: 'GL', label: 'Greenland' },
+  { value: 'GM', label: 'Gambia' },
+  { value: 'GN', label: 'Guinea' },
+  { value: 'GP', label: 'Guadeloupe' },
+  { value: 'GQ', label: 'Equatorial Guinea' },
+  { value: 'GR', label: 'Greece' },
+  { value: 'GS', label: 'South Georgia and the South Sandwich Islands' },
+  { value: 'GT', label: 'Guatemala' },
+  { value: 'GU', label: 'Guam' },
+  { value: 'GW', label: 'Guinea-Bissau' },
+  { value: 'GY', label: 'Guyana' },
+  { value: 'HK', label: 'Hong Kong' },
+  { value: 'HM', label: 'Heard Island and McDonald Islands' },
+  { value: 'HN', label: 'Honduras' },
+  { value: 'HR', label: 'Croatia' },
+  { value: 'HT', label: 'Haiti' },
+  { value: 'HU', label: 'Hungary' },
+  { value: 'ID', label: 'Indonesia' },
+  { value: 'IE', label: 'Ireland' },
+  { value: 'IL', label: 'Israel' },
+  { value: 'IM', label: 'Isle of Man' },
+  { value: 'IN', label: 'India' },
+  { value: 'IO', label: 'British Indian Ocean Territory' },
+  { value: 'IQ', label: 'Iraq' },
+  { value: 'IR', label: 'Iran, Islamic Republic of' },
+  { value: 'IS', label: 'Iceland' },
+  { value: 'IT', label: 'Italy' },
+  { value: 'JE', label: 'Jersey' },
+  { value: 'JM', label: 'Jamaica' },
+  { value: 'JO', label: 'Jordan' },
+  { value: 'JP', label: 'Japan' },
+  { value: 'KE', label: 'Kenya' },
+  { value: 'KG', label: 'Kyrgyzstan' },
+  { value: 'KH', label: 'Cambodia' },
+  { value: 'KI', label: 'Kiribati' },
+  { value: 'KM', label: 'Comoros' },
+  { value: 'KN', label: 'Saint Kitts and Nevis' },
+  { value: 'KP', label: 'Korea, Democratic People\'s Republic of' },
+  { value: 'KR', label: 'Korea, Republic of' },
+  { value: 'KW', label: 'Kuwait' },
+  { value: 'KY', label: 'Cayman Islands' },
+  { value: 'KZ', label: 'Kazakhstan' },
+  { value: 'LA', label: 'Lao People\'s Democratic Republic' },
+  { value: 'LB', label: 'Lebanon' },
+  { value: 'LC', label: 'Saint Lucia' },
+  { value: 'LI', label: 'Liechtenstein' },
+  { value: 'LK', label: 'Sri Lanka' },
+  { value: 'LR', label: 'Liberia' },
+  { value: 'LS', label: 'Lesotho' },
+  { value: 'LT', label: 'Lithuania' },
+  { value: 'LU', label: 'Luxembourg' },
+  { value: 'LV', label: 'Latvia' },
+  { value: 'LY', label: 'Libya' },
+  { value: 'MA', label: 'Morocco' },
+  { value: 'MC', label: 'Monaco' },
+  { value: 'MD', label: 'Moldova, Republic of' },
+  { value: 'ME', label: 'Montenegro' },
+  { value: 'MF', label: 'Saint Martin (French part)' },
+  { value: 'MG', label: 'Madagascar' },
+  { value: 'MH', label: 'Marshall Islands' },
+  { value: 'MK', label: 'North Macedonia' },
+  { value: 'ML', label: 'Mali' },
+  { value: 'MM', label: 'Myanmar' },
+  { value: 'MN', label: 'Mongolia' },
+  { value: 'MO', label: 'Macao' },
+  { value: 'MP', label: 'Northern Mariana Islands' },
+  { value: 'MQ', label: 'Martinique' },
+  { value: 'MR', label: 'Mauritania' },
+  { value: 'MS', label: 'Montserrat' },
+  { value: 'MT', label: 'Malta' },
+  { value: 'MU', label: 'Mauritius' },
+  { value: 'MV', label: 'Maldives' },
+  { value: 'MW', label: 'Malawi' },
+  { value: 'MX', label: 'Mexico' },
+  { value: 'MY', label: 'Malaysia' },
+  { value: 'MZ', label: 'Mozambique' },
+  { value: 'NA', label: 'Namibia' },
+  { value: 'NC', label: 'New Caledonia' },
+  { value: 'NE', label: 'Niger' },
+  { value: 'NF', label: 'Norfolk Island' },
   { value: 'NG', label: 'Nigeria' },
-  // Add more countries as needed
+  { value: 'NI', label: 'Nicaragua' },
+  { value: 'NL', label: 'Netherlands' },
+  { value: 'NO', label: 'Norway' },
+  { value: 'NP', label: 'Nepal' },
+  { value: 'NR', label: 'Nauru' },
+  { value: 'NU', label: 'Niue' },
+  { value: 'NZ', label: 'New Zealand' },
+  { value: 'OM', label: 'Oman' },
+  { value: 'PA', label: 'Panama' },
+  { value: 'PE', label: 'Peru' },
+  { value: 'PF', label: 'French Polynesia' },
+  { value: 'PG', label: 'Papua New Guinea' },
+  { value: 'PH', label: 'Philippines' },
+  { value: 'PK', label: 'Pakistan' },
+  { value: 'PL', label: 'Poland' },
+  { value: 'PM', label: 'Saint Pierre and Miquelon' },
+  { value: 'PN', label: 'Pitcairn' },
+  { value: 'PR', label: 'Puerto Rico' },
+  { value: 'PS', label: 'Palestine, State of' },
+  { value: 'PT', label: 'Portugal' },
+  { value: 'PW', label: 'Palau' },
+  { value: 'PY', label: 'Paraguay' },
+  { value: 'QA', label: 'Qatar' },
+  { value: 'RE', label: 'Réunion' },
+  { value: 'RO', label: 'Romania' },
+  { value: 'RS', label: 'Serbia' },
+  { value: 'RU', label: 'Russian Federation' },
+  { value: 'RW', label: 'Rwanda' },
+  { value: 'SA', label: 'Saudi Arabia' },
+  { value: 'SB', label: 'Solomon Islands' },
+  { value: 'SC', label: 'Seychelles' },
+  { value: 'SD', label: 'Sudan' },
+  { value: 'SE', label: 'Sweden' },
+  { value: 'SG', label: 'Singapore' },
+  { value: 'SH', label: 'Saint Helena, Ascension and Tristan da Cunha' },
+  { value: 'SI', label: 'Slovenia' },
+  { value: 'SJ', label: 'Svalbard and Jan Mayen' },
+  { value: 'SK', label: 'Slovakia' },
+  { value: 'SL', label: 'Sierra Leone' },
+  { value: 'SM', label: 'San Marino' },
+  { value: 'SN', label: 'Senegal' },
+  { value: 'SO', label: 'Somalia' },
+  { value: 'SR', label: 'Suriname' },
+  { value: 'SS', label: 'South Sudan' },
+  { value: 'ST', label: 'Sao Tome and Principe' },
+  { value: 'SV', label: 'El Salvador' },
+  { value: 'SX', label: 'Sint Maarten (Dutch part)' },
+  { value: 'SY', label: 'Syrian Arab Republic' },
+  { value: 'SZ', label: 'Eswatini' },
+  { value: 'TC', label: 'Turks and Caicos Islands' },
+  { value: 'TD', label: 'Chad' },
+  { value: 'TF', label: 'French Southern Territories' },
+  { value: 'TG', label: 'Togo' },
+  { value: 'TH', label: 'Thailand' },
+  { value: 'TJ', label: 'Tajikistan' },
+  { value: 'TK', label: 'Tokelau' },
+  { value: 'TL', label: 'Timor-Leste' },
+  { value: 'TM', label: 'Turkmenistan' },
+  { value: 'TN', label: 'Tunisia' },
+  { value: 'TO', label: 'Tonga' },
+  { value: 'TR', label: 'Turkey' },
+  { value: 'TT', label: 'Trinidad and Tobago' },
+  { value: 'TV', label: 'Tuvalu' },
+  { value: 'TW', label: 'Taiwan, Province of China' },
+  { value: 'TZ', label: 'Tanzania, United Republic of' },
+  { value: 'UA', label: 'Ukraine' },
+  { value: 'UG', label: 'Uganda' },
+  { value: 'UM', label: 'United States Minor Outlying Islands' },
+  { value: 'US', label: 'United States' },
+  { value: 'UY', label: 'Uruguay' },
+  { value: 'UZ', label: 'Uzbekistan' },
+  { value: 'VA', label: 'Holy See (Vatican City State)' },
+  { value: 'VC', label: 'Saint Vincent and the Grenadines' },
+  { value: 'VE', label: 'Venezuela, Bolivarian Republic of' },
+  { value: 'VG', label: 'Virgin Islands, British' },
+  { value: 'VI', label: 'Virgin Islands, U.S.' },
+  { value: 'VN', label: 'Viet Nam' },
+  { value: 'VU', label: 'Vanuatu' },
+  { value: 'WF', label: 'Wallis and Futuna' },
+  { value: 'WS', label: 'Samoa' },
+  { value: 'YE', label: 'Yemen' },
+  { value: 'YT', label: 'Mayotte' },
+  { value: 'ZA', label: 'South Africa' },
+  { value: 'ZM', label: 'Zambia' },
+  { value: 'ZW', label: 'Zimbabwe' }
 ];
 
 const units = ymcaUnits
@@ -22,7 +270,7 @@ const RequestForm: React.FC = () => {
     email: '',
     phoneNumber: '',
     citizen: 'Nigerian',
-    country: '',
+    country: 'NG',
     state: '',
     lga: '',
     unit: '',
@@ -200,10 +448,6 @@ const RequestForm: React.FC = () => {
       errors.state = 'State is required';
     }
     
-    if (!formData.lga) {
-      errors.lga = 'LGA is required';
-    }
-    
     if (!formData.unit) {
       errors.unit = 'Unit is required';
     }
@@ -225,7 +469,55 @@ const RequestForm: React.FC = () => {
     }
     
     setFieldErrors(errors);
+    
+    // Scroll to first error field if there are errors
+    if (Object.keys(errors).length > 0) {
+      scrollToFirstError(Object.keys(errors));
+    }
+    
     return Object.keys(errors).length === 0;
+  };
+
+  const scrollToFirstError = (errorFields: string[]) => {
+    // Define the order of fields as they appear in the form
+    const fieldOrder = [
+      'firstName', 'lastName', 'phoneNumber', 'country', 'state', 
+      'unit', 'club', 'validIdType', 'validIdFile', 'passportPhoto'
+    ];
+    
+    // Find the first field with an error based on form order
+    const firstErrorField = fieldOrder.find(field => errorFields.includes(field));
+    
+    if (firstErrorField) {
+      // Try to find the field element by name or id
+      let fieldElement = document.querySelector(`[name="${firstErrorField}"]`) as HTMLElement;
+      
+      // For file inputs, try to find by id
+      if (!fieldElement) {
+        fieldElement = document.getElementById(firstErrorField) as HTMLElement;
+      }
+      
+      // For react-select components, try to find the container
+      if (!fieldElement && (firstErrorField === 'country' || firstErrorField === 'state')) {
+        const selectContainer = document.querySelector(`[data-field="${firstErrorField}"]`) as HTMLElement;
+        if (selectContainer) {
+          fieldElement = selectContainer;
+        }
+      }
+      
+      if (fieldElement) {
+        // Scroll to the field with some offset for better visibility
+        fieldElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+        
+        // Focus the field if it's focusable
+        if (fieldElement.focus && typeof fieldElement.focus === 'function') {
+          setTimeout(() => fieldElement.focus(), 300);
+        }
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -359,7 +651,30 @@ const RequestForm: React.FC = () => {
         });
         
         setFieldErrors(fieldErrorMessages);
-        displayNotification('Please correct the errors in the form', 'error');
+        
+        // Create a more specific error message
+        const errorFieldNames = Object.keys(fieldErrorMessages).map(field => {
+          const fieldLabels: Record<string, string> = {
+            firstName: 'First Name',
+            lastName: 'Last Name',
+            phoneNumber: 'Phone Number',
+            country: 'Country',
+            state: 'State',
+            lga: 'LGA',
+            unit: 'Unit',
+            club: 'Club',
+            validIdType: 'Valid ID Type',
+            validIdFile: 'ID Document',
+            passportPhoto: 'Passport Photo'
+          };
+          return fieldLabels[field] || field;
+        });
+        
+        const errorMessage = errorFieldNames.length === 1 
+          ? `Please correct the error in: ${errorFieldNames[0]}`
+          : `Please correct the errors in: ${errorFieldNames.join(', ')}`;
+        
+        displayNotification(errorMessage, 'error');
       } else {
         displayNotification('Application submission failed. Please try again.', 'error');
       }
@@ -398,8 +713,36 @@ const RequestForm: React.FC = () => {
         <h2 className="text-2xl font-bold mb-6 text-center">Submit Application</h2>
         
         {Object.keys(fieldErrors).length > 0 && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            Please correct the errors in the form.
+          <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            <div className="flex items-center mb-2">
+              <svg className="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <h3 className="font-semibold text-red-800">Please correct the following errors:</h3>
+            </div>
+            <ul className="list-disc list-inside space-y-1 text-sm">
+              {Object.entries(fieldErrors).map(([field, error]) => {
+                const fieldLabels: Record<string, string> = {
+                  firstName: 'First Name',
+                  lastName: 'Last Name',
+                  phoneNumber: 'Phone Number',
+                  country: 'Country',
+                  state: 'State',
+                  lga: 'LGA',
+                  unit: 'Unit',
+                  club: 'Club',
+                  validIdType: 'Valid ID Type',
+                  validIdFile: 'ID Document',
+                  passportPhoto: 'Passport Photo'
+                };
+                const fieldLabel = fieldLabels[field] || field;
+                return (
+                  <li key={field} className="text-red-600">
+                    <span className="font-medium">{fieldLabel}:</span> {error}
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         )}
         
@@ -500,15 +843,32 @@ const RequestForm: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormSelect
-              label="Country"
-              name="country"
-              options={countries}
-              value={formData.country}
-              onChange={handleInputChange}
-              error={fieldErrors.country}
-              required
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Country <span className="text-red-500">*</span>
+              </label>
+              <CreatableSelect
+                options={countries}
+                value={
+                  formData.country 
+                    ? countries.find(option => option.value === formData.country) || { value: formData.country, label: formData.country }
+                    : null
+                }
+                onChange={(selectedOption) => setFormData({ ...formData, country: selectedOption ? selectedOption.value : '' })}
+                onCreateOption={(inputValue) => {
+                  setFormData({ ...formData, country: inputValue });
+                }}
+                placeholder="Select or type a country"
+                isSearchable
+                noOptionsMessage={() => "No country found"}
+                formatCreateLabel={(inputValue) => `Create "${inputValue}"`}
+                className={fieldErrors.country ? "border-red-500" : ""}
+                data-field="country"
+              />
+              {fieldErrors.country && (
+                <p className="mt-1 text-sm text-red-600">{fieldErrors.country}</p>
+              )}
+            </div>
 
             {formData.citizen === 'Nigerian' ? (
 
@@ -521,6 +881,7 @@ const RequestForm: React.FC = () => {
                 placeholder="Select State"
                 isSearchable
                 noOptionsMessage={() => "No state found"}
+                data-field="state"
               />
             </div>
             ) : (
@@ -545,7 +906,7 @@ const RequestForm: React.FC = () => {
                 value={formData.lga}
                 onChange={handleInputChange}
                 error={fieldErrors.lga}
-                required
+                // required
               />
             )}
           
