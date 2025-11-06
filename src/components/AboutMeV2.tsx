@@ -4,6 +4,13 @@ import SocialMediaBar from '../components/navigation/SocialMediaBar';
 import MainNavigation from '../components/navigation/MainNavigation';
 import ImpactSection from './ImpactSection';
 import vission2030 from '../assets/images/Vision-2030-logos-4-1.jpg'
+import queenObamina from '../assets/images/teams/Queen-Obamina.jpg'
+import stephenTogun from '../assets/images/teams/Mr-Stephen-Togun.jpg'
+import estherAgofure from '../assets/images/teams/Mrs-Agofure-Esther.jpg'
+import sarahAladeloba from '../assets/images/teams/Mrs-Aladeloba-Sarah.jpg'
+import bernardAkaachir from '../assets/images/teams/Mr-Akaachir-Bernard.jpg'
+import funkeHanson from '../assets/images/teams/Ms-Oluwafunke-Hanson.png'
+import ezeibeHope from '../assets/images/teams/Mr-Ezeibe-Akudike-Hope.jpg'
 
 
 
@@ -51,43 +58,43 @@ const AboutMeV2: React.FC = () => {
       id: 1,
       name: 'Queen Obamina',
       position: 'Senior Programmes Officer',
-      image: '/src/assets/images/teams/Queen-Obamina.jpg'
+      image: queenObamina
     },
     {
       id: 2,
       name: 'Mr. Stephen Togun',
       position: 'Admin/Human Resource Manager',
-      image: '/src/assets/images/teams/Mr-Stephen-Togun.JPG'
+      image: stephenTogun
     },
     {
       id: 3,
       name: 'Mrs. Esther Agofure',
       position: 'Account Officer',
-      image: '/src/assets/images/teams/Mrs-Agofure-Esther.JPG'
+      image: estherAgofure
     },
     {
       id: 4,
       name: 'Mrs Sarah Aladeloba',
       position: 'Protocol/Admin Officer',
-      image: '/src/assets/images/teams/Mrs-Aladeloba-Sarah.JPG'
+      image: sarahAladeloba
     },
     {
       id: 5,
       name: 'Mr. Bernard Akaachir',
       position: 'Programmes/Procurement Officer',
-      image: '/src/assets/images/teams/Mr-Akaachir-Bernard.JPG'
+      image: bernardAkaachir
     },
     {
       id: 6,
       name: 'Ms Funke Hanson',
       position: 'Programmes/Business Officer',
-      image: '/src/assets/images/teams/Ms-Oluwafunke-Hanson.png'
+      image: funkeHanson
     },
     {
       id: 7,
       name: 'Mr. Ezeibe A. Hope',
       position: 'Programmes Associate/ICT Officer',
-      image: '/src/assets/images/teams/Mr-Ezeibe-Akudike-Hope.jpg'
+      image: ezeibeHope
     }
   ];
   
