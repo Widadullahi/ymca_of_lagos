@@ -9,6 +9,10 @@ import stephenTogun from '../assets/images/teams/Mr-Stephen-Togun.jpg'
 import estherAgofure from '../assets/images/teams/Mrs-Agofure-Esther.jpg'
 import sarahAladeloba from '../assets/images/teams/Mrs-Aladeloba-Sarah.jpg'
 import bernardAkaachir from '../assets/images/teams/Mr-Akaachir-Bernard.jpg'
+import segun from '../assets/images/teams/segun.png'
+import oyeniran from '../assets/images/teams/oyeniran.jpeg'
+import dolapo from '../assets/images/teams/dolapo.jpeg'
+import kkk from '../assets/images/teams/kkk.png'
 import funkeHanson from '../assets/images/teams/Ms-Oluwafunke-Hanson.png'
 import ezeibeHope from '../assets/images/teams/Mr-Ezeibe-Akudike-Hope.jpg'
 
@@ -36,19 +40,19 @@ const AboutMeV2: React.FC = () => {
       id: 1,
       name: 'Engr. Raphael Oyeniran',
       position: 'Chairman',
-      image: '/api/placeholder/300/300'
+      image: kkk
     },
     {
       id: 2,
       name: 'Mr. Dolapo Ajuwon',
       position: 'Vice Chairman',
-      image: '/api/placeholder/300/300'
+      image: dolapo
     },
     {
       id: 3,
       name: 'Mr. Oluwasegun Adetitun',
       position: 'Treasurer',
-      image: '/api/placeholder/300/300'
+      image: segun
     }
   ];
 
