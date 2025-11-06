@@ -284,6 +284,8 @@ const AboutUsPage: React.FC = () => {
           </div>
         </div>
       </footer>
+
+
     </div>
   );
 };

@@ -43,7 +43,7 @@ export const nigerianStates = [
 
 export const ymcaUnits = [
   { value: "Y's men", label: "Y's men" },
-  { value: "Men's men", label: "Men's men" },
+  { value: "Central club", label: "Central club" },
   { 
     value: "Youth Council", 
     label: "Youth Council", 

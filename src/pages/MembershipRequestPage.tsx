@@ -289,6 +289,7 @@ const RequestForm: React.FC = () => {
     validIdType: '',
     validIdFile: null as File | null,
     passportPhoto: null as File | null,
+    signature: null as File | null,
     nextOfKin: '',
     referralSource: '',
     referralName: '',
@@ -299,12 +300,14 @@ const RequestForm: React.FC = () => {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [idPreview, setIdPreview] = useState<string | null>(null);
+  const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [dragActive, setDragActive] = useState({ passportPhoto: false, validIdFile: false });
+  const [dragActive, setDragActive] = useState({ passportPhoto: false, validIdFile: false, signature: false });
   const [availableClubs, setAvailableClubs] = useState<{value: string, label: string}[]>([]);
 
   const passportPhotoRef = useRef<HTMLInputElement>(null);
   const validIdFileRef = useRef<HTMLInputElement>(null);
+  const signatureRef = useRef<HTMLInputElement>(null);
 
   const { fetchWithAuth, displayNotification } = useAuth();
   
@@ -352,11 +355,9 @@ const RequestForm: React.FC = () => {
     }
   };
 
-  const handleFileChange = (file: File, field: 'passportPhoto' | 'validIdFile') => {
+  const handleFileChange = (file: File, field: 'passportPhoto' | 'validIdFile' | 'signature') => {
     if (file) {
-      const allowedTypes = field === 'passportPhoto' 
-        ? ['image/jpeg', 'image/jpg', 'image/png']
-        : ['image/jpeg', 'image/jpg', 'image/png'];
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
       
       if (!allowedTypes.includes(file.type)) {
         setFieldErrors(prev => ({
@@ -385,8 +386,10 @@ const RequestForm: React.FC = () => {
         reader.onload = (e) => {
           if (field === 'passportPhoto') {
             setPhotoPreview(e.target?.result as string);
-          } else {
+          } else if (field === 'validIdFile') {
             setIdPreview(e.target?.result as string);
+          } else if (field === 'signature') {
+            setSignaturePreview(e.target?.result as string);
           }
         };
         reader.readAsDataURL(file);
@@ -403,7 +406,7 @@ const RequestForm: React.FC = () => {
     }
   };
 
-  const handleDrag = (e: React.DragEvent, field: 'passportPhoto' | 'validIdFile') => {
+  const handleDrag = (e: React.DragEvent, field: 'passportPhoto' | 'validIdFile' | 'signature') => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === "dragenter" || e.type === "dragover") {
@@ -413,7 +416,7 @@ const RequestForm: React.FC = () => {
     }
   };
 
-  const handleDrop = (e: React.DragEvent, field: 'passportPhoto' | 'validIdFile') => {
+  const handleDrop = (e: React.DragEvent, field: 'passportPhoto' | 'validIdFile' | 'signature') => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(prev => ({ ...prev, [field]: false }));
@@ -482,7 +485,7 @@ const RequestForm: React.FC = () => {
     // Define the order of fields as they appear in the form
     const fieldOrder = [
       'firstName', 'lastName', 'phoneNumber', 'country', 'state', 
-      'unit', 'club', 'validIdType', 'validIdFile', 'passportPhoto'
+      'unit', 'club', 'validIdType', 'validIdFile', 'passportPhoto', 'signature'
     ];
     
     // Find the first field with an error based on form order
@@ -583,6 +586,23 @@ const RequestForm: React.FC = () => {
         isFormData: true,
       });
 
+      // If signature provided, upload it to account signature endpoint
+      if (formData.signature) {
+        const signatureData = new FormData();
+        signatureData.append('signature', formData.signature);
+        try {
+          await fetchWithAuth({
+            method: 'POST',
+            path: '/account/signature/',
+            body: signatureData,
+            isFormData: true,
+          });
+        } catch (err) {
+          // Notify but do not block overall success
+          displayNotification('Failed to upload signature. You can try again in Profile.', 'error');
+        }
+      }
+
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
@@ -610,6 +630,7 @@ const RequestForm: React.FC = () => {
           validIdType: '',
           validIdFile: null,
           passportPhoto: null,
+          signature: null,
           nextOfKin: '',
           referralSource: '',
           referralName: '',
@@ -618,6 +639,7 @@ const RequestForm: React.FC = () => {
         });
         setPhotoPreview(null);
         setIdPreview(null);
+        setSignaturePreview(null);
         
         const fileInputs = ['passportPhoto', 'validIdFile'].map(id => 
           document.getElementById(id) as HTMLInputElement
@@ -665,7 +687,8 @@ const RequestForm: React.FC = () => {
             club: 'Club',
             validIdType: 'Valid ID Type',
             validIdFile: 'ID Document',
-            passportPhoto: 'Passport Photo'
+            passportPhoto: 'Passport Photo',
+            signature: 'Signature'
           };
           return fieldLabels[field] || field;
         });
@@ -733,7 +756,8 @@ const RequestForm: React.FC = () => {
                   club: 'Club',
                   validIdType: 'Valid ID Type',
                   validIdFile: 'ID Document',
-                  passportPhoto: 'Passport Photo'
+                  passportPhoto: 'Passport Photo',
+                  signature: 'Signature'
                 };
                 const fieldLabel = fieldLabels[field] || field;
                 return (
@@ -809,8 +833,8 @@ const RequestForm: React.FC = () => {
             />
           
             <div className="mb-4">
-              <label className="block text-white text-sm font-bold mb-2">
-                Citizenship Status <span className="text-red-500">*</span>
+              <label className="block text-sm font-bold mb-2">
+                Citizenship Status 
               </label>
               <div className="flex space-x-4">
                 <label className="inline-flex items-center">
@@ -843,32 +867,35 @@ const RequestForm: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Country <span className="text-red-500">*</span>
-              </label>
-              <CreatableSelect
-                options={countries}
-                value={
-                  formData.country 
-                    ? countries.find(option => option.value === formData.country) || { value: formData.country, label: formData.country }
-                    : null
-                }
-                onChange={(selectedOption) => setFormData({ ...formData, country: selectedOption ? selectedOption.value : '' })}
-                onCreateOption={(inputValue) => {
-                  setFormData({ ...formData, country: inputValue });
-                }}
-                placeholder="Select or type a country"
-                isSearchable
-                noOptionsMessage={() => "No country found"}
-                formatCreateLabel={(inputValue) => `Create "${inputValue}"`}
-                className={fieldErrors.country ? "border-red-500" : ""}
-                data-field="country"
-              />
-              {fieldErrors.country && (
-                <p className="mt-1 text-sm text-red-600">{fieldErrors.country}</p>
-              )}
-            </div>
+            {formData.citizen === 'Foreigner' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Country <span className="text-red-500">*</span>
+                </label>
+                <CreatableSelect
+                  options={countries}
+                  value={
+                    formData.country 
+                      ? countries.find(option => option.value === formData.country) || { value: formData.country, label: formData.country }
+                      : null
+                  }
+                  onChange={(selectedOption) => setFormData({ ...formData, country: selectedOption ? selectedOption.value : '' })}
+                  onCreateOption={(inputValue) => {
+                    setFormData({ ...formData, country: inputValue });
+                  }}
+                  placeholder="Select or type a country"
+                  isSearchable
+                  noOptionsMessage={() => "No country found"}
+                  formatCreateLabel={(inputValue) => `Create "${inputValue}"`}
+                  className={fieldErrors.country ? "border-red-500" : ""}
+                  data-field="country"
+                />
+                {fieldErrors.country && (
+                  <p className="mt-1 text-sm text-red-600">{fieldErrors.country}</p>
+                )}
+              </div>
+            )}
+            
 
             {formData.citizen === 'Nigerian' ? (
 
@@ -1179,6 +1206,74 @@ const RequestForm: React.FC = () => {
                   src={photoPreview}
                   alt="Passport photo preview"
                   className="w-32 h-32 object-cover border-2 border-gray-300 rounded"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Signature Upload Section */}
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b pb-2">Signature Upload</h3>
+          <div className="mb-4">
+            <label
+              htmlFor="signature"
+              className="block text-gray-700 text-sm font-bold mb-2"
+            >
+              Signature (optional)
+            </label>
+            <div
+              className={`border-2 border-dashed rounded-lg p-6 text-center ${
+                dragActive.signature ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+              } ${fieldErrors.signature ? 'border-red-500' : ''}`}
+              onDragEnter={(e) => handleDrag(e, 'signature')}
+              onDragLeave={(e) => handleDrag(e, 'signature')}
+              onDragOver={(e) => handleDrag(e, 'signature')}
+              onDrop={(e) => handleDrop(e, 'signature')}
+            >
+              <input
+                type="file"
+                id="signature"
+                name="signature"
+                accept="image/jpeg,image/jpg,image/png"
+                onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0], 'signature')}
+                className="hidden"
+                ref={signatureRef}
+              />
+              <div className="flex flex-col items-center">
+                <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 0115.9 6M9 19h6m-3-3v6m3-6v6m-6-6v6" />
+                </svg>
+                <p className="text-gray-600 mb-2">
+                  {formData.signature ? formData.signature.name : 'Drag and drop your signature image here or'}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => signatureRef.current?.click()}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
+                >
+                  Choose Signature
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Upload a clear handwritten or e-signature image (JPEG, JPG, or PNG, max 2MB)
+              </p>
+              {fieldErrors.signature && (
+                <p className="text-red-500 text-sm mt-2">{fieldErrors.signature}</p>
+              )}
+            </div>
+          </div>
+
+          {signaturePreview && (
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Signature Preview:
+              </label>
+              <div className="flex justify-center">
+                <img
+                  src={signaturePreview}
+                  alt="Signature preview"
+                  className="w-48 h-32 object-contain border-2 border-gray-300 rounded"
                 />
               </div>
             </div>

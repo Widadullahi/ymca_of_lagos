@@ -91,7 +91,7 @@ export default function CoreValue() {
                     whileInView="visible"
                     viewport={{ once: true }}
                     variants={staggerContainer}
-                    className="grid grid-cols-1 md:grid-cols-3 gap-8"
+                    className="grid grid-cols-1 md:grid-cols-4 gap-8"
                 >
                     {coreValues.map((value, index) => (
                     <motion.div

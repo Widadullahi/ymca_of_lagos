@@ -23,22 +23,6 @@ const AboutMeV2: React.FC = () => {
   ];
 
 
-  // Leadership Team
-  const leadershipTeam = [
-    {
-      id: 1,
-      name: 'Engr. R.A. Oyeniran',
-      position: 'Chairman, YMCA Of Lagos',
-      image: '/src/assets/images/teams/Engr. R.A. Oyeniran.PNG'
-    },
-    {
-      id: 2,
-      name: 'Adetitun Oluwasegun Adetitun',
-      position: 'Treasurer',
-      image: '/src/assets/images/teams/Adetitun Oluwasegun Adetitun.PNG'
-    }
-  ];
-
   // Principal Officers
   const principalOfficers = [
     {
@@ -49,13 +33,13 @@ const AboutMeV2: React.FC = () => {
     },
     {
       id: 2,
-      name: 'Bro Dolapo Ajuwon',
+      name: 'Mr. Dolapo Ajuwon',
       position: 'Vice Chairman',
       image: '/api/placeholder/300/300'
     },
     {
       id: 3,
-      name: 'Mr. Segun Adetitun',
+      name: 'Mr. Oluwasegun Adetitun',
       position: 'Treasurer',
       image: '/api/placeholder/300/300'
     }
@@ -67,43 +51,43 @@ const AboutMeV2: React.FC = () => {
       id: 1,
       name: 'Queen Obamina',
       position: 'Senior Programmes Officer',
-      image: '/src/assets/images/teams/Queen Obamina.jpg'
+      image: '/src/assets/images/teams/Queen-Obamina.jpg'
     },
     {
       id: 2,
       name: 'Mr. Stephen Togun',
       position: 'Admin/Human Resource Manager',
-      image: '/src/assets/images/teams/Mr. Stephen Togun.JPG'
+      image: '/src/assets/images/teams/Mr-Stephen-Togun.JPG'
     },
     {
       id: 3,
       name: 'Mrs. Esther Agofure',
       position: 'Account Officer',
-      image: '/src/assets/images/teams/Mrs Agofure Esther.JPG'
+      image: '/src/assets/images/teams/Mrs-Agofure-Esther.JPG'
     },
     {
       id: 4,
       name: 'Mrs Sarah Aladeloba',
       position: 'Protocol/Admin Officer',
-      image: '/src/assets/images/teams/Mrs. Aladeloba Sarah.JPG'
+      image: '/src/assets/images/teams/Mrs-Aladeloba-Sarah.JPG'
     },
     {
       id: 5,
       name: 'Mr. Bernard Akaachir',
       position: 'Programmes/Procurement Officer',
-      image: '/src/assets/images/teams/Mr. Akaachir Bernard.JPG'
+      image: '/src/assets/images/teams/Mr-Akaachir-Bernard.JPG'
     },
     {
       id: 6,
       name: 'Ms Funke Hanson',
       position: 'Programmes/Business Officer',
-      image: '/src/assets/images/teams/Ms Oluwafunke Hanson.png'
+      image: '/src/assets/images/teams/Ms-Oluwafunke-Hanson.png'
     },
     {
       id: 7,
       name: 'Mr. Ezeibe A. Hope',
       position: 'Programmes Associate/ICT Officer',
-      image: '/src/assets/images/teams/Mr. Ezeibe Akudike Hope.jpg'
+      image: '/src/assets/images/teams/Mr-Ezeibe-Akudike-Hope.jpg'
     }
   ];
   
@@ -169,7 +153,7 @@ const AboutMeV2: React.FC = () => {
         <div className="container mx-auto px-4">
           <h2 className="text-4xl font-bold mb-6">About Us</h2>
           <p className="text-gray-600 max-w-3xl mx-auto mb-6">
-            The Africa Alliance of YMCAs (AAYMCAs) stands as the continent's largest Pan-African youth membership movement, 
+            The  YMCAs (Lagos) stands as the continent's largest Pan-African youth membership movement, 
             uniting 17 national YMCA movements across Africa with several more in development.
           </p>
 
@@ -196,7 +180,7 @@ const AboutMeV2: React.FC = () => {
         title="Our Impact"
         paragraphs={[
           {
-            content: "The Africa Alliance of YMCAs (AAYMCAs) is the umbrella organization of all YMCAs in Africa, bringing together 17 YMCA National Movements across the continent with several more in formation. As the largest Pan-African youth membership Movement in Africa, our reach and impact continue to grow each year.",
+            content: "The  YMCAs (Lagos) is the umbrella organization of all YMCAs in Africa, bringing together 17 YMCA National Movements across the continent with several more in formation. As the largest Pan-African youth membership Movement in Africa, our reach and impact continue to grow each year.",
             highlightedText: [
               { text: "largest Pan-African youth membership Movement", className: "text-blue-500" }
             ]
@@ -369,27 +353,6 @@ const AboutMeV2: React.FC = () => {
             Meet the dedicated leaders and professionals who drive our mission forward at YMCA of Lagos.
           </p>
           
-          {/* Leadership Team */}
-          <div className="mb-16">
-            <h3 className="text-3xl font-bold text-center mb-8 text-blue-800">Leadership</h3>
-            <div className="flex justify-center gap-8 flex-wrap">
-              {leadershipTeam.map(member => (
-                <div key={member.id} className="text-center w-80 mb-8">
-                  <div className="mb-6 relative">
-                    <div className="w-56 h-56 mx-auto rounded-full overflow-hidden bg-gray-200 border-4 border-blue-200 shadow-xl">
-                      <img 
-                        src={member.image} 
-                        alt={member.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-xl mb-2">{member.name}</h4>
-                  <p className="text-blue-600 font-semibold">{member.position}</p>
-                </div>
-              ))}
-            </div>
-          </div>
 
           {/* Principal Officers */}
           <div className="mb-16">
