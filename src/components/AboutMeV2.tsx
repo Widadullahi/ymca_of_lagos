@@ -5,7 +5,7 @@ import MainNavigation from '../components/navigation/MainNavigation';
 import ImpactSection from './ImpactSection';
 import vission2030 from '../assets/images/Vision-2030-logos-4-1.jpg'
 import queenObamina from '../assets/images/teams/Queen-Obamina.jpg'
-import stephenTogun from '../assets/images/teams/Mr-Stephen-Togun.jpg'
+import stephenTogun from '../assets/images/teams/Mr-Stephen-Togun.jpg' 
 import estherAgofure from '../assets/images/teams/Mrs-Agofure-Esther.jpg'
 import sarahAladeloba from '../assets/images/teams/Mrs-Aladeloba-Sarah.jpg'
 import bernardAkaachir from '../assets/images/teams/Mr-Akaachir-Bernard.jpg'
