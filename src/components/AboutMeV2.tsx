@@ -37,6 +37,30 @@ const AboutMeV2: React.FC = () => {
   const [loadingStaff, setLoadingStaff] = useState<boolean>(false);
   const [staffError, setStaffError] = useState<string | null>(null);
 
+  // Color palettes: ensure Tailwind sees these class strings
+  const principalColorClasses = [
+    { border: 'border-green-200', text: 'text-green-600' },
+    { border: 'border-blue-200', text: 'text-blue-600' },
+    { border: 'border-teal-200', text: 'text-teal-600' },
+    { border: 'border-indigo-200', text: 'text-indigo-600' },
+    { border: 'border-emerald-200', text: 'text-emerald-600' },
+    { border: 'border-cyan-200', text: 'text-cyan-600' },
+    { border: 'border-sky-200', text: 'text-sky-600' },
+    { border: 'border-lime-200', text: 'text-lime-600' },
+    { border: 'border-amber-200', text: 'text-amber-600' },
+    { border: 'border-orange-200', text: 'text-orange-600' },
+  ];
+
+  const managementColorClasses = [
+    { border: 'border-purple-200', text: 'text-purple-600' },
+    { border: 'border-pink-200', text: 'text-pink-600' },
+    { border: 'border-violet-200', text: 'text-violet-600' },
+    { border: 'border-fuchsia-200', text: 'text-fuchsia-600' },
+    { border: 'border-rose-200', text: 'text-rose-600' },
+    { border: 'border-orange-200', text: 'text-orange-600' },
+    { border: 'border-amber-200', text: 'text-amber-600' },
+  ];
+
   const fetchStaff = async () => {
     try {
       setLoadingStaff(true);
@@ -328,10 +352,12 @@ const AboutMeV2: React.FC = () => {
           <div className="mb-16">
             <h3 className="text-3xl font-bold text-center mb-8 text-green-800">Principal Officers</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              {principalOfficers.map(member => (
+              {principalOfficers.map((member, idx) => {
+                const color = principalColorClasses[idx % principalColorClasses.length];
+                return (
                 <div key={member.id} className="text-center bg-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
                   <div className="mb-4 relative">
-                    <div className="w-40 h-40 mx-auto rounded-full overflow-hidden bg-gray-200 border-4 border-green-200 shadow-lg">
+                    <div className={`w-40 h-40 mx-auto rounded-full overflow-hidden bg-gray-200 border-4 ${color.border} shadow-lg`}>
                       <img 
                         src={member?.image || ''} 
                         alt={member.name}
@@ -340,9 +366,9 @@ const AboutMeV2: React.FC = () => {
                     </div>
                   </div>
                   <h4 className="font-bold text-lg mb-2">{member.name}</h4>
-                  <p className="text-green-600 font-medium">{member.position}</p>
+                  <p className={`${color.text} font-medium`}>{member.position}</p>
                 </div>
-              ))}
+              )})}
             </div>
           </div>
 
@@ -350,10 +376,12 @@ const AboutMeV2: React.FC = () => {
           <div className="mb-12">
             <h3 className="text-3xl font-bold text-center mb-8 text-purple-800">Management Staff</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
-              {managementStaff.map(member => (
+              {managementStaff.map((member, idx) => {
+                const color = managementColorClasses[idx % managementColorClasses.length];
+                return (
                 <div key={member.id} className="text-center bg-white rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow duration-300">
                   <div className="mb-3 relative">
-                    <div className="w-32 h-32 mx-auto rounded-full overflow-hidden bg-gray-200 border-3 border-purple-200 shadow-md">
+                    <div className={`w-32 h-32 mx-auto rounded-full overflow-hidden bg-gray-200 border-3 ${color.border} shadow-md`}>
                       <img 
                         src={member?.image || ''} 
                         alt={member.name}
@@ -362,9 +390,9 @@ const AboutMeV2: React.FC = () => {
                     </div>
                   </div>
                   <h4 className="font-bold text-base mb-1">{member.name}</h4>
-                  <p className="text-purple-600 text-sm font-medium">{member.position}</p>
+                  <p className={`${color.text} text-sm font-medium`}>{member.position}</p>
                 </div>
-              ))}
+              )})}
             </div>
           </div>
           
