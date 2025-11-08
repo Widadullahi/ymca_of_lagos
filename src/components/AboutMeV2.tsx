@@ -4,16 +4,7 @@ import SocialMediaBar from '../components/navigation/SocialMediaBar';
 import MainNavigation from '../components/navigation/MainNavigation';
 import ImpactSection from './ImpactSection';
 import vission2030 from '../assets/images/Vision-2030-logos-4-1.jpg'
-import queenObamina from '../assets/images/teams/Queen-Obamina.jpg'
-import stephenTogun from '../assets/images/teams/Mr-Stephen-Togun.jpg' 
-import estherAgofure from '../assets/images/teams/Mrs-Agofure-Esther.jpg'
-import sarahAladeloba from '../assets/images/teams/Mrs-Aladeloba-Sarah.jpg'
-import bernardAkaachir from '../assets/images/teams/Mr-Akaachir-Bernard.jpg'
-import segun from '../assets/images/teams/segun.png'
-import dolapo from '../assets/images/teams/dolapo.jpeg'
-import kkk from '../assets/images/teams/kkk.png'
-import funkeHanson from '../assets/images/teams/Ms-Oluwafunke-Hanson.png'
-import ezeibeHope from '../assets/images/teams/Mr-Ezeibe-Akudike-Hope.jpg'
+import { useAuth } from '../context/NewAuthContext'
 
 
 
@@ -32,74 +23,39 @@ const AboutMeV2: React.FC = () => {
     { icon: '📊', value: 5000, label: 'Annual Beneficiaries', suffix: ' +' },
   ];
 
+  type StaffMember = {
+    id: string;
+    name: string;
+    position: string;
+    image: string | null;
+  };
 
-  // Principal Officers
-  const principalOfficers = [
-    {
-      id: 1,
-      name: 'Engr. Raphael Oyeniran',
-      position: 'Chairman',
-      image: kkk
-    },
-    {
-      id: 2,
-      name: 'Mr. Dolapo Ajuwon',
-      position: 'Vice Chairman',
-      image: dolapo
-    },
-    {
-      id: 3,
-      name: 'Mr. Oluwasegun Adetitun',
-      position: 'Treasurer',
-      image: segun
-    }
-  ];
+  const { fetchWithAuth } = useAuth();
 
-  // Management Staff
-  const managementStaff = [
-    {
-      id: 1,
-      name: 'Queen Obamina',
-      position: 'Senior Programmes Officer',
-      image: queenObamina
-    },
-    {
-      id: 2,
-      name: 'Mr. Stephen Togun',
-      position: 'Admin/Human Resource Manager',
-      image: stephenTogun
-    },
-    {
-      id: 3,
-      name: 'Mrs. Esther Agofure',
-      position: 'Account Officer',
-      image: estherAgofure
-    },
-    {
-      id: 4,
-      name: 'Mrs Sarah Aladeloba',
-      position: 'Protocol/Admin Officer',
-      image: sarahAladeloba
-    },
-    {
-      id: 5,
-      name: 'Mr. Bernard Akaachir',
-      position: 'Programmes/Procurement Officer',
-      image: bernardAkaachir
-    },
-    {
-      id: 6,
-      name: 'Ms Funke Hanson',
-      position: 'Programmes/Business Officer',
-      image: funkeHanson
-    },
-    {
-      id: 7,
-      name: 'Mr. Ezeibe A. Hope',
-      position: 'Programmes Associate/ICT Officer',
-      image: ezeibeHope
+  const [principalOfficers, setPrincipalOfficers] = useState<StaffMember[]>([]);
+  const [managementStaff, setManagementStaff] = useState<StaffMember[]>([]);
+  const [loadingStaff, setLoadingStaff] = useState<boolean>(false);
+  const [staffError, setStaffError] = useState<string | null>(null);
+
+  const fetchStaff = async () => {
+    try {
+      setLoadingStaff(true);
+      setStaffError(null);
+
+      const [principalRes, managementRes] = await Promise.all([
+        fetchWithAuth({ method: 'GET', path: '/staff/principal-officers/', isAthenticated: false }),
+        fetchWithAuth({ method: 'GET', path: '/staff/management-staff/', isAthenticated: false }),
+      ]);
+
+      setPrincipalOfficers(principalRes?.data || []);
+      setManagementStaff(managementRes?.data || []);
+    } catch (err) {
+      console.error('Error fetching staff:', err);
+      setStaffError('Failed to load staff');
+    } finally {
+      setLoadingStaff(false);
     }
-  ];
+  };
   
   // Counter animation effect
   useEffect(() => {
@@ -146,6 +102,10 @@ const AboutMeV2: React.FC = () => {
         observer.unobserve(statsRef.current);
       }
     };
+  }, []);
+
+  useEffect(() => {
+    fetchStaff();
   }, []);
 
   const [counters, setCounters] = useState(stats2.map(() => 0));
@@ -373,7 +333,7 @@ const AboutMeV2: React.FC = () => {
                   <div className="mb-4 relative">
                     <div className="w-40 h-40 mx-auto rounded-full overflow-hidden bg-gray-200 border-4 border-green-200 shadow-lg">
                       <img 
-                        src={member.image} 
+                        src={member?.image || ''} 
                         alt={member.name}
                         className="w-full h-full object-cover"
                       />
@@ -395,7 +355,7 @@ const AboutMeV2: React.FC = () => {
                   <div className="mb-3 relative">
                     <div className="w-32 h-32 mx-auto rounded-full overflow-hidden bg-gray-200 border-3 border-purple-200 shadow-md">
                       <img 
-                        src={member.image} 
+                        src={member?.image || ''} 
                         alt={member.name}
                         className="w-full h-full object-cover"
                       />
