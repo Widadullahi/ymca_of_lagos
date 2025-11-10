@@ -34,8 +34,8 @@ const AboutMeV2: React.FC = () => {
 
   const [principalOfficers, setPrincipalOfficers] = useState<StaffMember[]>([]);
   const [managementStaff, setManagementStaff] = useState<StaffMember[]>([]);
-  const [loadingStaff, setLoadingStaff] = useState<boolean>(false);
-  const [staffError, setStaffError] = useState<string | null>(null);
+  const [, setLoadingStaff] = useState<boolean>(false);
+  const [, setStaffError] = useState<string | null>(null);
 
   // Color palettes: ensure Tailwind sees these class strings
   const principalColorClasses = [
