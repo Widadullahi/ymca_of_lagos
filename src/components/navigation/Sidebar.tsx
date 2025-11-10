@@ -139,6 +139,13 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                   { to: "/admin/membership-request", label: "Membership Requests" },
                 ]}
               />
+              <SideNavbarItem 
+                icon={<MdOutlinePeopleAlt />} 
+                label="Staff" 
+                subItems={[
+                  { to: "/admin/staff", label: "Staff List" },
+                ]}
+              />
               {/* Logout button */}
               <li>
                 <button 

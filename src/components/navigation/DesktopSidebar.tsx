@@ -55,6 +55,7 @@ const DesktopSidebar = () => {
             <NavItem to="/admin/dashboard" icon={<GoHome />} label="Home" />
             <NavItem to="/admin/users" icon={<MdOutlinePeopleAlt />} label="Members" />
             <NavItem to="/admin/membership-request" icon={<MdOutlinePeopleAlt />} label="Membership Requests" />
+            <NavItem to="/admin/staff" icon={<MdOutlinePeopleAlt />} label="Staff List" />
             <NavItem to="/admin/updates" icon={<MdOutlineNewspaper />} label="Updates" />
             </>
           )}

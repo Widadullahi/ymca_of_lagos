@@ -25,6 +25,7 @@ import MemberRequestDetailPage from './pages/admin/MemberRequestDetailPage';
 import QRVerificationPage from './pages/QRVerificationPage';
 import AboutUsPage from './pages/AboutUsPage';
 import AboutMeV2 from './components/AboutMeV2';
+import StaffAdminPage from './pages/admin/StaffAdminPage';
 // import { AuthState } from './types';
 
 const App: React.FC = () => {
@@ -52,6 +53,7 @@ const App: React.FC = () => {
         <Route path="/payment" element={<PrivateRoute element={<TransactionValidation />} />} />
         <Route path="/updates" element={<PrivateRoute element={<UpdatesPage />} />} />
         <Route path="/admin/dashboard" element={<RoleBasedRoute element={<MemberDashboard />} requiredRole="Admin" />} />
+        <Route path="/admin/staff" element={<RoleBasedRoute element={<StaffAdminPage />} requiredRole="Admin" />} />
         <Route path="/admin/users" element={<RoleBasedRoute element={<UserListingPage />}  requiredRole="Admin"/>} />
         <Route path="/admin/users/:userId" element={<RoleBasedRoute element={<UserDetailPage />}  requiredRole="Admin"/>} />
         <Route path="/admin/membership-request" element={<RoleBasedRoute element={<MemberRequestListing />}  requiredRole="Admin"/>} />

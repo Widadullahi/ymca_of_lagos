@@ -65,14 +65,29 @@ const AboutMeV2: React.FC = () => {
     try {
       setLoadingStaff(true);
       setStaffError(null);
+      let principal: any[] = [];
+      let management: any[] = [];
 
-      const [principalRes, managementRes] = await Promise.all([
-        fetchWithAuth({ method: 'GET', path: '/staff/principal-officers/', isAthenticated: false }),
-        fetchWithAuth({ method: 'GET', path: '/staff/management-staff/', isAthenticated: false }),
-      ]);
+      // Try dedicated endpoints first
+      try {
+        const principalRes = await fetchWithAuth({ method: 'GET', path: '/staff/principal-officers/', isAthenticated: false });
+        principal = principalRes?.data || [];
+      } catch (e) {
+        // Fallback to viewset with category filter
+        const principalRes = await fetchWithAuth({ method: 'GET', path: '/staff/', queryParams: { category: 'principal_officer' }, isAthenticated: false });
+        principal = principalRes?.data || principalRes?.results || principalRes || [];
+      }
 
-      setPrincipalOfficers(principalRes?.data || []);
-      setManagementStaff(managementRes?.data || []);
+      try {
+        const managementRes = await fetchWithAuth({ method: 'GET', path: '/staff/management-staff/', isAthenticated: false });
+        management = managementRes?.data || [];
+      } catch (e) {
+        const managementRes = await fetchWithAuth({ method: 'GET', path: '/staff/', queryParams: { category: 'management_staff' }, isAthenticated: false });
+        management = managementRes?.data || managementRes?.results || managementRes || [];
+      }
+
+      setPrincipalOfficers(principal);
+      setManagementStaff(management);
     } catch (err) {
       console.error('Error fetching staff:', err);
       setStaffError('Failed to load staff');
@@ -349,52 +364,56 @@ const AboutMeV2: React.FC = () => {
           
 
           {/* Principal Officers */}
-          <div className="mb-16">
-            <h3 className="text-3xl font-bold text-center mb-8 text-green-800">Principal Officers</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              {principalOfficers.map((member, idx) => {
-                const color = principalColorClasses[idx % principalColorClasses.length];
-                return (
-                <div key={member.id} className="text-center bg-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                  <div className="mb-4 relative">
-                    <div className={`w-40 h-40 mx-auto rounded-full overflow-hidden bg-gray-200 border-4 ${color.border} shadow-lg`}>
-                      <img 
-                        src={member?.image || ''} 
-                        alt={member.name}
-                        className="w-full h-full object-cover"
-                      />
+          {principalOfficers.length > 0 && (
+            <div className="mb-16">
+              <h3 className="text-3xl font-bold text-center mb-8 text-green-800">Principal Officers</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                {principalOfficers.map((member, idx) => {
+                  const color = principalColorClasses[idx % principalColorClasses.length];
+                  return (
+                  <div key={member.id} className="text-center bg-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                    <div className="mb-4 relative">
+                      <div className={`w-40 h-40 mx-auto rounded-full overflow-hidden bg-gray-200 border-4 ${color.border} shadow-lg`}>
+                        <img 
+                          src={member?.image || ''} 
+                          alt={member.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                     </div>
+                    <h4 className="font-bold text-lg mb-2">{member.name}</h4>
+                    <p className={`${color.text} font-medium`}>{member.position}</p>
                   </div>
-                  <h4 className="font-bold text-lg mb-2">{member.name}</h4>
-                  <p className={`${color.text} font-medium`}>{member.position}</p>
-                </div>
-              )})}
+                )})}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Management Staff */}
-          <div className="mb-12">
-            <h3 className="text-3xl font-bold text-center mb-8 text-purple-800">Management Staff</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
-              {managementStaff.map((member, idx) => {
-                const color = managementColorClasses[idx % managementColorClasses.length];
-                return (
-                <div key={member.id} className="text-center bg-white rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow duration-300">
-                  <div className="mb-3 relative">
-                    <div className={`w-32 h-32 mx-auto rounded-full overflow-hidden bg-gray-200 border-3 ${color.border} shadow-md`}>
-                      <img 
-                        src={member?.image || ''} 
-                        alt={member.name}
-                        className="w-full h-full object-cover"
-                      />
+          {managementStaff.length > 0 && (
+            <div className="mb-12">
+              <h3 className="text-3xl font-bold text-center mb-8 text-purple-800">Management Staff</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
+                {managementStaff.map((member, idx) => {
+                  const color = managementColorClasses[idx % managementColorClasses.length];
+                  return (
+                  <div key={member.id} className="text-center bg-white rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow duration-300">
+                    <div className="mb-3 relative">
+                      <div className={`w-32 h-32 mx-auto rounded-full overflow-hidden bg-gray-200 border-3 ${color.border} shadow-md`}>
+                        <img 
+                          src={member?.image || ''} 
+                          alt={member.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                     </div>
+                    <h4 className="font-bold text-base mb-1">{member.name}</h4>
+                    <p className={`${color.text} text-sm font-medium`}>{member.position}</p>
                   </div>
-                  <h4 className="font-bold text-base mb-1">{member.name}</h4>
-                  <p className={`${color.text} text-sm font-medium`}>{member.position}</p>
-                </div>
-              )})}
+                )})}
+              </div>
             </div>
-          </div>
+          )}
           
           {/* Social Media Icons */}
           <div className="flex justify-center gap-6 mt-12">
