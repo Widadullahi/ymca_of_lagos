@@ -173,7 +173,7 @@ const HomePage: React.FC = () => {
       
       {/* Hero Section S2 */}
       <HeroSectionS2 
-        title="Welcome to Worldwide YMCA Movement"
+        title="Welcome to YMCA of Lagos"
         subtitle="Africa's largest Pan-African youth membership movement, empowering young people for the African Renaissance through holistic development and community transformation."
         primaryButtonText="Membership Application"
         secondaryButtonText="Make Donation"
