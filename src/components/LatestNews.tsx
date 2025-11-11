@@ -242,7 +242,7 @@ export default function LatestNews() {
                 ))}
                 
                 {/* Read More News Button */}
-                <div className="bg-red-700 rounded-lg shadow-md overflow-hidden">
+                {/* <div className="bg-red-700 rounded-lg shadow-md overflow-hidden">
                   <div className="p-6 text-center">
                     <motion.button
                       variants={buttonVariants}
@@ -256,7 +256,7 @@ export default function LatestNews() {
                       </svg>
                     </motion.button>
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
           )}

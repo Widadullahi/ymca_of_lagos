@@ -162,10 +162,17 @@ const AboutMeV2: React.FC = () => {
         <div className="container mx-auto px-4">
           <h2 className="text-4xl font-bold mb-6">About Us</h2>
           <p className="text-gray-600 max-w-3xl mx-auto mb-6">
-            The  YMCAs (Lagos) stands as the continent's largest Pan-African youth membership movement, 
-            uniting 17 national YMCA movements across Africa with several more in development.
+            The YMCA of Lagos stands as a beacon of hope and transformation within the broader African YMCA movement. As part of the continent’s largest Pan-African youth membership organization, we are committed to nurturing the potential of young people, fostering leadership, and building stronger communities across Nigeria and beyond.
           </p>
-
+          <p className="text-gray-600 max-w-3xl mx-auto mb-6">
+            Rooted in over a century of global YMCA tradition, we embody values of youth empowerment, community service, inclusivity, and social responsibility. Our programs are designed to meet the diverse needs of today’s youth — providing a platform where young people can learn, grow, and become agents of positive change in their communities.
+          </p>
+          <p className="text-gray-600 max-w-3xl mx-auto mb-6">
+            We work through a variety of initiatives that promote education, health, civic engagement, entrepreneurship, and spiritual growth. By focusing on holistic development — mind, body, and spirit — the YMCA of Lagos continues to shape individuals who contribute meaningfully to society and uphold strong ethical and moral standards.
+          </p>
+          <p className="text-gray-600 max-w-3xl mx-auto mb-6">
+            As part of the African Alliance of YMCAs (AAYMCA), our movement connects with 17 national YMCA bodies across the continent, with more emerging every year. Together, we share a bold vision: “Empowering young people for the African Renaissance.”
+          </p>
         </div>
       </section>
 
@@ -189,21 +196,27 @@ const AboutMeV2: React.FC = () => {
         title="Our Impact"
         paragraphs={[
           {
-            content: "The  YMCAs (Lagos) is the umbrella organization of all YMCAs in Africa, bringing together 17 YMCA National Movements across the continent with several more in formation. As the largest Pan-African youth membership Movement in Africa, our reach and impact continue to grow each year.",
+            content: "At YMCA of Lagos, impact is at the heart of everything we do. Our mission extends beyond community programs — it’s about transforming lives and creating lasting change.",
             highlightedText: [
-              { text: "largest Pan-African youth membership Movement", className: "text-blue-500" }
+              { text: "YMCA of Lagos", className: "font-semibold" }
             ]
           },
           {
-            content: 'Our vision is clear and powerful: "to empower young people for the African Renaissance." Guided by Christian values, we develop youth who can transform their communities, nations, and ultimately, the entire continent through holistic approaches that address the complete person.',
+            content: 'Through leadership training, skill development workshops, youth advocacy, and outreach initiatives, we equip young people with the confidence and tools to lead in their communities and beyond.',
             highlightedText: [
-              { text: '"to empower young people for the African Renaissance."', className: "font-semibold" }
+              { text: 'leadership training, skill development workshops, youth advocacy, and outreach initiatives', className: "font-semibold" }
             ]
           },
           {
-            content: 'The AAYMCA Secretariat consists of an experienced, multi-disciplinary team providing institutional and technical support to National Movements. We focus on programme innovation and capacity development for good governance, ensuring that our impact is both sustainable and transformative. Through our "Subject to Citizen" philosophy, we\'re creating a generation of active participants who drive positive change throughout Africa.',
+            content: 'The YMCA of Lagos Secretariat is powered by a passionate, multi-disciplinary team dedicated to sustaining excellence in program design, implementation, and governance. With a strong commitment to accountability and innovation, we continuously expand our reach and deepen our impact across Lagos and Nigeria.',
             highlightedText: [
-              { text: "programme innovation", className: "text-blue-500 font-semibold" }
+              { text: "YMCA of Lagos Secretariat", className: " font-semibold" }
+            ]
+          },
+          {
+            content: 'Through our guiding philosophy, “Subject to Citizen,” we inspire young people to move from passive observers to active citizens — individuals who take ownership of their communities, champion social justice, and drive meaningful transformation.',
+            highlightedText: [
+              { text: "Subject to Citizen,", className: " font-semibold" }
             ]
           }
         ]}
