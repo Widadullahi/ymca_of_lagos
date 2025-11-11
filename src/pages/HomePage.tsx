@@ -174,7 +174,7 @@ const HomePage: React.FC = () => {
       {/* Hero Section S2 */}
       <HeroSectionS2 
         title="Welcome to YMCA of Lagos"
-        subtitle="Africa's largest Pan-African youth membership movement, empowering young people for the African Renaissance through holistic development and community transformation."
+        subtitle="We are part of the worldwide YMCA movement and Africa’s largest Pan-African youth membership network, committed to empowering young people for the African Renaissance. Through holistic development, leadership training, and community transformation, we nurture the potential of every individual to create lasting impact across Lagos, Nigeria, and beyond."
         primaryButtonText="Membership Application"
         secondaryButtonText="Make Donation"
         primaryButtonLink="/membership-request"
