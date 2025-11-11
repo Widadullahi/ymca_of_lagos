@@ -1,11 +1,11 @@
-import { motion, Variants } from 'framer-motion';
+import {  Variants } from 'framer-motion';
 import logo from "../assets/images/post-international-youth-day.png"
 
 type WhoAreWeProps = {
-  buttonVariants: Variants;
+  buttonVariants?: Variants;
 };
 
-export default function WhoAreWe({ buttonVariants }: WhoAreWeProps) {
+export default function WhoAreWe({  }: WhoAreWeProps) {
   return (
     <section className="py-16 bg-white">
       <div className="container mx-auto px-4">
