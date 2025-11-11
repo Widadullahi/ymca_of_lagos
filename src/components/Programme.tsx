@@ -35,7 +35,7 @@ export default function Programme() {
       const programmes = [
         {
           title: "Sports Committee",
-          description: "Promotes health, fitness, and teamwork through organized sports activities, particularly basketball.",
+          description: "Promotes health, fitness, and teamwork through organized sports activities, basketball, Volleyball and tennis",
           icon: "🏀"
         },
         {
@@ -65,7 +65,7 @@ export default function Programme() {
         },
         {
           title: "Camp Committee",
-          description: "Organizes leadership and development camps aimed at enhancing youth capabilities.",
+          description: "Organizes leadership and development camps aimed at enhancing youth capabilities.Parking Lot, Multipurposehall,Confrence Room, Office Space, And Apartment space at Tarkwa Bay",
           icon: "🏕️"
         }
       ];
