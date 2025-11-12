@@ -47,6 +47,7 @@ const UserDetailPage: React.FC = () => {
 
         setMember(response);
         setFormData(response);
+        console.log(response)
       } catch (error) {
         console.error('Error fetching member details:', error);
         displayNotification('error', 'Failed to load member details');
@@ -348,17 +349,31 @@ const UserDetailPage: React.FC = () => {
                 </div>
                 
                 <div>
-                  <p className="text-xs text-gray-500">Phone Number</p>
+                  <p className="text-xs text-gray-500">First Name </p>
                   {isEditing ? (
                     <input
                       type="text"
-                      name="phone_number"
-                      value={formData.phone_number || ''}
+                      name="first_name"
+                      value={formData.first_name || ''}
                       onChange={handleInputChange}
                       className="w-full p-1 text-sm border rounded"
                     />
                   ) : (
-                    <p className="text-sm">{member.phone_number}</p>
+                    <p className="text-sm">{member.first_name}</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Last Name </p>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="last_name"
+                      value={formData.last_name || ''}
+                      onChange={handleInputChange}
+                      className="w-full p-1 text-sm border rounded"
+                    />
+                  ) : (
+                    <p className="text-sm">{member.user_request?.phone_number}</p>
                   )}
                 </div>
                 
@@ -376,16 +391,16 @@ const UserDetailPage: React.FC = () => {
                       <option value="Other">Other</option>
                     </select>
                   ) : (
-                    <p className="text-sm">{member.gender}</p>
+                    <p className="text-sm">{member.user_request?.gender}</p>
                   )}
                 </div>
                 
-                <div>
+                {/* <div>
                   <p className="text-xs text-gray-500">Category</p>
                   <p className="text-sm">{member?.category?.name || 'N/A'}</p>
-                </div>
+                </div> */}
                 
-                <div>
+                {/* <div>
                   <p className="text-xs text-gray-500">Date of Birth</p>
                   {isEditing ? (
                     <input
@@ -398,7 +413,7 @@ const UserDetailPage: React.FC = () => {
                   ) : (
                     <p className="text-sm">{member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString() : 'N/A'}</p>
                   )}
-                </div>
+                </div> */}
                 
                 <div>
                   <p className="text-xs text-gray-500">Join Date</p>
@@ -409,7 +424,7 @@ const UserDetailPage: React.FC = () => {
               <h3 className="text-base font-medium border-b pb-2 mt-6 mb-4">Location Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <p className="text-xs text-gray-500">Country</p>
+                  <p className="text-xs text-gray-500">Citizen</p>
                   {isEditing ? (
                     <input
                       type="text"
@@ -419,7 +434,7 @@ const UserDetailPage: React.FC = () => {
                       className="w-full p-1 text-sm border rounded"
                     />
                   ) : (
-                    <p className="text-sm">{member.country || 'N/A'}</p>
+                    <p className="text-sm">{member.user_request?.citizen || 'N/A'}</p>
                   )}
                 </div>
                 
@@ -434,7 +449,7 @@ const UserDetailPage: React.FC = () => {
                       className="w-full p-1 text-sm border rounded"
                     />
                   ) : (
-                    <p className="text-sm">{member.state || 'N/A'}</p>
+                    <p className="text-sm">{member.user_request?.state || 'N/A'}</p>
                   )}
                 </div>
                 
@@ -449,7 +464,7 @@ const UserDetailPage: React.FC = () => {
                       className="w-full p-1 text-sm border rounded"
                     />
                   ) : (
-                    <p className="text-sm">{member.lga || 'N/A'}</p>
+                    <p className="text-sm">{member.user_request?.lga || 'N/A'}</p>
                   )}
                 </div>
                 
@@ -469,7 +484,7 @@ const UserDetailPage: React.FC = () => {
                 </div>
               </div>
               
-              <h3 className="text-base font-medium border-b pb-2 mt-6 mb-4">Membership Information</h3>
+              {/* <h3 className="text-base font-medium border-b pb-2 mt-6 mb-4">Membership Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-xs text-gray-500">Unit</p>
@@ -499,15 +514,15 @@ const UserDetailPage: React.FC = () => {
                   <p className="text-xs text-gray-500">Referral</p>
                   <p className="text-sm">{member.referral || 'N/A'}</p>
                 </div>
-              </div>
+              </div> */}
               
               <h3 className="text-base font-medium border-b pb-2 mt-6 mb-4">Next of Kin</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-xs text-gray-500">Name</p>
-                  <p className="text-sm">{member.next_of_kin_name || 'N/A'}</p>
+                  <p className="text-sm">{member.user_request?.next_of_kin || 'N/A'}</p>
                 </div>
-                
+{/*                 
                 <div>
                   <p className="text-xs text-gray-500">Relationship</p>
                   <p className="text-sm">{member.next_of_kin_relationship || 'N/A'}</p>
@@ -516,12 +531,12 @@ const UserDetailPage: React.FC = () => {
                 <div>
                   <p className="text-xs text-gray-500">Phone Number</p>
                   <p className="text-sm">{member.next_of_kin_phone || 'N/A'}</p>
-                </div>
-                
+                </div> */}
+{/*                 
                 <div className="md:col-span-3">
                   <p className="text-xs text-gray-500">Address</p>
                   <p className="text-sm">{member.next_of_kin_address || 'N/A'}</p>
-                </div>
+                </div> */}
               </div>
 
               <h3 className="text-base font-medium border-b pb-2 mt-6 mb-4">Signature</h3>
@@ -736,10 +751,10 @@ const UserDetailPage: React.FC = () => {
                 <div>
                   <h4 className="text-base font-medium text-gray-900 mb-3">Identification</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
+                    {/* <div>
                       <p className="text-xs text-gray-500">Valid ID Number</p>
                       <p className="text-sm">{member.user_request.valid_id_number || 'N/A'}</p>
-                    </div>
+                    </div> */}
                     <div>
                       <p className="text-xs text-gray-500">Passport Photo</p>
                       {member.user_request.passport_photo ? (

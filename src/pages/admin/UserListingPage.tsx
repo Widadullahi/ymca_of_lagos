@@ -40,7 +40,7 @@ const UserListingPage: React.FC = () => {
     try {
       const response = await fetchWithAuth({
         method: 'GET',
-        path: `/admin/members/?page_size=10&page=${page}`,
+        path: `/admin/members/?page_size=100&page=${page}`,
       });
 
       if (append) {
