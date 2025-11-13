@@ -15,6 +15,7 @@ interface MemberRequest {
   valid_id_number: string;
   passport_photo: string;
   valid_id_file: string;
+  signature?: string;
   status: string;
   created_at: string;
   updated_at: string;
@@ -383,6 +384,20 @@ const MemberRequestDetailPage: React.FC = () => {
                     src={memberRequest.passport_photo} 
                     alt="Passport Photo"
                     className="w-20 h-20 object-cover rounded-lg border border-gray-300 shadow-sm"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Signature */}
+            {memberRequest.signature && (
+              <div className="mb-8">
+                <h3 className="text-base font-medium border-b pb-2 mb-4">Signature</h3>
+                <div className="flex justify-start">
+                  <img 
+                    src={memberRequest.signature} 
+                    alt="Signature"
+                    className="w-32 h-20 object-contain rounded-lg border border-gray-300 shadow-sm"
                   />
                 </div>
               </div>

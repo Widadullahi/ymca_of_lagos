@@ -578,6 +578,9 @@ const RequestForm: React.FC = () => {
       if (formData.passportPhoto) {
         requestData.append('passport_photo', formData.passportPhoto);
       }
+      if (formData.signature) {
+        requestData.append('signature', formData.signature);
+      }
 
       await fetchWithAuth({
         method: 'POST',
@@ -586,22 +589,7 @@ const RequestForm: React.FC = () => {
         isFormData: true,
       });
 
-      // If signature provided, upload it to account signature endpoint
-      if (formData.signature) {
-        const signatureData = new FormData();
-        signatureData.append('signature', formData.signature);
-        try {
-          await fetchWithAuth({
-            method: 'POST',
-            path: '/account/signature/',
-            body: signatureData,
-            isFormData: true,
-          });
-        } catch (err) {
-          // Notify but do not block overall success
-          displayNotification('Failed to upload signature. You can try again in Profile.', 'error');
-        }
-      }
+      
 
       setShowSuccess(true);
       setTimeout(() => {
@@ -688,7 +676,10 @@ const RequestForm: React.FC = () => {
             validIdType: 'Valid ID Type',
             validIdFile: 'ID Document',
             passportPhoto: 'Passport Photo',
-            signature: 'Signature'
+            signature: 'Signature',
+            date_of_birth: 'Date of Birth',
+            marital_status: 'Marital Status',
+            occupation: 'Occupation'
           };
           return fieldLabels[field] || field;
         });
@@ -757,7 +748,10 @@ const RequestForm: React.FC = () => {
                   validIdType: 'Valid ID Type',
                   validIdFile: 'ID Document',
                   passportPhoto: 'Passport Photo',
-                  signature: 'Signature'
+                  signature: 'Signature',
+                  date_of_birth: 'Date of Birth',
+                  marital_status: 'Marital Status',
+                  occupation: 'Occupation'
                 };
                 const fieldLabel = fieldLabels[field] || field;
                 return (
@@ -830,6 +824,29 @@ const RequestForm: React.FC = () => {
               onChange={handleInputChange}
               error={fieldErrors.gender}
               required
+            />
+
+            <FormInput
+              label="Date of Birth"
+              name="date_of_birth"
+              type="date"
+              value={formData.date_of_birth}
+              onChange={handleInputChange}
+              error={fieldErrors.date_of_birth}
+            />
+
+            <FormSelect
+              label="Marital Status"
+              name="marital_status"
+              options={[
+                { value: 'single', label: 'Single' },
+                { value: 'married', label: 'Married' },
+                { value: 'divorced', label: 'Divorced' },
+                { value: 'widowed', label: 'Widowed' },
+              ]}
+              value={formData.marital_status}
+              onChange={handleInputChange}
+              error={fieldErrors.marital_status}
             />
           
             <div className="mb-4">
@@ -990,6 +1007,16 @@ const RequestForm: React.FC = () => {
                 error={fieldErrors.profession}
                 required
               />
+
+            <FormInput
+              label="Occupation"
+              name="occupation"
+              type="text"
+              placeholder="Enter your occupation"
+              value={formData.occupation}
+              onChange={handleInputChange}
+              error={fieldErrors.occupation}
+            />
 
             <FormSelect
               label="Unit"
