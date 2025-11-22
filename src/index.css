@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add this to your global CSS file (e.g., styles/globals.css) */
+
+@media print {
+    /* Hide everything except the ID card when printing */
+    body * {
+      visibility: hidden;
+    }
+    
+    /* Only show the ID card */
+    #root > div > div > div > div > div[ref="cardRef"],
+    #root > div > div > div > div > div[ref="cardRef"] * {
+      visibility: visible;
+    }
+    
+    /* Position the ID card at the top of the page */
+    #root > div > div > div > div > div[ref="cardRef"] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: auto;
+    }
+    
+    /* Hide all buttons and controls */
+    button, 
+    .print-hidden, 
+    .print\:hidden {
+      display: none !important;
+    }
+  }

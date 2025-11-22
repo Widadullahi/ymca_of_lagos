@@ -1,0 +1,568 @@
+//@ts-nocheck
+import React, { useState, useEffect } from 'react';
+import thumbnail from '../assets/images/default.jpg'
+import { useAuth } from '../context/NewAuthContext';
+import FileUpload from './forms/FileUpload';
+import PasswordChange from './PasswordChange';
+import AccountDeleteModal from './modals/admin/AccountDeleteModal';
+
+// Types
+interface Card {
+  id: string;
+  id_number: string;
+  is_active: boolean;
+  expired: boolean;
+  expired_at: string;
+  days_remaining: number;
+  signature: string | null;
+  first_time: boolean;
+}
+
+interface YouthCouncilGroup {
+  id: string;
+  name: string;
+}
+
+interface UserProfile {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  gender: string;
+  image: string;
+  unit: string;
+  church: string | null;
+  card: Card;
+  role: string;
+  youth_council_group: YouthCouncilGroup;
+  created_at: string;
+}
+
+// Modal types for confirmation
+type ModalType = 'deleteAccount' | 'passwordUpdate' | 'dataDownload' | null;
+
+const ProfileManagementPage: React.FC = () => {
+  const { fetchWithAuth, displayNotification, user, setUser, setAuthToken, setGlobalLoading, setGlobalLoadingText } = useAuth(); 
+  
+  // Initial profile state with the correct structure
+  const [profile, setProfile] = useState<UserProfile>({
+    id: '',
+    email: '',
+    first_name: '',
+    last_name: '',
+    phone_number: '',
+    gender: '',
+    image: thumbnail,
+    unit: '',
+    church: null,
+    card: {
+      id: '',
+      id_number: '',
+      is_active: false,
+      expired: false,
+      expired_at: '',
+      days_remaining: 0,
+      signature: null,
+      first_time: false
+    },
+    role: '',
+    youth_council_group: {
+      id: '',
+      name: ''
+    },
+    created_at: ''
+  });
+
+  // Form states
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isProfileUpdating, setIsProfileUpdating] = useState(false);
+  const [profileForm, setProfileForm] = useState<Partial<UserProfile>>({});
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
+  
+  // Modal state
+  const [modalOpen, setModalOpen] = useState<ModalType>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  
+  // Signature file state
+  const [signatureFile, setSignatureFile] = useState<File | null>(null);
+
+  // Profile Image file state
+  const [profileFile, setProfileFile] = useState<File | null>(null);
+
+  // Fetch user profile after the token is available or on token update
+  const fetchUserProfile = async () => {
+    try {
+      const data = await fetchWithAuth({
+        method: 'GET',
+        path: `/account/`,
+      });
+      
+      if (data?.data) {
+        setProfile(data.data);
+        setUser(data.data);
+        
+        // Set initial profile form data
+        setProfileForm({
+          first_name: data.data.first_name,
+          last_name: data.data.last_name,
+          email: data.data.email,
+          phone_number: data.data.phone_number,
+          gender: data.data.gender
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      displayNotification?.('error', 'Failed to load profile data');
+    }
+  };
+
+  // Reset forms when canceling edit modes or on component mount
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  useEffect(() => {
+    if (!isEditingProfile) {
+      setProfileForm({
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        email: profile.email,
+        phone_number: profile.phone_number,
+        gender: profile.gender
+      });
+      setSignatureFile(null);
+    }
+  }, [isEditingProfile, profile]);
+
+  // Handle profile form changes
+  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setProfileForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle signature file selection
+  const handleSignatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files[0]) {
+      setSignatureFile(files[0]);
+    }
+  };
+
+  // Handle signature file selection
+  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files[0]) {
+      setProfileFile(files[0]);
+    }
+  };
+
+  // Handle profile update
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      setIsProfileUpdating(true)
+      // Update basic profile information
+      const response = await fetchWithAuth({
+        method: 'PUT',
+        path: '/account/',
+        body: profileForm
+      });
+      
+      if (response?.data) {
+        setProfile(response.data);
+        setUser(response.data);
+        
+        if (profileFile) {
+          await handleProfileImageUpload();
+        }
+        // Upload signature if a file was selected
+        if (signatureFile) {
+          await handleSignatureUpload();
+        } else {
+          setIsEditingProfile(false);
+          displayNotification?.('success', 'Profile updated successfully');
+        }
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      displayNotification?.('error', 'Failed to update profile');
+    }finally{
+      setIsProfileUpdating(false)
+    }
+  };
+
+  // Handle signature upload
+  const handleSignatureUpload = async () => {
+    try {
+      setGlobalLoading?.(true);
+      setGlobalLoadingText?.('Uploading signature...');
+      
+      const formData = new FormData();
+      formData.append('signature', signatureFile);
+      
+      const response = await fetchWithAuth({
+        method: 'POST',
+        path: `/account/signature/`,
+        body: formData,
+        isFormData: true
+      });
+      
+      if (response?.data) {
+        // Refresh user profile to get updated signature
+        await fetchUserProfile();
+        setIsEditingProfile(false);
+        displayNotification?.('success', 'Profile and signature updated successfully');
+      }
+    } catch (error) {
+      console.error('Error uploading signature:', error);
+      displayNotification?.('error', 'Failed to upload signature');
+    } finally {
+      setGlobalLoading?.(false);
+    }
+  };
+
+  // Handle signature upload
+  const handleProfileImageUpload = async () => {
+    try {
+      setGlobalLoading?.(true);
+      setGlobalLoadingText?.('Uploading profile picture...');
+      
+      const formData = new FormData();
+      formData.append('picture', profileFile);
+      
+      const response = await fetchWithAuth({
+        method: 'POST',
+        path: `/account/picture/`,
+        body: formData,
+        isFormData: true
+      });
+      
+      if (response?.data) {
+        // Refresh user profile to get updated signature
+        await fetchUserProfile();
+        setIsEditingProfile(false);
+        displayNotification?.('success', 'Profile image updated successfully');
+      }
+    } catch (error) {
+      console.error('Error uploading signature:', error);
+      displayNotification?.('error', 'Failed to upload signature');
+    } finally {
+      setGlobalLoading?.(false);
+    }
+  };
+
+  // Format date
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(date);
+  };
+
+  // Get full name
+  const getFullName = (): string => {
+    return `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim();
+  };
+
+  // Handle account deletion
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText === 'DELETE') {
+      try {
+        await fetchWithAuth({
+          method: 'DELETE',
+          path: '/account/'
+        });
+        
+        setModalOpen(null);
+        setDeleteConfirmText('');
+        displayNotification?.('success', 'Account deleted successfully');
+        setAuthToken?.(null); // Log out user
+      } catch (error) {
+        console.error('Error deleting account:', error);
+        displayNotification?.('error', 'Failed to delete account');
+      }
+    }
+  };
+
+  return (
+    <>
+  <div className="p-6">
+    <h1 className="text-3xl font-bold mb-6">Profile Management</h1>
+    
+    {/* Tabs */}
+    <div className="flex border-b mb-6">
+      <button
+        className={`py-2 px-4 font-medium ${activeTab === 'profile' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+        onClick={() => setActiveTab('profile')}
+      >
+        Profile Information
+      </button>
+      <button
+        className={`py-2 px-4 font-medium ${activeTab === 'password' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+        onClick={() => setActiveTab('password')}
+      >
+        Change Password
+      </button>
+    </div>
+    
+    {/* Profile Tab */}
+    {activeTab === 'profile' && (
+      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">Profile Information</h2>
+          <button
+            className={`px-4 py-2 rounded ${isEditingProfile ? 'bg-gray-200 text-gray-800' : 'px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 '}`}
+            onClick={() => setIsEditingProfile(!isEditingProfile)}
+          >
+            {isEditingProfile ? 'Cancel' : 'Edit Profile'}
+          </button>
+        </div>
+        
+        {isEditingProfile ? (
+          <form onSubmit={handleProfileUpdate}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                <input
+                  type="text"
+                  name="first_name"
+                  value={profileForm?.first_name || ''}
+                  onChange={handleProfileChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                <input
+                  type="text"
+                  name="last_name"
+                  value={profileForm?.last_name || ''}
+                  onChange={handleProfileChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={profileForm?.email || ''}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                  disabled
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <input
+                  type="text"
+                  name="phone_number"
+                  value={profileForm?.phone_number || ''}
+                  onChange={handleProfileChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                <select
+                  name="gender"
+                  value={profileForm?.gender || ''}
+                  onChange={handleProfileChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Card Signature</label>
+                <input
+                  type="file"
+                  name="signature"
+                  accept="image/*"
+                  onChange={handleSignatureChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Upload your signature for your membership card</p>
+              </div>
+            </div>
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Profile Picture</label>
+                <input
+                  type="file"
+                  name="profile-image"
+                  accept="image/*"
+                  onChange={handleProfileImageChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Upload your new picture for your membership card</p>
+              </div>
+            
+          
+            <div className="flex justify-end mt-6">
+              <button
+                type="button"
+                className="px-4 py-2 mr-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                onClick={() => setIsEditingProfile(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isProfileUpdating}
+                className={`px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700`}
+              >{isProfileUpdating ? "Updating..." : 'Save Changes' }
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="flex flex-col md:flex-row">
+            <div className="md:w-1/3 mb-6 md:mb-0">
+              <img
+                src={profile?.image || thumbnail}
+                alt={getFullName()}
+                className="w-32 h-32 rounded-full object-cover"
+              />
+              <div className="mt-4 text-sm text-gray-500">
+                Member since {formatDate(profile?.created_at)}
+              </div>
+              
+              {profile?.card?.signature && (
+                <div className="mt-4">
+                  <h3 className="text-sm font-medium text-gray-500">Signature</h3>
+                  <img 
+                    src={profile.card.signature} 
+                    alt="Signature" 
+                    className="mt-2 h-16 border border-gray-200 p-1 rounded"
+                  />
+                </div>
+              )}
+            </div>
+            
+            <div className="md:w-2/3">
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Name</h3>
+                  <p className="mt-1">{getFullName()}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Email</h3>
+                  <p className="mt-1">{profile?.email}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Phone Number</h3>
+                  <p className="mt-1">{profile?.phone_number || 'Not provided'}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Gender</h3>
+                  <p className="mt-1">{profile?.gender || 'Not specified'}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Role</h3>
+                  <p className="mt-1">{profile?.role || 'Member'}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Unit</h3>
+                  <p className="mt-1">{profile?.unit || 'Not assigned'}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Youth Council Group</h3>
+                  <p className="mt-1">{profile?.youth_council_group?.name || 'Not assigned'}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Card ID</h3>
+                  <p className="mt-1">{profile?.card?.id_number || 'No ID issued'}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Card Status</h3>
+                  <p className="mt-1">
+                    {profile?.card?.is_active ? 
+                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Active</span> : 
+                      <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">Inactive</span>
+                    }
+                    {profile?.card?.expired && 
+                      <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Expired</span>
+                    }
+                    {!profile?.card?.expired && profile?.card?.days_remaining &&
+                      <span className="ml-2 text-xs text-gray-500">({profile.card.days_remaining} days remaining)</span>
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )}
+    
+    {/* Password Tab */}
+    {activeTab === 'password' && (
+      <PasswordChange />
+    )}
+
+    {/* Account Danger Zone */}
+    <div className="bg-white rounded-lg shadow-sm p-6 border border-red-200">
+      <h2 className="text-xl font-semibold text-red-600 mb-4">Danger Zone</h2>
+      <p className="text-gray-600 mb-4">
+        Actions in this section can permanently affect your account. Please proceed with caution.
+      </p>
+      
+      <div className="space-y-4">
+        <div className="flex items-center justify-between p-4 border border-gray-200 rounded-md">
+          <div>
+            <h3 className="font-medium">Delete Account</h3>
+            <p className="text-sm text-gray-500">
+              This will permanently delete your account and all associated data.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setModalOpen('deleteAccount')}
+            className="px-4 py-2 bg-white border border-red-500 text-red-600 rounded-md hover:bg-red-50"
+          >
+            Delete Account
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {/* Delete Account Confirmation Modal */}
+    {modalOpen === 'deleteAccount' && (
+      <AccountDeleteModal 
+        deleteConfirmText={deleteConfirmText}
+        setDeleteConfirmText={setDeleteConfirmText}
+        setModalOpen={setModalOpen}
+        handleDeleteAccount={handleDeleteAccount}
+      />
+    )}
+  </div>
+    </>
+  )
+};
+
+export default ProfileManagementPage;
