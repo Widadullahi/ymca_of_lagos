@@ -72,7 +72,7 @@ export default function Programme() {
   {
     title: "Camp Committee",
     description:
-      "Organizes leadership and development camps aimed at enhancing youth capabilities. Facilities: Parking lot, multipurpose hall, conference room, office space, and apartment space at Tarkwa Bay.",
+      "Organizes leadership and development camps aimed at enhancing youth capabilities.",
     icon: "🏕️",
   },
 
@@ -104,7 +104,7 @@ export default function Programme() {
   {
     title: "Hostel Committee",
     description:
-      "Oversees hostel facilities, accommodation management, maintenance, and the welfare of residents.",
+      "Oversees the YMCA of Lagos transient hostel facilities, accommodation management, maintenance, and the welfare of residents.",
     icon: "🏠",
   },
   {
