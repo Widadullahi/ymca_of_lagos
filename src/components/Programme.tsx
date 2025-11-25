@@ -33,42 +33,94 @@ export default function Programme() {
       };
     
       const programmes = [
-        {
-          title: "Sports Committee",
-          description: "Promotes health, fitness, and teamwork through organized sports activities including basketball, volleyball, and tennis",
-          icon: "🏀"
-        },
-        {
-          title: "Programmes Committee",
-          description: "Develops youth-centered programs that focus on personal growth, leadership, and social responsibility.",
-          icon: "📋"
-        },
-        {
-          title: "Social Welfare Committee",
-          description: "Provides support to vulnerable groups and addresses social issues within the community.",
-          icon: "🤝"
-        },
-        {
-          title: "Christian Emphasis Committee",
-          description: "Focuses on spiritual growth and embedding Christian values in all programs and activities.",
-          icon: "⛪"
-        },
-        {
-          title: "Membership Committee",
-          description: "Engages members through active participation in YMCA programs, fostering a sense of belonging and contribution.",
-          icon: "👥"
-        },
-        {
-          title: "Leadership Development Committee",
-          description: "Provides training and mentorship for young people, focusing on building leadership capacity for community and national service.",
-          icon: "👑"
-        },
-        {
-          title: "Camp Committee",
-          description: "Organizes leadership and development camps aimed at enhancing youth capabilities. Facilities: Parking lot, multipurpose hall, conference room, office space, and apartment space at Tarkwa Bay",
-          icon: "🏕️"
-        }
-      ];
+  {
+    title: "Sports Committee",
+    description:
+      "Promotes health, fitness, and teamwork through organized sports activities including basketball, volleyball, and tennis.",
+    icon: "🏀",
+  },
+  {
+    title: "Programmes Committee",
+    description:
+      "Develops youth-centered programs that focus on personal growth, leadership, and social responsibility.",
+    icon: "📋",
+  },
+  {
+    title: "Social Welfare Committee",
+    description:
+      "Provides support to vulnerable groups and addresses social issues within the community.",
+    icon: "🤝",
+  },
+  {
+    title: "Christian Emphasis Committee",
+    description:
+      "Focuses on spiritual growth and embedding Christian values in all programs and activities.",
+    icon: "⛪",
+  },
+  {
+    title: "Membership Committee",
+    description:
+      "Engages members through active participation in YMCA programs, fostering a sense of belonging and contribution.",
+    icon: "👥",
+  },
+  {
+    title: "Leadership Development Committee",
+    description:
+      "Provides training and mentorship for young people, focusing on building leadership capacity for community and national service.",
+    icon: "👑",
+  },
+  {
+    title: "Camp Committee",
+    description:
+      "Organizes leadership and development camps aimed at enhancing youth capabilities.",
+    icon: "🏕️",
+  },
+
+  // 🔻 Newly added ones
+  {
+    title: "Executive Committee",
+    description:
+      "Oversees the overall governance, strategic direction, and effective functioning of the YMCA and its committees.",
+    icon: "🎯",
+  },
+  {
+    title: "Project Committee",
+    description:
+      "Plans, coordinates, and monitors projects and initiatives to ensure timely and impactful delivery.",
+    icon: "📁",
+  },
+  {
+    title: "Finance Committee",
+    description:
+      "Manages budgeting, financial planning, accountability, and proper use of the organization’s resources.",
+    icon: "💰",
+  },
+  {
+    title: "Personnel Committee",
+    description:
+      "Handles staff and volunteer-related matters including recruitment, welfare, performance, and development.",
+    icon: "🧑‍💼",
+  },
+  {
+    title: "Hostel Committee",
+    description:
+      "Oversees the YMCA of Lagos transient hostel facilities, accommodation management, maintenance, and the welfare of residents.",
+    icon: "🏠",
+  },
+  {
+    title: "Publicity Committee",
+    description:
+      "Promotes YMCA activities through media, branding, and communications to enhance visibility and engagement.",
+    icon: "📢",
+  },
+  {
+    title: "Audit Committee",
+    description:
+      "Ensures transparency and accountability by reviewing financial records, systems, and internal controls.",
+    icon: "📊",
+  },
+];
+
     
 
 
