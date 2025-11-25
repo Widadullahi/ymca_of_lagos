@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaFacebook, FaInstagram, FaGithub, FaBehance, FaPinterest, FaTwitter, FaDribbble } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 import SocialMediaBar from '../components/navigation/SocialMediaBar';
 import MainNavigation from '../components/navigation/MainNavigation';
 import ImpactSection from './ImpactSection';
 import vission2030 from '../assets/images/Vision-2030-logos-4-1.jpg'
 import about from '../assets/images/aboutus.jpg'
 import { useAuth } from '../context/NewAuthContext'
-
-
-
+import theirlogo from '../assets/images/image.png'; // Make sure to import your logo
 
 const AboutMeV2: React.FC = () => {
   const statsRef = useRef<HTMLDivElement>(null);
@@ -19,7 +18,6 @@ const AboutMeV2: React.FC = () => {
     setIsDonationModalOpen(true);
     document.body.style.overflow = 'hidden';
   };
-  
 
   const stats2 = [
     { icon: '📊', value: 5000, label: 'Annual Beneficiaries', suffix: ' +' },
@@ -159,34 +157,126 @@ const AboutMeV2: React.FC = () => {
       
       {/* Main Navigation */}
       <MainNavigation openDonationModal={openDonationModal} />
-      {/* About Us Section */}
-      <section className="py-16 text-center">
-        <div className="container mx-auto px-4">
-          <h2 className="text-4xl font-bold mb-6">About Us</h2>
-          <p className="text-gray-600 max-w-3xl mx-auto mb-6">
-            The YMCA of Lagos is a non-governmental, young people-based organization committed to empowering youth for personal and community development. Founded in 1904, the YMCA of Lagos has grown into a vibrant community-based organization that promotes leadership, capacity-building, and civic engagement through Christian values. With a focus on service to communities and the nation, the YMCA of Lagos provides equal opportunities for all without any form of discrimination, making a significant impact on over 2,000 beneficiaries annually.
+
+      {/* Hero Section */}
+      <section className="bg-gradient-to-r from-red-700 to-red-600 text-white py-20">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6">About YMCA Lagos</h1>
+          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
+            Empowering young people for the African Renaissance since 1944
           </p>
-          {/* <p className="text-gray-600 max-w-3xl mx-auto mb-6">
-            Rooted in over a century of global YMCA tradition, we embody values of youth empowerment, community service, inclusivity, and social responsibility. Our programs are designed to meet the diverse needs of today’s youth — providing a platform where young people can learn, grow, and become agents of positive change in their communities.
-          </p>
-          <p className="text-gray-600 max-w-3xl mx-auto mb-6">
-            We work through a variety of initiatives that promote education, health, civic engagement, entrepreneurship, and spiritual growth. By focusing on holistic development — mind, body, and spirit — the YMCA of Lagos continues to shape individuals who contribute meaningfully to society and uphold strong ethical and moral standards.
-          </p>
-          <p className="text-gray-600 max-w-3xl mx-auto mb-6">
-            As part of the African Alliance of YMCAs (AAYMCA), our movement connects with 17 national YMCA bodies across the continent, with more emerging every year. Together, we share a bold vision: “Empowering young people for the African Renaissance.”
-          </p> */}
+          <div className="flex flex-col md:flex-row justify-center items-center gap-6 text-lg">
+            <div className="flex items-center gap-2">
+              <span className="text-yellow-300">📅</span>
+              <span>Founded: 1944</span>
+            </div>
+            <div className="hidden md:block text-yellow-300">•</div>
+            <div className="flex items-center gap-2">
+              <span className="text-yellow-300">👥</span>
+              <span>5,000+ Annual Beneficiaries</span>
+            </div>
+          </div>
         </div>
       </section>
 
+      {/* About Us Section */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-4xl font-bold text-center mb-12">Our Story & Heritage</h2>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-12">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-6">A Legacy of Service</h3>
+                <p className="text-gray-600 leading-relaxed mb-6">
+                  The YMCA of Lagos was born from the hardships of the Second World War, 
+                  officially established on <strong>June 4, 1944</strong> through the efforts of 
+                  Rev. Dugald Davidson and Rt. Rev. L.G. Vining. Our journey began at the 
+                  "Sailors Institute" on Marina, providing spiritual and physical well-being 
+                  for Allied sailors and local youth.
+                </p>
+                <p className="text-gray-600 leading-relaxed mb-6">
+                  Through decades of movement and growth, we've maintained our commitment to 
+                  developing spirit, mind, and body. Today, we continue this legacy from our 
+                  permanent home at <strong>77 Awolowo Road, Ikoyi</strong>, serving as a beacon 
+                  of hope and development for young people across Lagos.
+                </p>
+                <Link 
+                  to="/history" 
+                  className="inline-flex items-center text-red-600 font-semibold hover:text-red-700 transition-colors duration-300"
+                >
+                  Explore Our Full History
+                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </div>
+              
+              <div className="bg-gradient-to-br from-red-50 to-red-100 p-8 rounded-2xl shadow-lg">
+                <h3 className="text-2xl font-bold text-gray-900 mb-6">Global Heritage</h3>
+                <div className="space-y-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="bg-red-600 text-white p-2 rounded-full mt-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900">Founded in London</h4>
+                      <p className="text-gray-700 text-sm">June 6, 1844 by Sir George Williams</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="bg-red-600 text-white p-2 rounded-full mt-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900">Paris Basis</h4>
+                      <p className="text-gray-700 text-sm">Our founding principle since 1855</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="bg-red-600 text-white p-2 rounded-full mt-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900">Worldwide Movement</h4>
+                      <p className="text-gray-700 text-sm">Present in 120+ countries</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
+            <div className="bg-gray-50 p-8 rounded-2xl">
+              <h3 className="text-2xl font-bold text-gray-900 mb-6">Our Continuing Mission</h3>
+              <p className="text-gray-600 leading-relaxed mb-4">
+                The YMCA of Lagos is a non-governmental, young people-based organization committed to 
+                empowering youth for personal and community development. Founded in 1944, the YMCA of 
+                Lagos has grown into a vibrant community-based organization that promotes leadership, 
+                capacity-building, and civic engagement through Christian values.
+              </p>
+              <p className="text-gray-600 leading-relaxed">
+                With a focus on service to communities and the nation, the YMCA of Lagos provides equal 
+                opportunities for all without any form of discrimination, making a significant impact 
+                on over 5,000 beneficiaries annually.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Team Image Section */}
       <section className="mb-16">
         <div className="container mx-auto px-4">
-          <div className="bg-gray-100 rounded-lg overflow-hidden">
+          <div className="bg-gray-100 rounded-lg overflow-hidden shadow-lg">
             <img 
               src={about}
-              alt="Team Meeting" 
+              alt="YMCA Lagos Team" 
               className="w-full h-auto object-cover"
               style={{ maxHeight: '500px', maxWidth:'1500px' }}
             />
@@ -194,13 +284,12 @@ const AboutMeV2: React.FC = () => {
         </div>
       </section>
 
-
       {/* Our Impact Section */}
       <ImpactSection 
         title="Our Impact"
         paragraphs={[
           {
-            content: "At YMCA of Lagos, impact is at the heart of everything we do. Our mission extends beyond community programs — it’s about transforming lives and creating lasting change.",
+            content: "At YMCA of Lagos, impact is at the heart of everything we do. Our mission extends beyond community programs. it's about transforming lives and creating lasting change.",
             highlightedText: [
               { text: "YMCA of Lagos", className: "font-semibold" }
             ]
@@ -218,7 +307,7 @@ const AboutMeV2: React.FC = () => {
             ]
           },
           {
-            content: 'Through our guiding philosophy, “Subject to Citizen,” we inspire young people to move from passive observers to active citizens — individuals who take ownership of their communities, champion social justice, and drive meaningful transformation.',
+            content: 'Through our guiding philosophy, "Subject to Citizen," we inspire young people to move from passive observers to active citizens individuals who take ownership of their communities, champion social justice, and drive meaningful transformation.',
             highlightedText: [
               { text: "Subject to Citizen,", className: " font-semibold" }
             ]
@@ -226,45 +315,37 @@ const AboutMeV2: React.FC = () => {
         ]}
       />
 
-
       {/* Stats Section */}
       <section className="py-16 bg-gray-50" ref={statsRef}>
         <div className="container mx-auto px-4">
           <div className="flex flex-wrap justify-center gap-8 md:gap-16">
             {stats2.map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="flex justify-center mb-4">
-                  {/* <div className="text-5xl">{stat.icon}</div> */}
-                </div>
-                <div className="text-6xl font-bold text-gray-800">
+                <div className="text-6xl font-bold text-gray-800 mb-2">
                   {counters[index]}{stat.suffix}
                 </div>
                 <div className="text-2xl text-gray-600">{stat.label}</div>
               </div>
             ))}
           </div>
-          
-
         </div>
       </section>
 
-
-
       {/* Mission and Vision Section */}
-      <section className="py-12 bg-gray-50">
+      <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-6xl mx-auto">
             {/* Mission */}
-            <div className="bg-white p-8 rounded-lg shadow-md">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-2xl shadow-lg border-l-4 border-blue-600">
               <div className="flex items-center mb-6">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                <div className="bg-blue-600 text-white p-3 rounded-full mr-4">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-gray-800">Our Mission</h3>
               </div>
-              <p className="text-gray-600">
+              <p className="text-gray-700 leading-relaxed">
                 YMCA of Lagos is a community-based organization that seeks to empower 
                 young people for service to their immediate communities and the 
                 nation without any form of discrimination.
@@ -272,17 +353,17 @@ const AboutMeV2: React.FC = () => {
             </div>
             
             {/* Vision */}
-            <div className="bg-white p-8 rounded-lg shadow-md">
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-8 rounded-2xl shadow-lg border-l-4 border-purple-600">
               <div className="flex items-center mb-6">
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                <div className="bg-purple-600 text-white p-3 rounded-full mr-4">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-gray-800">Our Vision</h3>
               </div>
-              <p className="text-gray-600">
+              <p className="text-gray-700 leading-relaxed">
                 Empowering young people for the African Renaissance.
               </p>
             </div>
@@ -290,96 +371,93 @@ const AboutMeV2: React.FC = () => {
         </div>
       </section>
 
-
-
-      {/* Publications Section */}
-      {/* <section className="py-16">
+      {/* Core Values Section */}
+      <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
-          <h2 className="text-4xl font-bold text-center mb-4">Publications</h2>
-          <p className="text-gray-600 text-center mb-12 max-w-3xl mx-auto">
-            Our goal is to provide a complete and robust theme solution
-            to boost all of our customer's project deployments
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {publications.map(pub => (
-              <div key={pub.id} className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                <img 
-                  src={pub.image} 
-                  alt={pub.title}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-6">
-                  <h3 className="font-bold text-lg mb-2">{pub.title}</h3>
-                  <p className="text-gray-600 text-sm mb-4">{pub.description}</p>
-                  <div className="text-sm text-gray-500">
-                    {pub.author} on {pub.date}
-                  </div>
-                </div>
+          <h2 className="text-4xl font-bold text-center mb-12">Our Core Values</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+            {[
+              {
+                title: "Christian Foundation",
+                description: "Guided by the Paris Basis and Christian principles in all our work",
+                icon: "⛪"
+              },
+              {
+                title: "Youth Empowerment",
+                description: "Developing young leaders for community and national service",
+                icon: "🌟"
+              },
+              {
+                title: "Inclusivity",
+                description: "Serving all without discrimination based on faith, age, or background",
+                icon: "🤝"
+              },
+              {
+                title: "Excellence",
+                description: "Committed to quality in program delivery and leadership",
+                icon: "⭐"
+              }
+            ].map((value, index) => (
+              <div key={index} className="bg-white p-6 rounded-xl shadow-lg text-center hover:shadow-xl transition-shadow">
+                <div className="text-4xl mb-4">{value.icon}</div>
+                <h3 className="text-xl font-bold text-gray-800 mb-3">{value.title}</h3>
+                <p className="text-gray-600">{value.description}</p>
               </div>
             ))}
           </div>
         </div>
-      </section> */}
+      </section>
 
       {/* YMCA Vision 2030 Section */}
-          <section className="py-8 bg-white">
-          <div className="container mx-auto px-4">
-
-            {/* Equal height columns */}
-            <div className="grid md:grid-cols-2 gap-8 items-stretch">
-
-              {/* Left column */}
-              <div className="flex flex-col">
-                <div className="flex-1">
-                  <iframe
-                    src="https://www.youtube.com/embed/KfGMl7ov2x8"
-                    title="YMCA Vision 2030 - Stories from across the Movement"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-full object-cover"
-                  ></iframe>
-                </div>
-
-                <a 
-                  href="#" 
-                  className="block bg-red-600 text-white text-center py-3 rounded-none hover:bg-red-700 transition-colors mt-4"
-                >
-                  Read more about vision 2030
-                </a>
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-2 gap-12 items-stretch max-w-6xl mx-auto">
+            {/* Left column */}
+            <div className="flex flex-col">
+              <div className="flex-1 bg-gray-100 rounded-lg overflow-hidden">
+                <iframe
+                  src="https://www.youtube.com/embed/KfGMl7ov2x8"
+                  title="YMCA Vision 2030 - Stories from across the Movement"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full min-h-[300px] object-cover"
+                ></iframe>
               </div>
-
-              {/* Right column */}
-              <div>
-                <div className="flex justify-start mb-4">
-                  <img 
-                    src={vission2030}
-                    alt="YMCA Vision 2030 Logo"
-                    className="h-20"
-                  />
-                </div>
-
-                <h2 className="text-4xl font-bold text-red-600 mb-4">YMCA Vision 2030</h2>
-
-                <p className="text-gray-700 mb-4 text-base">
-                  In July 2022 the YMCA made history. At the 20th World Council in July 2022, 
-                  YMCAs across the globe voted to adopt YMCA 2030 - the first-ever shared strategy and plan.
-                </p>
-
-                <p className="text-gray-700 mb-6 text-base">
-                  In 2024, we made a series of films showcasing real impact across the four Pillars 
-                  of YMCA Vision 2030. We screened them at the Accelerator Summit in Mombasa, 
-                  and you can see them all on the Pillar pages of this website.
-                </p>
-              </div>
-
+              <Link 
+                to="/vision-2030" 
+                className="block bg-red-600 text-white text-center py-4 px-6 rounded-lg hover:bg-red-700 transition-colors mt-6 font-semibold text-lg"
+              >
+                Read more about Vision 2030
+              </Link>
             </div>
 
+            {/* Right column */}
+            <div className="flex flex-col justify-center">
+              <div className="flex justify-start mb-6">
+                <img 
+                  src={vission2030}
+                  alt="YMCA Vision 2030 Logo"
+                  className="h-24"
+                />
+              </div>
+
+              <h2 className="text-4xl font-bold text-red-600 mb-6">YMCA Vision 2030</h2>
+
+              <p className="text-gray-700 mb-4 text-lg leading-relaxed">
+                In July 2022 the YMCA made history. At the 20th World Council in July 2022, 
+                YMCAs across the globe voted to adopt YMCA 2030 - the first-ever shared strategy and plan.
+              </p>
+
+              <p className="text-gray-700 mb-6 text-lg leading-relaxed">
+                In 2024, we made a series of films showcasing real impact across the four Pillars 
+                of YMCA Vision 2030. We screened them at the Accelerator Summit in Mombasa, 
+                and you can see them all on the Pillar pages of this website.
+              </p>
+            </div>
           </div>
-        </section>
-
-
+        </div>
+      </section>
 
       {/* Team Section */}
       <section className="py-16 bg-gray-50">
@@ -387,10 +465,8 @@ const AboutMeV2: React.FC = () => {
           <h2 className="text-4xl font-bold text-center mb-4">Our Great Team</h2>
           <p className="text-gray-600 text-center mb-12 max-w-3xl mx-auto">
             Meet the dedicated leaders and professionals who drive our mission forward at YMCA of Lagos.
-
           </p>
           
-
           {/* Principal Officers */}
           {principalOfficers.length > 0 && (
             <div className="mb-16">
@@ -455,6 +531,94 @@ const AboutMeV2: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-800 text-white py-14">
+        <div className="container mx-auto px-4">
+          {/* Top Section */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+            {/* Column 1 - About */}
+            <div>
+              <img 
+                src={theirlogo}
+                alt="YMCA Logo"
+                className="h-12 mb-6"
+              />
+              <p className="text-gray-400 leading-relaxed">
+                77 Awolowo Road, Ikoyi, Lagos, Nigeria
+              </p>
+            </div>
+
+            {/* Column 2 - Jump To */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Jump to...</h3>
+              <ul className="space-y-2 text-gray-300">
+                <li>Latest News</li>
+                <li>Who we are</li>
+                <li>Our core values</li>
+                <li>Words of wisdom</li>
+                <li>Programmes & Committees</li>
+              </ul>
+            </div>
+
+            {/* Column 3 - Join Us */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Join us...</h3>
+              <ul className="space-y-2 text-gray-300">
+                <li>Membership</li>
+                <li>Partnerships</li>
+                <li>Volunteer</li>
+              </ul>
+            </div>
+
+            {/* Column 4 - Contact */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Get in touch...</h3>
+              <p className="flex items-center space-x-3 text-gray-300">
+                <span>📞</span>
+                <span>Hostel: 08102977099</span>
+              </p>
+              <p className="flex items-center space-x-3 text-gray-300 mt-2">
+                <span>📞</span>
+                <span>Admin: 09026802928</span>
+              </p>
+              <p className="flex items-center space-x-3 text-gray-300 mt-2">
+                <span>📞</span>
+                <span>Programmes: 09026114628</span>
+              </p>
+              <p className="flex items-center space-x-3 text-gray-300 mt-2">
+                <span>✉️</span>
+                <span>info@ymcaoflagos.org</span>
+              </p>
+            </div>
+          </div>
+
+          {/* CTA + Bottom Section */}
+          <div className="mt-12 flex flex-col md:flex-row justify-between items-center">
+            {/* Red CTA Button */}
+            <button 
+              onClick={openDonationModal}
+              className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-lg font-semibold transition-colors duration-300"
+            >
+              Donate
+            </button>
+
+            {/* Language - commented out as per your code */}
+            {/* <div className="mt-6 md:mt-0 flex items-center space-x-2">
+              🌍 
+              <select className="bg-black border border-gray-700 px-3 py-2 text-gray-300">
+                <option>EN</option>
+                <option>FR</option>
+              </select>
+            </div> */}
+          </div>
+
+          {/* Bottom line */}
+          <div className="mt-10 pt-6 border-t border-gray-700 text-center text-gray-400">
+            © 2025 YMCA Lagos. All rights reserved.
+          </div>
+        </div>
+      </footer>
     </div>
     </div>
   );

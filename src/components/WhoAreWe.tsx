@@ -29,7 +29,7 @@ export default function WhoAreWe({  }: WhoAreWeProps) {
               The YMCA of Lagos is a vibrant and inclusive community committed to empowering young people and transforming lives through service, education, leadership, and faith-based principles. As part of the global YMCA movement, one of the world’s oldest and most respected youth organizations, we work tirelessly to nurture the potential of every individual and promote positive change within our communities.
             </p>
             <p>
-              Our focus goes beyond youth engagement; we seek to build stronger communities, promote social justice, and inspire holistic development—spiritually, mentally, and physically. Through our diverse programs and outreach efforts, we provide platforms where young people can discover their purpose, strengthen their values, and become agents of change in society.
+              Our focus goes beyond youth engagement; we seek to build stronger communities, promote social justice, and inspire holistic development spiritually, mentally, and physically. Through our diverse programs and outreach efforts, we provide platforms where young people can discover their purpose, strengthen their values, and become agents of change in society.
             </p>
 
             {/* <motion.button

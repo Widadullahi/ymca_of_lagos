@@ -1,13 +1,14 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/NewAuthContext';
 import FormInput from '../components/forms/FormInput';
 import FormSelect from '../components/forms/FormSelect';
 import { Link, useNavigate } from 'react-router-dom';
-import ymca from '../assets/images/image.png'
-import { nigerianStates,ymcaUnits } from '../constants/utils';
+import ymca from '../assets/images/image.png';
+import { nigerianStates, ymcaUnits } from '../constants/utils';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
-// Mock data for dropdowns - replace with actual API calls or data source
+import axios from 'axios';
+
 const countries = [
   { value: 'AD', label: 'Andorra' },
   { value: 'AE', label: 'United Arab Emirates' },
@@ -260,11 +261,44 @@ const countries = [
   { value: 'ZW', label: 'Zimbabwe' }
 ];
 
-const units = ymcaUnits
+const units = ymcaUnits;
+
+interface FormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  citizen: string;
+  country: string;
+  state: string;
+  lga: string;
+  unit: string;
+  club: string;
+  age: string;
+  gender: string;
+  date_of_birth: string;
+  place_of_birth: string;
+  home_address: string;
+  office_address: string;
+  profession: string;
+  religion: string;
+  churchName: string;
+  occupation: string;
+  marital_status: string;
+  validIdType: string;
+  validIdFile: File | null;
+  passportPhoto: File | null;
+  signature: File | null;
+  nextOfKinName: string;
+  nextOfKinNumber: string;
+  referralSource: string;
+  referralName: string;
+  referredBy: string;
+}
 
 const RequestForm: React.FC = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
     email: '',
@@ -287,10 +321,11 @@ const RequestForm: React.FC = () => {
     occupation: '',
     marital_status: '',
     validIdType: '',
-    validIdFile: null as File | null,
-    passportPhoto: null as File | null,
-    signature: null as File | null,
-    nextOfKin: '',
+    validIdFile: null,
+    passportPhoto: null,
+    signature: null,
+    nextOfKinName: '',
+    nextOfKinNumber: '',
     referralSource: '',
     referralName: '',
     referredBy: 'no',
@@ -302,51 +337,401 @@ const RequestForm: React.FC = () => {
   const [idPreview, setIdPreview] = useState<string | null>(null);
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [dragActive, setDragActive] = useState({ passportPhoto: false, validIdFile: false, signature: false });
+  const [dragActive, setDragActive] = useState({ 
+    passportPhoto: false, 
+    validIdFile: false, 
+    signature: false 
+  });
   const [availableClubs, setAvailableClubs] = useState<{value: string, label: string}[]>([]);
+  const [availableUnits] = useState<{value: string, label: string}[]>(units);
+  const [availableChurches, setAvailableChurches] = useState<{value: string, label: string}[]>([]);
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
   const passportPhotoRef = useRef<HTMLInputElement>(null);
   const validIdFileRef = useRef<HTMLInputElement>(null);
   const signatureRef = useRef<HTMLInputElement>(null);
 
   const { fetchWithAuth, displayNotification } = useAuth();
-  
 
   const validIdOptions = [
     { value: 'national_id', label: 'National ID' },
     { value: 'international_passport', label: 'International Passport' },
-    { value: 'nin_slip', label: 'NIN Slip' },
+    // { value: 'nin_slip', label: 'NIN Slip' },
+    { value: 'voters_card', label: 'Voters Card' },
+    { value: 'others', label: 'Others' },
   ];
 
+  // Function to calculate age from date of birth
+  const calculateAge = (dateOfBirth: string): number => {
+    if (!dateOfBirth) return 0;
+    
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+    
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
 
+  // Function to filter available clubs based on age - UPDATED VERSION
+  const getAvailableClubs = (age: number, selectedUnit: any) => {
+    if (age <= 0 || !age || !selectedUnit || !selectedUnit.dropDown) {
+      console.log('No clubs available - missing required data');
+      return [];
+    }
+    
+    const allClubs = selectedUnit.dropDown.map((club: any) => {
+      const key = Object.keys(club)[0];
+      return { value: club[key], label: club[key] };
+    });
+    
+    console.log('Available clubs in', selectedUnit.label, ':', allClubs);
+    console.log('User age:', age);
+    
+    const unitName = selectedUnit.label.toLowerCase();
+    const unitValue = selectedUnit.value.toLowerCase();
+    
+    // Check for Youth Council
+    const isYouthCouncil = unitName.includes('youth') || unitValue.includes('youth');
+    
+    // Check for Y's Men
+    const isYsMen = unitName.includes("y's men") || unitValue.includes("y's men") || 
+                   unitName.includes('ys men') || unitValue.includes('ys men');
+    
+    // Check for Central Club
+    const isCentralClub = unitName.includes('central') || unitValue.includes('central');
+    
+    // Check for Council of Church
+    const isCouncilOfChurch = unitName.includes('council') && unitName.includes('church');
+    
+    console.log('Unit analysis:', { isYouthCouncil, isYsMen, isCentralClub, isCouncilOfChurch });
+    
+    if (isYouthCouncil) {
+      if (age <= 23) {
+        // For age 1-23, look for Hi-Y or youth clubs
+        const youthClubs = allClubs.filter(club => {
+          const clubName = club.value.toLowerCase();
+          const clubLabel = club.label.toLowerCase();
+          
+          const isYouthClub = 
+            clubName.includes('Hi-Y') || clubLabel.includes('Hi-Y') ||
+            clubName.includes('hi-y') || clubLabel.includes('hi-y') ;
+          
+          console.log('Club:', club.value, 'Is Youth Council?', isYouthClub);
+          return isYouthClub;
+        });
+        
+        console.log('Youth Council found for age', age, ':', youthClubs);
+        
+        if (youthClubs.length === 0) {
+          console.log('No specific youth clubs found, showing all clubs as fallback');
+          return allClubs;
+        }
+        
+        return youthClubs;
+      } else if (age >= 24 && age <= 30) {
+        // For age 24-30, look for Y-Elite or young adult clubs
+        const youngAdultClubs = allClubs.filter(club => {
+          const clubName = club.value.toLowerCase();
+          const clubLabel = club.label.toLowerCase();
+          
+          const isYoungAdultClub = 
+            clubName.includes('Y-Elite') || clubLabel.includes('Y-Elite') ||
+            clubName.includes('y-elite') || clubLabel.includes('y-elite');
+          
+          console.log('Club:', club.value, 'Is Youth Council?', isYoungAdultClub);
+          return isYoungAdultClub;
+        });
+        
+        console.log('Youth Council found for age', age, ':', youngAdultClubs);
+        
+        if (youngAdultClubs.length === 0) {
+          console.log('No specific young adult clubs found, showing all clubs as fallback');
+          return allClubs;
+        }
+        
+        return youngAdultClubs;
+      } else {
+        // Age 31+ cannot join Youth Council
+        console.log('Age 31+ cannot join Youth Council');
+        return [];
+      }
+    } else if (isYsMen || isCentralClub) {
+      // Y's Men and Central Club are only for adults (31+)
+      if (age >= 31) {
+        return allClubs;
+      } else {
+        return [];
+      }
+    } else if (isCouncilOfChurch) {
+      // Council of Church - show churches based on age
+      if (age <= 23) {
+        return allClubs.filter(club => {
+          const clubName = club.value.toLowerCase();
+          return !clubName.includes('adult') && !clubName.includes('senior');
+        });
+      } else if (age >= 24 && age <= 30) {
+        return allClubs.filter(club => {
+          const clubName = club.value.toLowerCase();
+          return clubName.includes('Y-Elite');
+        });
+      } else {
+        return allClubs; // Age 31+ can join any church
+      }
+    } else {
+      // For other adult units, show all clubs
+      console.log('Adult unit - showing all clubs');
+      return allClubs;
+    }
+  };
 
+  // Function to filter available churches based on age
+  const getAvailableChurches = (age: number, selectedUnit: any) => {
+    if (!selectedUnit || !selectedUnit.churchDropDown) return [];
+    
+    const allChurches = selectedUnit.churchDropDown.map((church: any) => {
+      const key = Object.keys(church)[0];
+      return { value: church[key], label: church[key] };
+    });
+    
+    const isYouthCouncil = selectedUnit.value.toLowerCase().includes('youth') || 
+                           selectedUnit.label.toLowerCase().includes('youth');
+    
+    if (isYouthCouncil) {
+      if (age <= 23) {
+        return allChurches.filter(church => {
+          const churchName = church.value.toLowerCase();
+          return !churchName.includes('adult') && !churchName.includes('senior');
+        });
+      } else if (age >= 24 && age <= 30) {
+        return allChurches.filter(church => {
+          const churchName = church.value.toLowerCase();
+          return churchName.includes('Y-Elite');
+        });
+      } else {
+        return [];
+      }
+    } else {
+      return allChurches;
+    }
+  };
 
+  // Effect to update age and available clubs when date of birth or unit changes
+  useEffect(() => {
+    if (formData.date_of_birth) {
+      const calculatedAge = calculateAge(formData.date_of_birth);
+      
+      setFormData(prev => ({
+        ...prev,
+        age: calculatedAge.toString()
+      }));
+
+      if (formData.unit) {
+        const selectedUnit = units.find(unit => unit.value === formData.unit);
+        if (selectedUnit) {
+          const filteredClubs = getAvailableClubs(calculatedAge, selectedUnit);
+          setAvailableClubs(filteredClubs);
+          
+          const isCouncilOfChurch = formData.club && (
+            formData.club.toLowerCase().includes('council of church') || 
+            formData.club.toLowerCase().includes('council') ||
+            formData.club.toLowerCase().includes('church')
+          );
+          
+          if (isCouncilOfChurch && selectedUnit.churchDropDown) {
+            const filteredChurches = getAvailableChurches(calculatedAge, selectedUnit);
+            setAvailableChurches(filteredChurches);
+            
+            const currentChurchValid = filteredChurches.some(church => church.value === formData.churchName);
+            if (formData.churchName && !currentChurchValid) {
+              setFormData(prev => ({
+                ...prev,
+                churchName: ''
+              }));
+            }
+          }
+          
+          const currentClubValid = filteredClubs.some(club => club.value === formData.club);
+          if (formData.club && !currentClubValid) {
+            setFormData(prev => ({
+              ...prev,
+              club: '',
+              churchName: ''
+            }));
+            setAvailableChurches([]);
+          }
+        }
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        age: ''
+      }));
+      setAvailableClubs([]);
+      setAvailableChurches([]);
+    }
+  }, [formData.date_of_birth, formData.unit, formData.club]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
+    setTouchedFields(prev => ({
+      ...prev,
+      [name]: true
+    }));
+
+    const updates: Partial<FormData> = {
+      [name]: value,
+    };
+
+    // Handle cascading resets
+    if (name === 'country') {
+      updates.state = '';
+      updates.lga = '';
+    } else if (name === 'state') {
+      updates.lga = '';
+    } else if (name === 'unit') {
+      updates.club = '';
+      updates.churchName = '';
+    } else if (name === 'club') {
+      updates.churchName = '';
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: value,
-      ...(name === 'country' ? { state: '', lga: '' } : {}),
-      ...(name === 'state' ? { lga: '' } : {}),
-      ...(name === 'unit' ? { club: '' } : {}),
+      ...updates,
     }));
 
     // Update available clubs when unit changes
     if (name === 'unit') {
       const selectedUnit = units.find(unit => unit.value === value);
-      if (selectedUnit && selectedUnit.dropDown) {
-        const clubOptions = selectedUnit.dropDown.map(club => {
+      
+      if (selectedUnit && selectedUnit.dropDown && formData.age) {
+        const calculatedAge = parseInt(formData.age);
+        const filteredClubs = getAvailableClubs(calculatedAge, selectedUnit);
+        setAvailableClubs(filteredClubs);
+        
+        if (selectedUnit.churchDropDown) {
+          const churchOptions = getAvailableChurches(calculatedAge, selectedUnit);
+          setAvailableChurches(churchOptions);
+        } else {
+          setAvailableChurches([]);
+        }
+      } else if (selectedUnit && selectedUnit.dropDown) {
+        const allClubs = selectedUnit.dropDown.map((club: any) => {
           const key = Object.keys(club)[0];
-          return { value: club[key as keyof typeof club], label: club[key as keyof typeof club] };
+          return { value: club[key], label: club[key] };
         });
-        setAvailableClubs(clubOptions);
+        setAvailableClubs(allClubs);
+        
+        if (selectedUnit.churchDropDown) {
+          const allChurches = selectedUnit.churchDropDown.map((church: any) => {
+            const key = Object.keys(church)[0];
+            return { value: church[key], label: church[key] };
+          });
+          setAvailableChurches(allChurches);
+        } else {
+          setAvailableChurches([]);
+        }
       } else {
         setAvailableClubs([]);
+        setAvailableChurches([]);
       }
     }
 
+    // Update available churches when club is "Council Of Church"
+    if (name === 'club') {
+      const selectedUnit = units.find(unit => unit.value === formData.unit);
+      const isCouncilOfChurch = value.toLowerCase().includes('council of church') ;
+      
+      if (isCouncilOfChurch && selectedUnit && selectedUnit.churchDropDown && formData.age) {
+        const calculatedAge = parseInt(formData.age);
+        const filteredChurches = getAvailableChurches(calculatedAge, selectedUnit);
+        setAvailableChurches(filteredChurches);
+        
+        // Also update available clubs to show appropriate message
+        if (filteredChurches.length > 0) {
+          setAvailableClubs([{ value: 'council_of_church', label: 'Council of Church - Select your church below' }]);
+        }
+      } else if (isCouncilOfChurch && selectedUnit && selectedUnit.churchDropDown) {
+        const allChurches = selectedUnit.churchDropDown.map((church: any) => {
+          const key = Object.keys(church)[0];
+          return { value: church[key], label: church[key] };
+        });
+        setAvailableChurches(allChurches);
+        setAvailableClubs([{ value: 'council_of_church', label: 'Council of Church - Select your church below' }]);
+      } else {
+        setAvailableChurches([]);
+        setFormData(prev => ({ ...prev, churchName: '' }));
+        
+        // Reset available clubs to normal when not selecting Council of Church
+        if (selectedUnit && selectedUnit.dropDown && formData.age) {
+          const calculatedAge = parseInt(formData.age);
+          const filteredClubs = getAvailableClubs(calculatedAge, selectedUnit);
+          setAvailableClubs(filteredClubs);
+        }
+      }
+    }
+
+    // Manual age calculation if date_of_birth is entered
+    if (name === 'date_of_birth') {
+      if (value) {
+        const calculatedAge = calculateAge(value);
+        setFormData(prev => ({
+          ...prev,
+          age: calculatedAge.toString()
+        }));
+
+        if (formData.unit) {
+          const selectedUnit = units.find(unit => unit.value === formData.unit);
+          if (selectedUnit) {
+            const filteredClubs = getAvailableClubs(calculatedAge, selectedUnit);
+            setAvailableClubs(filteredClubs);
+            
+            const isCouncilOfChurch = formData.club && (
+              formData.club.toLowerCase().includes('council of church') 
+            );
+            
+            if (isCouncilOfChurch && selectedUnit.churchDropDown) {
+              const filteredChurches = getAvailableChurches(calculatedAge, selectedUnit);
+              setAvailableChurches(filteredChurches);
+              
+              const currentChurchValid = filteredChurches.some(church => church.value === formData.churchName);
+              if (formData.churchName && !currentChurchValid) {
+                setFormData(prev => ({
+                  ...prev,
+                  churchName: ''
+                }));
+              }
+            }
+            
+            const currentClubValid = filteredClubs.some(club => club.value === formData.club);
+            if (formData.club && !currentClubValid) {
+              setFormData(prev => ({
+                ...prev,
+                club: '',
+                churchName: ''
+              }));
+              setAvailableChurches([]);
+            }
+          }
+        }
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          age: ''
+        }));
+        setAvailableClubs([]);
+        setAvailableChurches([]);
+      }
+    }
+
+    // Clear error when user starts typing
     if (fieldErrors[name]) {
       setFieldErrors(prev => ({
         ...prev,
@@ -362,12 +747,12 @@ const RequestForm: React.FC = () => {
       if (!allowedTypes.includes(file.type)) {
         setFieldErrors(prev => ({
           ...prev,
-          [field]: `Please upload a valid ${field === 'passportPhoto' ? 'image' : 'file'} (${allowedTypes.join(', ')})`
+          [field]: `Please upload a valid image (JPEG, JPG, PNG)`
         }));
         return;
       }
 
-      const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+      const maxSize = 2 * 1024 * 1024;
       if (file.size > maxSize) {
         setFieldErrors(prev => ({
           ...prev,
@@ -384,19 +769,16 @@ const RequestForm: React.FC = () => {
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = (e) => {
+          const result = e.target?.result as string;
           if (field === 'passportPhoto') {
-            setPhotoPreview(e.target?.result as string);
+            setPhotoPreview(result);
           } else if (field === 'validIdFile') {
-            setIdPreview(e.target?.result as string);
+            setIdPreview(result);
           } else if (field === 'signature') {
-            setSignaturePreview(e.target?.result as string);
+            setSignaturePreview(result);
           }
         };
         reader.readAsDataURL(file);
-      } else {
-        if (field === 'validIdFile') {
-          setIdPreview(null);
-        }
       }
 
       setFieldErrors(prev => ({
@@ -426,54 +808,85 @@ const RequestForm: React.FC = () => {
     }
   };
 
+  // Helper function to get input border color based on validation
+  const getInputBorderColor = (fieldName: string, value: any) => {
+    if (touchedFields[fieldName] || Object.keys(fieldErrors).length > 0) {
+      if (fieldErrors[fieldName]) {
+        return 'border-red-500';
+      } else if (value && value.toString().trim() !== '') {
+        return 'border-green-500';
+      }
+    }
+    return 'border-gray-300';
+  };
+
   const validateForm = () => {
     const errors: Record<string, string> = {};
     
-    if (!formData.firstName.trim()) {
-      errors.firstName = 'First name is required';
-    }
+    // Required field validations
+    const requiredFields = {
+      firstName: 'First name is required',
+      lastName: 'Last name is required',
+      phoneNumber: 'Phone number is required',
+      country: 'Country is required',
+      state: 'State is required',
+      unit: 'Unit is required',
+      validIdType: 'Please select a valid ID type',
+      validIdFile: 'ID document is required',
+      passportPhoto: 'Passport photo is required',
+    };
 
-    if (!formData.lastName.trim()) {
-      errors.lastName = 'Last name is required';
-    }
-    
-    if (!formData.phoneNumber.trim()) {
-      errors.phoneNumber = 'Phone number is required';
-    } else if (!/^[\+]?[0-9\s\-\(\)]{10,}$/.test(formData.phoneNumber.trim())) {
+    Object.entries(requiredFields).forEach(([field, message]) => {
+      if (!formData[field as keyof FormData]) {
+        errors[field] = message;
+      }
+    });
+
+    // Phone number format validation
+    if (formData.phoneNumber && !/^[\+]?[0-9\s\-\(\)]{10,}$/.test(formData.phoneNumber.trim())) {
       errors.phoneNumber = 'Please enter a valid phone number';
     }
-    
-    if (!formData.country) {
-      errors.country = 'Country is required';
-    }
-    
-    if (!formData.state) {
-      errors.state = 'State is required';
-    }
-    
-    if (!formData.unit) {
-      errors.unit = 'Unit is required';
-    }
-    
+
+    // Club validation
     if (availableClubs.length > 0 && !formData.club) {
       errors.club = 'Club is required';
     }
+
+    // Church name validation when Council Of Church is selected
+    const isCouncilOfChurch = formData.club && (
+      formData.club.toLowerCase().includes('council of church') 
+    );
     
-    if (!formData.validIdType) {
-      errors.validIdType = 'Please select a valid ID type';
+    if (isCouncilOfChurch && !formData.churchName) {
+      errors.churchName = 'Please select your church';
     }
-    
-    if (!formData.validIdFile) {
-      errors.validIdFile = 'ID document is required';
+
+    // Age-based validations
+    if (formData.age && formData.unit) {
+      const ageNum = parseInt(formData.age);
+      const selectedUnit = units.find(unit => unit.value === formData.unit);
+      const isYouthCouncil = selectedUnit && (
+        selectedUnit.value.toLowerCase().includes('youth') || 
+        selectedUnit.label.toLowerCase().includes('youth')
+      );
+      
+      if (isYouthCouncil) {
+        if (ageNum >= 31) {
+          errors.unit = 'Age 31 and above cannot join Youth Council. Please select an other unit.';
+        }
+      }
     }
-    
-    if (!formData.passportPhoto) {
-      errors.passportPhoto = 'Passport photo is required';
-    }
+
+    // Mark all fields as touched when validating
+    const allFields = Object.keys(requiredFields);
+    const newTouchedFields: Record<string, boolean> = {};
+    allFields.forEach(field => {
+      newTouchedFields[field] = true;
+    });
+    setTouchedFields(prev => ({ ...prev, ...newTouchedFields }));
     
     setFieldErrors(errors);
     
-    // Scroll to first error field if there are errors
     if (Object.keys(errors).length > 0) {
       scrollToFirstError(Object.keys(errors));
     }
@@ -482,43 +895,23 @@ const RequestForm: React.FC = () => {
   };
 
   const scrollToFirstError = (errorFields: string[]) => {
-    // Define the order of fields as they appear in the form
     const fieldOrder = [
       'firstName', 'lastName', 'phoneNumber', 'country', 'state', 
-      'unit', 'club', 'validIdType', 'validIdFile', 'passportPhoto', 'signature'
+      'unit', 'club', 'churchName', 'validIdType', 'validIdFile', 'passportPhoto'
     ];
     
-    // Find the first field with an error based on form order
     const firstErrorField = fieldOrder.find(field => errorFields.includes(field));
     
     if (firstErrorField) {
-      // Try to find the field element by name or id
-      let fieldElement = document.querySelector(`[name="${firstErrorField}"]`) as HTMLElement;
-      
-      // For file inputs, try to find by id
-      if (!fieldElement) {
-        fieldElement = document.getElementById(firstErrorField) as HTMLElement;
-      }
-      
-      // For react-select components, try to find the container
-      if (!fieldElement && (firstErrorField === 'country' || firstErrorField === 'state')) {
-        const selectContainer = document.querySelector(`[data-field="${firstErrorField}"]`) as HTMLElement;
-        if (selectContainer) {
-          fieldElement = selectContainer;
-        }
-      }
+      const fieldElement = document.querySelector(`[name="${firstErrorField}"]`) as HTMLElement;
       
       if (fieldElement) {
-        // Scroll to the field with some offset for better visibility
         fieldElement.scrollIntoView({ 
           behavior: 'smooth', 
           block: 'center' 
         });
         
-        // Focus the field if it's focusable
-        if (fieldElement.focus && typeof fieldElement.focus === 'function') {
-          setTimeout(() => fieldElement.focus(), 300);
-        }
+        setTimeout(() => fieldElement.focus?.(), 300);
       }
     }
   };
@@ -534,53 +927,17 @@ const RequestForm: React.FC = () => {
 
     try {
       const requestData = new FormData();
-      // Basic Information
-      requestData.append('first_name', formData.firstName);
-      requestData.append('last_name', formData.lastName);
-      requestData.append('email', formData.email);
-      requestData.append('phone_number', formData.phoneNumber);
       
-      // Location Information
-      requestData.append('citizen', formData.citizen);
-      requestData.append('country', formData.country);
-      requestData.append('state', formData.state);
-      requestData.append('lga', formData.lga);
-      
-      // YMCA Information
-      requestData.append('unit', formData.unit);
-      requestData.append('club', formData.club);
-      
-      // Personal Information
-      requestData.append('age', formData.age);
-      requestData.append('gender', formData.gender);
-      requestData.append('date_of_birth', formData.date_of_birth);
-      requestData.append('place_of_birth', formData.place_of_birth);
-      requestData.append('home_address', formData.home_address);
-      requestData.append('office_address', formData.office_address);
-      requestData.append('profession', formData.profession);
-      requestData.append('religion', formData.religion);
-      requestData.append('church_name', formData.churchName);
-      requestData.append('occupation', formData.occupation);
-      requestData.append('marital_status', formData.marital_status);
-      
-      // ID Information
-      requestData.append('valid_id_type', formData.validIdType);
-      
-      // Referral Information
-      requestData.append('next_of_kin', formData.nextOfKin);
-      requestData.append('referral_source', formData.referralSource);
-      requestData.append('referral_name', formData.referralName);
-      requestData.append('referred_by', formData.referredBy);
-      
-      if (formData.validIdFile) {
-        requestData.append('valid_id_file', formData.validIdFile);
-      }
-      if (formData.passportPhoto) {
-        requestData.append('passport_photo', formData.passportPhoto);
-      }
-      if (formData.signature) {
-        requestData.append('signature', formData.signature);
-      }
+      // Append all form data
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== '') {
+          if (value instanceof File) {
+            requestData.append(key, value);
+          } else {
+            requestData.append(key, value.toString());
+          }
+        }
+      });
 
       await fetchWithAuth({
         method: 'POST',
@@ -589,18 +946,21 @@ const RequestForm: React.FC = () => {
         isFormData: true,
       });
 
-      
-
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
+        // Reset form
         setFormData({
           firstName: '',
           lastName: '',
           email: '',
           phoneNumber: '',
           citizen: 'Nigerian',
-          country: '',
+          country: 'NG',
+          state: '',
+          lga: '',
+          unit: '',
+          club: '',
           age: '',
           gender: '',
           date_of_birth: '',
@@ -609,31 +969,29 @@ const RequestForm: React.FC = () => {
           office_address: '',
           profession: '',
           religion: '',
+          churchName: '',
           occupation: '',
           marital_status: '',
-          state: '',
-          lga: '',
-          unit: '',
-          club: '',
           validIdType: '',
           validIdFile: null,
           passportPhoto: null,
           signature: null,
-          nextOfKin: '',
+          nextOfKinName: '',
+          nextOfKinNumber: '',
           referralSource: '',
           referralName: '',
           referredBy: 'no',
-          churchName: '',
         });
         setPhotoPreview(null);
         setIdPreview(null);
         setSignaturePreview(null);
+        setTouchedFields({});
+        setAvailableClubs([]);
+        setAvailableChurches([]);
         
-        const fileInputs = ['passportPhoto', 'validIdFile'].map(id => 
-          document.getElementById(id) as HTMLInputElement
-        );
-        fileInputs.forEach(input => {
-          if (input) input.value = '';
+        // Reset file inputs
+        [passportPhotoRef, validIdFileRef, signatureRef].forEach(ref => {
+          if (ref.current) ref.current.value = '';
         });
       }, 3000);
 
@@ -662,28 +1020,7 @@ const RequestForm: React.FC = () => {
         
         setFieldErrors(fieldErrorMessages);
         
-        // Create a more specific error message
-        const errorFieldNames = Object.keys(fieldErrorMessages).map(field => {
-          const fieldLabels: Record<string, string> = {
-            firstName: 'First Name',
-            lastName: 'Last Name',
-            phoneNumber: 'Phone Number',
-            country: 'Country',
-            state: 'State',
-            lga: 'LGA',
-            unit: 'Unit',
-            club: 'Club',
-            validIdType: 'Valid ID Type',
-            validIdFile: 'ID Document',
-            passportPhoto: 'Passport Photo',
-            signature: 'Signature',
-            date_of_birth: 'Date of Birth',
-            marital_status: 'Marital Status',
-            occupation: 'Occupation'
-          };
-          return fieldLabels[field] || field;
-        });
-        
+        const errorFieldNames = Object.keys(fieldErrorMessages);
         const errorMessage = errorFieldNames.length === 1 
           ? `Please correct the error in: ${errorFieldNames[0]}`
           : `Please correct the errors in: ${errorFieldNames.join(', ')}`;
@@ -696,6 +1033,84 @@ const RequestForm: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // File upload component to reduce duplication
+  const FileUploadField = ({
+    field,
+    label,
+    accept = "image/jpeg,image/jpg,image/png",
+    required = false,
+    preview,
+    dragActiveKey,
+    fileRef
+  }: {
+    field: 'passportPhoto' | 'validIdFile' | 'signature';
+    label: string;
+    accept?: string;
+    required?: boolean;
+    preview: string | null;
+    dragActiveKey: keyof typeof dragActive;
+    fileRef: React.RefObject<HTMLInputElement>;
+  }) => (
+    <div className="mb-4">
+      <label htmlFor={field} className="block text-gray-700 text-sm font-bold mb-2">
+        {label} {required && '*'}
+      </label>
+      <div 
+        className={`border-2 border-dashed rounded-lg p-6 text-center ${
+          dragActive[dragActiveKey] ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+        } ${fieldErrors[field] ? 'border-red-500' : ''}`}
+        onDragEnter={(e) => handleDrag(e, field)}
+        onDragLeave={(e) => handleDrag(e, field)}
+        onDragOver={(e) => handleDrag(e, field)}
+        onDrop={(e) => handleDrop(e, field)}
+      >
+        <input
+          type="file"
+          id={field}
+          name={field}
+          accept={accept}
+          onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0], field)}
+          className="hidden"
+          ref={fileRef}
+        />
+        <div className="flex flex-col items-center">
+          <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 0115.9 6M9 19h6m-3-3v6m3-6v6m-6-6v6" />
+          </svg>
+          <p className="text-gray-600 mb-2">
+            {formData[field] ? formData[field]?.name : `Drag and drop your ${label.toLowerCase()} here or`}
+          </p>
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
+          >
+            Choose File
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          Upload a clear image (JPEG, JPG, PNG, max 2MB)
+        </p>
+        {fieldErrors[field] && <p className="text-red-500 text-sm mt-2">{fieldErrors[field]}</p>}
+      </div>
+
+      {preview && (
+        <div className="mt-4">
+          <label className="block text-gray-700 text-sm font-bold mb-2">Preview:</label>
+          <div className="flex justify-center">
+            <img 
+              src={preview} 
+              alt={`${label} preview`} 
+              className={`${
+                field === 'passportPhoto' ? 'w-32 h-32' : 'w-48 h-32'
+              } object-cover border-2 border-gray-300 rounded`} 
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="w-full max-w-2xl mx-auto relative">
@@ -710,19 +1125,11 @@ const RequestForm: React.FC = () => {
         </div>
       )}
       
-      <form 
-        onSubmit={handleSubmit} 
-        className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
-      >
+      <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
         <div className="flex justify-center mb-4">
-          <Link to={'/'} >
-            <img 
-                src={ymca} 
-                alt="YMCA Lagos Logo" 
-                className="h-10 w-auto object-contain" 
-              />
+          <Link to={'/'}>
+            <img src={ymca} alt="YMCA Lagos Logo" className="h-10 w-auto object-contain" />
           </Link>
-          
         </div>
         <h2 className="text-2xl font-bold mb-6 text-center">Submit Application</h2>
         
@@ -745,13 +1152,11 @@ const RequestForm: React.FC = () => {
                   lga: 'LGA',
                   unit: 'Unit',
                   club: 'Club',
+                  churchName: 'Church Name',
                   validIdType: 'Valid ID Type',
                   validIdFile: 'ID Document',
                   passportPhoto: 'Passport Photo',
                   signature: 'Signature',
-                  date_of_birth: 'Date of Birth',
-                  marital_status: 'Marital Status',
-                  occupation: 'Occupation'
                 };
                 const fieldLabel = fieldLabels[field] || field;
                 return (
@@ -778,6 +1183,7 @@ const RequestForm: React.FC = () => {
               onChange={handleInputChange}
               error={fieldErrors.firstName}
               required
+              className={getInputBorderColor('firstName', formData.firstName)}
             />
 
             <FormInput
@@ -789,6 +1195,7 @@ const RequestForm: React.FC = () => {
               onChange={handleInputChange}
               error={fieldErrors.lastName}
               required
+              className={getInputBorderColor('lastName', formData.lastName)}
             />
 
             <FormInput
@@ -799,7 +1206,7 @@ const RequestForm: React.FC = () => {
               value={formData.email}
               onChange={handleInputChange}
               error={fieldErrors.email}
-              required
+              className={getInputBorderColor('email', formData.email)}
             />
 
             <FormInput
@@ -811,6 +1218,7 @@ const RequestForm: React.FC = () => {
               onChange={handleInputChange}
               error={fieldErrors.phoneNumber}
               required
+              className={getInputBorderColor('phoneNumber', formData.phoneNumber)}
             />
 
             <FormSelect
@@ -823,7 +1231,7 @@ const RequestForm: React.FC = () => {
               value={formData.gender}
               onChange={handleInputChange}
               error={fieldErrors.gender}
-              required
+              className={getInputBorderColor('gender', formData.gender)}
             />
 
             <FormInput
@@ -833,7 +1241,22 @@ const RequestForm: React.FC = () => {
               value={formData.date_of_birth}
               onChange={handleInputChange}
               error={fieldErrors.date_of_birth}
+              className={getInputBorderColor('date_of_birth', formData.date_of_birth)}
             />
+
+            {/* Age field - read only, automatically calculated */}
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">Age *</label>
+              <input
+                type="text"
+                name="age"
+                value={formData.age || ''}
+                readOnly
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 bg-gray-100 cursor-not-allowed"
+                placeholder="Age will be calculated automatically"
+              />
+              <p className="text-xs text-gray-500 mt-1">Calculated automatically from date of birth</p>
+            </div>
 
             <FormSelect
               label="Marital Status"
@@ -847,12 +1270,11 @@ const RequestForm: React.FC = () => {
               value={formData.marital_status}
               onChange={handleInputChange}
               error={fieldErrors.marital_status}
+              className={getInputBorderColor('marital_status', formData.marital_status)}
             />
           
             <div className="mb-4">
-              <label className="block text-sm font-bold mb-2">
-                Citizenship Status 
-              </label>
+              <label className="block text-sm font-bold mb-2">Citizenship Status</label>
               <div className="flex space-x-4">
                 <label className="inline-flex items-center">
                   <input
@@ -877,57 +1299,51 @@ const RequestForm: React.FC = () => {
                   <span className="ml-2 text-gray-700">Foreigner</span>
                 </label>
               </div>
-              {fieldErrors.citizen && (
-                <p className="text-red-500 text-xs italic mt-1">{fieldErrors.citizen}</p>
-              )}
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {formData.citizen === 'Foreigner' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Country <span className="text-red-500">*</span>
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Country <span className="text-red-500">*</span></label>
                 <CreatableSelect
                   options={countries}
-                  value={
-                    formData.country 
-                      ? countries.find(option => option.value === formData.country) || { value: formData.country, label: formData.country }
-                      : null
-                  }
-                  onChange={(selectedOption) => setFormData({ ...formData, country: selectedOption ? selectedOption.value : '' })}
+                  value={formData.country ? countries.find(option => option.value === formData.country) || { value: formData.country, label: formData.country } : null}
+                  onChange={(selectedOption) => {
+                    setTouchedFields(prev => ({ ...prev, country: true }));
+                    setFormData({ ...formData, country: selectedOption ? selectedOption.value : '' });
+                  }}
                   onCreateOption={(inputValue) => {
+                    setTouchedFields(prev => ({ ...prev, country: true }));
                     setFormData({ ...formData, country: inputValue });
                   }}
                   placeholder="Select or type a country"
                   isSearchable
                   noOptionsMessage={() => "No country found"}
                   formatCreateLabel={(inputValue) => `Create "${inputValue}"`}
-                  className={fieldErrors.country ? "border-red-500" : ""}
-                  data-field="country"
+                  className={getInputBorderColor('country', formData.country)}
                 />
-                {fieldErrors.country && (
-                  <p className="mt-1 text-sm text-red-600">{fieldErrors.country}</p>
-                )}
+                {fieldErrors.country && <p className="mt-1 text-sm text-red-600">{fieldErrors.country}</p>}
               </div>
             )}
             
-
             {formData.citizen === 'Nigerian' ? (
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
-              <Select
-                options={nigerianStates}
-                value={nigerianStates.find(option => option.value === formData.state) || null}
-                onChange={(selectedOption) => setFormData({ ...formData, state: selectedOption ? selectedOption.value : '' })}
-                placeholder="Select State"
-                isSearchable
-                noOptionsMessage={() => "No state found"}
-                data-field="state"
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+                <Select
+                  options={nigerianStates}
+                  value={nigerianStates.find(option => option.value === formData.state) || null}
+                  onChange={(selectedOption) => {
+                    setTouchedFields(prev => ({ ...prev, state: true }));
+                    setFormData({ ...formData, state: selectedOption ? selectedOption.value : '' });
+                  }}
+                  placeholder="Select State"
+                  isSearchable
+                  noOptionsMessage={() => "No state found"}
+                  className={getInputBorderColor('state', formData.state)}
+                />
+                {fieldErrors.state && <p className="mt-1 text-sm text-red-600">{fieldErrors.state}</p>}
+              </div>
             ) : (
               <FormInput
                 label="State/Province"
@@ -938,6 +1354,7 @@ const RequestForm: React.FC = () => {
                 onChange={handleInputChange}
                 error={fieldErrors.state}
                 required
+                className={getInputBorderColor('state', formData.state)}
               />
             )}
 
@@ -950,27 +1367,10 @@ const RequestForm: React.FC = () => {
                 value={formData.lga}
                 onChange={handleInputChange}
                 error={fieldErrors.lga}
-                // required
+                className={getInputBorderColor('lga', formData.lga)}
               />
             )}
           
-            {/* <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Religion <span className="text-red-500">*</span></label>
-              <select
-                name="religion"
-                value={formData.religion}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                required
-              >
-                <option value="">Select Religion</option>
-                <option value="Christian">Christian</option>
-                <option value="Other">Other</option>
-              </select>
-              {fieldErrors.religion && (
-                <p className="text-red-500 text-xs italic mt-1">{fieldErrors.religion}</p>
-              )}
-            </div> */}
             <FormSelect
               label="Religion"
               name="religion"
@@ -981,7 +1381,7 @@ const RequestForm: React.FC = () => {
               value={formData.religion}
               onChange={handleInputChange}
               error={fieldErrors.religion}
-              required
+              className={getInputBorderColor('religion', formData.religion)}
             />
             
             {formData.religion === 'Christian' && (
@@ -993,20 +1393,20 @@ const RequestForm: React.FC = () => {
                 value={formData.churchName}
                 onChange={handleInputChange}
                 error={fieldErrors.churchName}
-                required
+                className={getInputBorderColor('churchName', formData.churchName)}
               />
             )}
             
             <FormInput
-                label="Profession"
-                name="profession"
-                type="text"
-                placeholder="Enter your state or province"
-                value={formData.profession}
-                onChange={handleInputChange}
-                error={fieldErrors.profession}
-                required
-              />
+              label="Profession"
+              name="profession"
+              type="text"
+              placeholder="Enter your profession"
+              value={formData.profession}
+              onChange={handleInputChange}
+              error={fieldErrors.profession}
+              className={getInputBorderColor('profession', formData.profession)}
+            />
 
             <FormInput
               label="Occupation"
@@ -1016,47 +1416,198 @@ const RequestForm: React.FC = () => {
               value={formData.occupation}
               onChange={handleInputChange}
               error={fieldErrors.occupation}
+              className={getInputBorderColor('occupation', formData.occupation)}
             />
 
             <FormSelect
               label="Unit"
               name="unit"
-              options={units}
+              options={availableUnits}
               value={formData.unit}
               onChange={handleInputChange}
               error={fieldErrors.unit}
               required
+              className={getInputBorderColor('unit', formData.unit)}
             />
 
             {availableClubs.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Club/Church</label>
-              <Select
-                options={availableClubs}
-                value={availableClubs.find(option => option.value === formData.club) || null}
-                onChange={(selectedOption) => setFormData({ ...formData, club: selectedOption ? selectedOption.value : '' })}
-                placeholder="Select Club/Church"
-                isSearchable
-                noOptionsMessage={() => "No club found"}
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Church/Club</label>
+                <Select
+                  options={availableClubs}
+                  value={availableClubs.find(option => option.value === formData.club) || null}
+                  onChange={(selectedOption) => {
+                    setTouchedFields(prev => ({ ...prev, club: true }));
+                    const newClub = selectedOption ? selectedOption.value : '';
+                    setFormData({ ...formData, club: newClub, churchName: '' });
+                    
+                    const isCouncilOfChurch = newClub.toLowerCase().includes('council of church') ;
+                    
+                    if (isCouncilOfChurch && formData.unit) {
+                      const selectedUnit = units.find(unit => unit.value === formData.unit);
+                      if (selectedUnit && selectedUnit.churchDropDown && formData.age) {
+                        const calculatedAge = parseInt(formData.age);
+                        const filteredChurches = getAvailableChurches(calculatedAge, selectedUnit);
+                        setAvailableChurches(filteredChurches);
+                      } else if (selectedUnit && selectedUnit.churchDropDown) {
+                        const allChurches = selectedUnit.churchDropDown.map((church: any) => {
+                          const key = Object.keys(church)[0];
+                          return { value: church[key], label: church[key] };
+                        });
+                        setAvailableChurches(allChurches);
+                      }
+                    } else {
+                      setAvailableChurches([]);
+                    }
+                  }}
+                  placeholder="Select Church/Club"
+                  isSearchable
+                  noOptionsMessage={() => "No church found"}
+                  className={getInputBorderColor('church', formData.club)}
+                />
+                {fieldErrors.club && <p className="mt-1 text-sm text-red-600">{fieldErrors.club}</p>}
+              </div>
+            )}
+
+            {/* Church Name Dropdown - Only show when Council Of Church is selected */}
+            {availableChurches.length > 0 && (
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Church
+                </label>
+                <Select
+                  options={availableChurches}
+                  value={availableChurches.find(option => option.value === formData.churchName) || null}
+                  onChange={(selectedOption) => {
+                    setTouchedFields(prev => ({ ...prev, churchName: true }));
+                    setFormData({ ...formData, churchName: selectedOption ? selectedOption.value : '' });
+                  }}
+                  placeholder="Select your Church"
+                  isSearchable
+                  noOptionsMessage={() => "No church found"}
+                  className={getInputBorderColor('churchName', formData.churchName)}
+                />
+                {fieldErrors.churchName && <p className="mt-1 text-sm text-red-600">{fieldErrors.churchName}</p>}
+              </div>
+            )}
+
+            {!formData.date_of_birth && (
+              <p className="text-sm text-yellow-600 mb-2 col-span-2">
+                Please enter your date of birth first to see available clubs and churches
+              </p>
+            )}
+
+            {/* Updated error message for no clubs available */}
+            {formData.age && formData.unit && availableClubs.length === 0 && (
+              <div className="text-sm text-red-600 mb-2 col-span-2 p-3 bg-red-50 rounded border border-red-200">
+                {(() => {
+                  const unitName = formData.unit;
+                  const unitLabel = availableUnits.find(u => u.value === unitName)?.label || unitName;
+                  const age = parseInt(formData.age);
+                  const isCouncilOfChurch = unitLabel.toLowerCase().includes('council') && unitLabel.toLowerCase().includes('church');
+                  
+                  // Determine the specific message based on unit type
+                  let specificMessage = '';
+                  
+                  if (unitLabel.toLowerCase().includes("y's men") || unitLabel.toLowerCase().includes('ys men')) {
+                    specificMessage = `Y's Men not available for your age group`;
+                  } else if (unitLabel.toLowerCase().includes('central')) {
+                    specificMessage = `Central Club not available for your age group`;
+                  } else if (isCouncilOfChurch) {
+                    specificMessage = `No churches available for your age group in Council of Church`;
+                  } else if (unitLabel.toLowerCase().includes('youth')) {
+                    specificMessage = `No clubs available for your age group in Youth Council`;
+                  } else {
+                    specificMessage = `No clubs available for your age group`;
+                  }
+                  
+                  return (
+                    <>
+                      <p className="font-semibold">{specificMessage}</p>
+                      <p>Age {formData.age} in {unitLabel}:</p>
+                      <ul className="list-disc list-inside mt-1">
+                        <li>Youth Council (ages 1-23): Hi-Y </li>
+                        <li>Youth Council (ages 24-30): Y-Elite </li>
+                        <li>Age 31+: Please select an other unit</li>
+                      </ul>
+                      <p className="mt-2">Please try selecting a different unit or contact administration.</p>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* Helpful info section */}
+            {formData.age && formData.unit && (
+              <div className="text-sm text-blue-600 mb-2 col-span-2 p-3 bg-blue-50 rounded border border-blue-200">
+                <p className="font-semibold">Age Guidance for {availableUnits.find(u => u.value === formData.unit)?.label || formData.unit}:</p>
+                {(() => {
+                  const age = parseInt(formData.age);
+                  const unitLabel = availableUnits.find(u => u.value === formData.unit)?.label || formData.unit;
+                  const isYouthCouncil = unitLabel.toLowerCase().includes('youth');
+                  const isCouncilOfChurch = unitLabel.toLowerCase().includes('council') && unitLabel.toLowerCase().includes('church');
+                  
+                  if (isYouthCouncil) {
+                    if (age <= 23) {
+                      return <p>At age {formData.age}, you can join: Hi-Y</p>;
+                    } else if (age >= 24 && age <= 30) {
+                      return <p>At age {formData.age}, you can join: Y-Elite</p>;
+                    } else {
+                      return <p>At age {formData.age}, you cannot join Youth Council. Please select an other unit.</p>;
+                    }
+                  } else if (isCouncilOfChurch) {
+                    // For Council of Church, show a simple message instead of listing all churches
+                    if (age <= 23) {
+                      return <p>At age {formData.age}, you can only join Youth Council</p>;
+                    } else if (age >= 24 && age <= 30) {
+                      return <p>At age {formData.age}, you can only join Youth Council</p>;
+                    } else {
+                      return <p>At age {formData.age}, you can join any other unit</p>;
+                    }
+                  } else if (unitLabel.toLowerCase().includes("y's men") || unitLabel.toLowerCase().includes('central')) {
+                    if (age >= 31) {
+                      return <p>At age {formData.age}, you can join this unit</p>;
+                    } else {
+                      return <p>At age {formData.age}, you cannot join {unitLabel}. Minimum age is 31.</p>;
+                    }
+                  } else {
+                    // For other units, show available clubs but limit the display
+                    const availableClubLabels = availableClubs.map(club => club.label);
+                    if (availableClubLabels.length > 3) {
+                      return <p>At age {formData.age}, you can join {availableClubLabels.length} available clubs</p>;
+                    } else if (availableClubLabels.length > 0) {
+                      return <p>At age {formData.age}, you can join: {availableClubLabels.join(', ')}</p>;
+                    } else {
+                      return <p>At age {formData.age}, no clubs available for this unit</p>;
+                    }
+                  }
+                })()}
+              </div>
             )}
           </div>
 
-
-          {/* add next of kin field */}
           <FormInput
-            label="Next of Kin"
-            name="nextOfKin"
+            label="Next of Kin Name"
+            name="nextOfKinName"
             type="text"
-            placeholder="Enter your next of kin"
-            value={formData.nextOfKin}
+            placeholder="Next Of Kin's Name"
+            value={formData.nextOfKinName}
             onChange={handleInputChange}
-            error={fieldErrors.nextOfKin}
-            required
+            error={fieldErrors.nextOfKinName}
+            className={getInputBorderColor('nextOfKinName', formData.nextOfKinName)}
           />
 
-          {/* add were you refered by something this should be a yes or no */}
+          <FormInput
+            label="Next of Kin Phone No"
+            name="nextOfKinNumber"
+            type="text"
+            placeholder="Next of kin's Phone No"
+            value={formData.nextOfKinNumber}
+            onChange={handleInputChange}
+            error={fieldErrors.nextOfKinNumber}
+            className={getInputBorderColor('nextOfKinNumber', formData.nextOfKinNumber)}
+          />
+
           <FormSelect
             label="Were you referred by someone?"
             name="referredBy"
@@ -1067,20 +1618,21 @@ const RequestForm: React.FC = () => {
             value={formData.referredBy}
             onChange={handleInputChange}
             error={fieldErrors.referredBy}
-            required
+            className={getInputBorderColor('referredBy', formData.referredBy)}
           />
 
-          {/* add referela nmae optional */}
-          <FormInput
-            label="Referral Name (Optional)"
-            name="referralName"
-            type="text"
-            placeholder="Enter your referral name"
-            value={formData.referralName}
-            onChange={handleInputChange}
-            error={fieldErrors.referralName}
-          />
-
+          {formData.referredBy === 'yes' && (
+            <FormInput
+              label="Referral Name"
+              name="referralName"
+              type="text"
+              placeholder="Enter your referral name"
+              value={formData.referralName}
+              onChange={handleInputChange}
+              error={fieldErrors.referralName}
+              className={getInputBorderColor('referralName', formData.referralName)}
+            />
+          )}
         </div>
 
         {/* Identification Section */}
@@ -1095,216 +1647,45 @@ const RequestForm: React.FC = () => {
             onChange={handleInputChange}
             error={fieldErrors.validIdType}
             required
+            className={getInputBorderColor('validIdType', formData.validIdType)}
           />
 
-          <div className="mb-4">
-            <label 
-              htmlFor="validIdFile" 
-              className="block text-gray-700 text-sm font-bold mb-2"
-            >
-              ID Document *
-            </label>
-            <div 
-              className={`border-2 border-dashed rounded-lg p-6 text-center ${
-                dragActive.validIdFile ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
-              } ${fieldErrors.validIdFile ? 'border-red-500' : ''}`}
-              onDragEnter={(e) => handleDrag(e, 'validIdFile')}
-              onDragLeave={(e) => handleDrag(e, 'validIdFile')}
-              onDragOver={(e) => handleDrag(e, 'validIdFile')}
-              onDrop={(e) => handleDrop(e, 'validIdFile')}
-            >
-              <input
-                type="file"
-                id="validIdFile"
-                name="validIdFile"
-                accept="image/jpeg,image/jpg,image/png"
-                onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0], 'validIdFile')}
-                className="hidden"
-                ref={validIdFileRef}
-              />
-              <div className="flex flex-col items-center">
-                <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 0115.9 6M9 19h6m-3-3v6m3-6v6m-6-6v6" />
-                </svg>
-                <p className="text-gray-600 mb-2">
-                  {formData.validIdFile ? formData.validIdFile.name : 'Drag and drop your ID document here or'}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => validIdFileRef.current?.click()}
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
-                >
-                  Choose File
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Upload a clear image of your ID document (JPEG, JPG, PNG, max 2MB)
-              </p>
-              {fieldErrors.validIdFile && (
-                <p className="text-red-500 text-sm mt-2">{fieldErrors.validIdFile}</p>
-              )}
-            </div>
-          </div>
-
-          {idPreview && (
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
-                ID Preview:
-              </label>
-              <div className="flex justify-center">
-                <img
-                  src={idPreview}
-                  alt="ID document preview"
-                  className="w-48 h-32 object-cover border-2 border-gray-300 rounded"
-                />
-              </div>
-            </div>
-          )}
-          {formData.validIdFile && !idPreview && (
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
-                Uploaded File:
-              </label>
-              <p className="text-gray-600">{formData.validIdFile.name}</p>
-            </div>
-          )}
+          <FileUploadField
+            field="validIdFile"
+            label="ID Document"
+            required={true}
+            preview={idPreview}
+            dragActiveKey="validIdFile"
+            fileRef={validIdFileRef}
+          />
         </div>
 
         {/* Photo Upload Section */}
         <div className="mb-6">
           <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b pb-2">Photo Upload</h3>
           
-          <div className="mb-4">
-            <label 
-              htmlFor="passportPhoto" 
-              className="block text-gray-700 text-sm font-bold mb-2"
-            >
-              Passport Photo *
-            </label>
-            <div 
-              className={`border-2 border-dashed rounded-lg p-6 text-center ${
-                dragActive.passportPhoto ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
-              } ${fieldErrors.passportPhoto ? 'border-red-500' : ''}`}
-              onDragEnter={(e) => handleDrag(e, 'passportPhoto')}
-              onDragLeave={(e) => handleDrag(e, 'passportPhoto')}
-              onDragOver={(e) => handleDrag(e, 'passportPhoto')}
-              onDrop={(e) => handleDrop(e, 'passportPhoto')}
-            >
-              <input
-                type="file"
-                id="passportPhoto"
-                name="passportPhoto"
-                accept="image/jpeg,image/jpg,image/png"
-                onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0], 'passportPhoto')}
-                className="hidden"
-                ref={passportPhotoRef}
-              />
-              <div className="flex flex-col items-center">
-                <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 0115.9 6M9 19h6m-3-3v6m3-6v6m-6-6v6" />
-                </svg>
-                <p className="text-gray-600 mb-2">
-                  {formData.passportPhoto ? formData.passportPhoto.name : 'Drag and drop your passport photo here or'}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => passportPhotoRef.current?.click()}
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
-                >
-                  Choose Photo
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Upload a clear passport picture of yourself (JPEG, JPG, or PNG, max 2MB)
-              </p>
-              {fieldErrors.passportPhoto && (
-                <p className="text-red-500 text-sm mt-2">{fieldErrors.passportPhoto}</p>
-              )}
-            </div>
-          </div>
-
-          {photoPreview && (
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
-                Photo Preview:
-              </label>
-              <div className="flex justify-center">
-                <img
-                  src={photoPreview}
-                  alt="Passport photo preview"
-                  className="w-32 h-32 object-cover border-2 border-gray-300 rounded"
-                />
-              </div>
-            </div>
-          )}
+          <FileUploadField
+            field="passportPhoto"
+            label="Passport Photo"
+            required={true}
+            preview={photoPreview}
+            dragActiveKey="passportPhoto"
+            fileRef={passportPhotoRef}
+          />
         </div>
 
         {/* Signature Upload Section */}
         <div className="mb-6">
           <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b pb-2">Signature Upload</h3>
-          <div className="mb-4">
-            <label
-              htmlFor="signature"
-              className="block text-gray-700 text-sm font-bold mb-2"
-            >
-              Signature (optional)
-            </label>
-            <div
-              className={`border-2 border-dashed rounded-lg p-6 text-center ${
-                dragActive.signature ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
-              } ${fieldErrors.signature ? 'border-red-500' : ''}`}
-              onDragEnter={(e) => handleDrag(e, 'signature')}
-              onDragLeave={(e) => handleDrag(e, 'signature')}
-              onDragOver={(e) => handleDrag(e, 'signature')}
-              onDrop={(e) => handleDrop(e, 'signature')}
-            >
-              <input
-                type="file"
-                id="signature"
-                name="signature"
-                accept="image/jpeg,image/jpg,image/png"
-                onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0], 'signature')}
-                className="hidden"
-                ref={signatureRef}
-              />
-              <div className="flex flex-col items-center">
-                <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 0115.9 6M9 19h6m-3-3v6m3-6v6m-6-6v6" />
-                </svg>
-                <p className="text-gray-600 mb-2">
-                  {formData.signature ? formData.signature.name : 'Drag and drop your signature image here or'}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => signatureRef.current?.click()}
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
-                >
-                  Choose Signature
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Upload a clear handwritten or e-signature image (JPEG, JPG, or PNG, max 2MB)
-              </p>
-              {fieldErrors.signature && (
-                <p className="text-red-500 text-sm mt-2">{fieldErrors.signature}</p>
-              )}
-            </div>
-          </div>
-
-          {signaturePreview && (
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
-                Signature Preview:
-              </label>
-              <div className="flex justify-center">
-                <img
-                  src={signaturePreview}
-                  alt="Signature preview"
-                  className="w-48 h-32 object-contain border-2 border-gray-300 rounded"
-                />
-              </div>
-            </div>
-          )}
+          
+          <FileUploadField
+            field="signature"
+            label="Signature"
+            required={false}
+            preview={signaturePreview}
+            dragActiveKey="signature"
+            fileRef={signatureRef}
+          />
         </div>
 
         {/* Submit Button */}

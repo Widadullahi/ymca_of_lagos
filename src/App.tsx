@@ -26,6 +26,11 @@ import QRVerificationPage from './pages/QRVerificationPage';
 import AboutUsPage from './pages/AboutUsPage';
 import AboutMeV2 from './components/AboutMeV2';
 import StaffAdminPage from './pages/admin/StaffAdminPage';
+import HistoryPage from './components/HistoryPage';
+import Vision2030Page from './components/Vision2030Page';
+
+
+
 // import { AuthState } from './types';
 
 const App: React.FC = () => {
@@ -47,6 +52,8 @@ const App: React.FC = () => {
         <Route path="/verify" element={<QRVerificationPage />} />
         <Route path="/about-" element={<AboutUsPage />} /> 
         <Route path="/about-us" element={<AboutMeV2 />} />
+        <Route path="/vision-2030" element={<Vision2030Page />} />
+        <Route path="/history" element={<HistoryPage />} />
         <Route path="/dashboard" element={<PrivateRoute element={<MemberDashboardMember />} />} />
         <Route path="/account" element={<PrivateRoute element={<ProfileManagementPage />} />} />
         <Route path="/myid" element={<PrivateRoute element={<DashboardPage />} />} />

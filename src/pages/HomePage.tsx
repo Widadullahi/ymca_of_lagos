@@ -11,6 +11,8 @@ import HeroSectionS2 from '../components/HeroSectionS2';
 import WhoAreWe from '../components/WhoAreWe.js';
 import SocialMediaBar from '../components/navigation/SocialMediaBar';
 import MainNavigation from '../components/navigation/MainNavigation';
+import aboutImage from '../assets/images/aboutus.jpg';
+import vision2030Logo from '../assets/images/Vision-2030-logos-4-1.jpg';
 
 interface Quote {
   id: string;
@@ -28,6 +30,14 @@ const HomePage: React.FC = () => {
     email: '',
     redirect_url: FRONTEND_URL + '',
   });
+
+  // Stats data
+  const [stats] = useState([
+    { number: '5000+', label: 'Annual Beneficiaries', icon: '👥' },
+    { number: '80+', label: 'Years of Service', icon: '📅' },
+    { number: '50+', label: 'Active Programs', icon: '🎯' },
+    { number: '1000+', label: 'Youth Trained', icon: '🌟' }
+  ]);
 
   // Quotes data
   const [quotes] = useState<Quote[]>([
@@ -164,6 +174,59 @@ const HomePage: React.FC = () => {
     }
   };
 
+  const fadeInUp = {
+    hidden: { opacity: 0, y: 60 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.6, ease: "easeOut" }
+    }
+  };
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+        delayChildren: 0.1
+      }
+    }
+  };
+
+  // Quick Links data - moved after function definitions
+  const [quickLinks] = useState(() => [
+    { 
+      title: 'About Us', 
+      description: 'Learn about our rich history, mission, and the team behind YMCA Lagos', 
+      link: '/about-us', 
+      icon: '🏛️',
+      image: '/images/about-us-preview.jpg'
+    },
+    { 
+    title: 'Vision 2030', 
+    description: 'The Four Pillars of Impact: To achieve Vision 2030, YMCA of Lagos will focus on four strategic areas and work toward 12 strategic goals.', 
+    link: '/vision-2030', 
+    icon: '🌍',
+    image: '/images/vision-2030-preview.jpg'
+  },
+    { 
+      title: 'YMCA History', 
+      description: 'Explore our journey from 1844 to present day across the globe', 
+      link: '/history', 
+      icon: '📜',
+      image: '/images/history-preview.jpg'
+    },
+    { 
+      title: 'Donate', 
+      description: 'Support our mission and make a difference in young lives', 
+      link: '#donate', 
+      icon: '❤️',
+      image: '/images/donate-preview.jpg',
+      action: openDonationModal
+    },
+  ]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Social Media Bar */}
@@ -175,7 +238,7 @@ const HomePage: React.FC = () => {
       {/* Hero Section S2 */}
       <HeroSectionS2 
         title="Welcome to YMCA of Lagos"
-        subtitle="We are part of the worldwide YMCA movement and Africa’s largest Pan-African youth membership network, committed to empowering young people for the African Renaissance. Through holistic development, leadership training, and community transformation, we nurture the potential of every individual to create lasting impact across Lagos, Nigeria, and beyond."
+        subtitle="We are part of the worldwide YMCA movement and Africa's largest Pan-African youth membership network, committed to empowering young people for the African Renaissance. Through holistic development, leadership training, and community transformation, we nurture the potential of every individual to create lasting impact across Lagos, Nigeria, and beyond."
         primaryButtonText="Membership Application"
         secondaryButtonText="Make Donation"
         primaryButtonLink="/membership-request"
@@ -184,45 +247,175 @@ const HomePage: React.FC = () => {
         imageAlt="Patient with healthcare provider"
       />
 
-            <LatestNews />
+      {/* Stats Section */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={staggerContainer}
+            className="grid grid-cols-2 md:grid-cols-4 gap-8"
+          >
+            {stats.map((stat, index) => (
+              <motion.div
+                key={index}
+                variants={fadeInUp}
+                className="text-center"
+              >
+                <div className="text-4xl mb-4">{stat.icon}</div>
+                <div className="text-3xl md:text-4xl font-bold text-red-600 mb-2">
+                  {stat.number}
+                </div>
+                <div className="text-gray-600 font-medium">{stat.label}</div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      <LatestNews />
+
+      {/* Quick Links Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeInUp}
+            className="text-center mb-12"
+          >
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Explore YMCA Lagos</h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Discover our programs, learn about our mission, and find ways to get involved in our vibrant community
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={staggerContainer}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          >
+            {quickLinks.map((link, index) => (
+              <motion.div
+                key={index}
+                variants={fadeInUp}
+                className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                onClick={() => link.action ? link.action() : navigate(link.link)}
+              >
+                {/* Image Container */}
+                <div className="h-32 bg-gradient-to-br from-red-100 to-red-200 relative overflow-hidden">
+                  {link.image ? (
+                    <img 
+                      src={link.image} 
+                      alt={link.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <span className="text-4xl">{link.icon}</span>
+                    </div>
+                  )}
+                  {/* Overlay */}
+                  <div className="absolute inset-0 bg-black bg-opacity-20 group-hover:bg-opacity-10 transition-all duration-300"></div>
+                </div>
+                
+                {/* Content */}
+                <div className="p-6">
+                  <div className="flex items-start mb-3">
+                    <span className="text-2xl mr-3">{link.icon}</span>
+                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-red-600 transition-colors">
+                      {link.title}
+                    </h3>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+                    {link.description}
+                  </p>
+                  <div className="flex items-center text-red-600 font-semibold text-sm group-hover:text-red-700 transition-colors">
+                    Learn More
+                    <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* View All Button */}
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeInUp}
+            className="text-center mt-12"
+          >
+            <motion.button
+              variants={buttonVariants}
+              whileHover="hover"
+              whileTap="tap"
+              onClick={() => navigate('/about-us')}
+              className="border-2 border-red-600 text-red-600 font-bold py-3 px-8 rounded-full hover:bg-red-600 hover:text-white transition-all duration-300"
+            >
+              Explore All Sections
+            </motion.button>
+          </motion.div>
+        </div>
+      </section>
 
       {/* Who We Are Section */}
-      {/* <section className="py-16 bg-white">
+      <WhoAreWe buttonVariants={buttonVariants}/>
+
+      <CoreValue />
+
+      {/* Vision 2030 Preview Section */}
+      <section className="py-16 bg-gradient-to-r from-red-600 to-red-700 text-white">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center gap-8">
-            <div className="md:w-2/5">
-              <div className="rounded-lg overflow-hidden shadow-xl">
-                <img 
-                  src="https://images.unsplash.com/photo-1551601651-2a8555f1a136?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80" 
-                  alt="Healthcare professionals" 
-                  className="w-full h-auto" 
-                />
-              </div>
-            </div>
-            
-            <div className="md:w-3/5">
-              <h2 className="text-3xl font-bold text-gray-800 mb-6">Who we are</h2>
-              <p className="text-gray-600 mb-6 leading-relaxed max-w-xl">
-                The YMCA movement is dedicated to empowering youth and communities worldwide to build a just, sustainable, and inclusive world.
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeInUp}
+            >
+              <h2 className="text-4xl font-bold mb-6">YMCA Vision 2030</h2>
+              <p className="text-xl mb-6 opacity-90">
+                Join us in the global movement to empower young people and create lasting positive change across Africa and beyond.
+              </p>
+              <p className="mb-8 opacity-90">
+                Discover how YMCA of Lagos is implementing the four pillars of Vision 2030 to drive sustainable development and youth empowerment.
               </p>
               <motion.button
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
-                className="text-red-700 border border-red-700 px-6 py-2 rounded-full font-medium hover:bg-red-50 transition-colors"
+                onClick={() => navigate('/vision-2030')}
+                className="bg-white text-red-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
               >
-                Read more
+                Explore Vision 2030
               </motion.button>
-            </div>
+            </motion.div>
+            
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeInUp}
+              transition={{ delay: 0.2 }}
+              className="flex justify-center"
+            >
+              <img 
+                src={vision2030Logo} 
+                alt="YMCA Vision 2030" 
+                className="max-w-md w-full h-auto rounded-lg shadow-2xl"
+              />
+            </motion.div>
           </div>
         </div>
-      </section> */}
-      <WhoAreWe buttonVariants={buttonVariants}/>
-
-
-
-
-      <CoreValue />
+      </section>
 
       {/* Inspirational Quotes Section */}
       <section className="py-16 bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -317,14 +510,34 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       </section>
-
-      {/* Updates Section */}
-      {/* <LatestUpdate /> */}
-
-      {/* Latest News Section */}
-      {/* <LatestNews /> */}
       
       <Programme />
+
+      {/* Emergency/Urgent CTA Section */}
+      <section className="bg-red-600 text-white py-12">
+        <div className="container mx-auto px-4 text-center">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeInUp}
+          >
+            <h2 className="text-3xl font-bold mb-4">Urgent Support Needed</h2>
+            <p className="text-xl mb-6 max-w-2xl mx-auto opacity-90">
+              Your donation today can transform a young person's life. Help us continue our vital work in youth empowerment and community development.
+            </p>
+            <motion.button
+              variants={buttonVariants}
+              whileHover="hover"
+              whileTap="tap"
+              onClick={openDonationModal}
+              className="bg-white text-red-600 font-bold py-3 px-8 rounded-full shadow-lg hover:bg-gray-100 transition-colors"
+            >
+              Donate Now
+            </motion.button>
+          </motion.div>
+        </div>
+      </section>
 
       {/* Call to Action */}
       <section className="bg-gray-100 py-16">
@@ -339,28 +552,36 @@ const HomePage: React.FC = () => {
               Come and be part of our family. We welcome everyone, regardless of where you are on your journey.
             </p>
             
-            <motion.button
-              variants={buttonVariants}
-              whileHover="hover"
-              whileTap="tap"
-              onClick={() => navigate('/about-us')}
-              className="bg-red-700 text-white font-bold py-3 px-8 rounded-full shadow-lg"
-            >
-              Learn More About Us
-            </motion.button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <motion.button
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
+                onClick={() => navigate('/membership-request')}
+                className="bg-red-700 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-red-800 transition-colors"
+              >
+                Become a Member
+              </motion.button>
+              
+              <motion.button
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
+                onClick={() => navigate('/about-us')}
+                className="border-2 border-red-700 text-red-700 font-bold py-3 px-8 rounded-full hover:bg-red-700 hover:text-white transition-colors"
+              >
+                Learn More About Us
+              </motion.button>
+            </div>
           </motion.div>
         </div>
       </section>
 
-
-
       {/* Footer */}
-        <footer className="bg-gray-800 text-white py-14">
+      <footer className="bg-gray-800 text-white py-14">
         <div className="container mx-auto px-4">
-
           {/* Top Section */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-
             {/* Column 1 - About */}
             <div>
               <img 
@@ -398,22 +619,18 @@ const HomePage: React.FC = () => {
             {/* Column 4 - Contact */}
             <div>
               <h3 className="text-lg font-semibold mb-4">Get in touch...</h3>
-
               <p className="flex items-center space-x-3 text-gray-300">
                 <span>📞</span>
                 <span>Hostel: 08102977099</span>
               </p>
-
               <p className="flex items-center space-x-3 text-gray-300 mt-2">
                 <span>📞</span>
                 <span>Admin: 09026802928</span>
               </p>
-
               <p className="flex items-center space-x-3 text-gray-300 mt-2">
                 <span>📞</span>
                 <span>Programmes: 09026114628</span>
               </p>
-
               <p className="flex items-center space-x-3 text-gray-300 mt-2">
                 <span>✉️</span>
                 <span>info@ymcaoflagos.org</span>
@@ -423,35 +640,21 @@ const HomePage: React.FC = () => {
 
           {/* CTA + Bottom Section */}
           <div className="mt-12 flex flex-col md:flex-row justify-between items-center">
-
             {/* Red CTA Button */}
-            <a 
-              href="#"
-              className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-lg font-semibold"
+            <button 
+              onClick={openDonationModal}
+              className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-lg font-semibold transition-colors duration-300"
             >
               Donate
-            </a>
-
-            {/* Language */}
-            {/* <div className="mt-6 md:mt-0 flex items-center space-x-2">
-              🌍 
-              <select className="bg-black border border-gray-700 px-3 py-2 text-gray-300">
-                <option>EN</option>
-                <option>FR</option>
-              </select>
-            </div> */}
+            </button>
           </div>
 
           {/* Bottom line */}
           <div className="mt-10 pt-6 border-t border-gray-700 text-center text-gray-400">
             © 2025 YMCA Lagos. All rights reserved.
           </div>
-
         </div>
       </footer>
-
-
-     
 
       {/* Donation Modal */}
       <AnimatePresence>
