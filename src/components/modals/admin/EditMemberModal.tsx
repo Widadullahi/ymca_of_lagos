@@ -229,7 +229,6 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({
                       className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                     >
                       <option value="Full Membership">Full Membership</option>
-                      <option value="Associate Membership">Associate Membership</option>
                       <option value="Honorary Membership">Honorary Membership</option>
                       <option value="Student Membership">Student Membership</option>
                     </select>

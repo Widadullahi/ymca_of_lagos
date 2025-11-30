@@ -346,10 +346,11 @@ const MemberRequestListing: React.FC = () => {
               className="w-full p-2 border border-gray-300 rounded-md"
             >
               <option value="">All Units</option>
-              <option value="Council of Church">Council of Church</option>
+              <option value="Coundil of church">Council of Church</option>
               <option value="Youth Council">Youth Council</option>
               <option value="Y's Men">Y's Men</option>
-              <option value="Central Club">Central Club</option>
+              <option value="Men's men">Men's Men</option>
+              <option value="Central club">Central Club</option>
             </select>
           </div>
 
@@ -364,8 +365,8 @@ const MemberRequestListing: React.FC = () => {
               className="w-full p-2 border border-gray-300 rounded-md"
             >
               <option value="">All Genders</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
             </select>
           </div>
         </div>

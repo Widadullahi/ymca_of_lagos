@@ -33,6 +33,24 @@ const UserListingPage: React.FC = () => {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
 
+  // Bulk selection state
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const allSelected = filteredMembers.length > 0 && selectedUserIds.length === filteredMembers.length;
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedUserIds([]);
+    } else {
+      setSelectedUserIds(filteredMembers.map((m) => m.id));
+    }
+  };
+
+  const toggleSelectUser = (id: string) => {
+    setSelectedUserIds((prev) =>
+      prev.includes(id) ? prev.filter((uid) => uid !== id) : [...prev, id]
+    );
+  };
+
   async function fetchMembers(page = 1, append = false) {
     setIsLoadingMore(append);
     if (!append) setIsLoading(true);
@@ -213,8 +231,168 @@ const UserListingPage: React.FC = () => {
   };
 
 
+  // Bulk action modal state
+  const [showBulkActionModal, setShowBulkActionModal] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<'membership' | 'status'>('membership');
+  const [bulkMembershipType, setBulkMembershipType] = useState('');
+  const [bulkStatus, setBulkStatus] = useState('');
+
+  // Show action bar if any user is selected
+  const showActionBar = selectedUserIds.length > 0;
+
+  // Membership type options for the action modal
+  const membershipTypeOptions = [
+    { value: 'full', label: 'Full Member' },
+    { value: 'ordinary', label: 'Ordinary Member' },
+    { value: 'honorary', label: 'Honorary Member' },
+    { value: 'life', label: 'Life Member' },
+  ];
+
+  // Status options
+  const statusOptions = [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+  ];
+
+  // Handler for opening the bulk action modal
+  const handleBulkAction = () => {
+    setShowBulkActionModal(true);
+    setBulkActionType('membership');
+    setBulkMembershipType('');
+    setBulkStatus('');
+  };
+
+  // Handler for closing the modal
+  const closeBulkActionModal = () => {
+    setShowBulkActionModal(false);
+    setBulkMembershipType('');
+    setBulkStatus('');
+  };
+
+  // Handler for submitting the bulk update
+  const handleBulkUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedUserIds.length === 0) return;
+    try {
+      if (bulkActionType === 'membership' && bulkMembershipType) {
+          await fetchWithAuth({
+            method: 'POST',
+            path: '/admin/members/bulk-update-membership-type/',
+            body: {
+              user_ids: selectedUserIds,
+              membership_type: bulkMembershipType,
+            },
+            headers: { 'Content-Type': 'application/json' },
+          });
+      } else if (bulkActionType === 'status' && bulkStatus) {
+          await fetchWithAuth({
+            method: 'POST',
+            path: '/admin/members/bulk-update-status/',
+            body: {
+              user_ids: selectedUserIds,
+              is_active: bulkStatus === 'active',
+            },
+            headers: { 'Content-Type': 'application/json' },
+          });
+      }
+      // Refresh members and clear selection
+      await fetchMembers();
+      setSelectedUserIds([]);
+    } catch (err) {
+      // Optionally show error to user
+      console.error('Bulk update failed', err);
+    }
+    closeBulkActionModal();
+  };
+
   return (
-    <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+    <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen relative">
+            {/* Floating action bar for bulk actions */}
+            {showActionBar && (
+              <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-30 bg-white shadow-lg rounded-lg px-6 py-3 flex items-center space-x-4 border border-gray-200">
+                <span className="text-gray-700 font-medium">{selectedUserIds.length} selected</span>
+                <button
+                  className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+                  onClick={handleBulkAction}
+                >
+                  Take Action
+                </button>
+              </div>
+            )}
+
+            {/* Modal for choosing bulk action (membership type or status update) */}
+            {showBulkActionModal && (
+              <div className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-40">
+                <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md relative">
+                  <button
+                    className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                    onClick={closeBulkActionModal}
+                    aria-label="Close"
+                  >
+                    &times;
+                  </button>
+                  <h2 className="text-lg font-bold mb-4">Bulk Action</h2>
+                  <form onSubmit={handleBulkUpdate}>
+                    <label className="block mb-2 font-medium text-gray-700">Action</label>
+                    <select
+                      className="w-full p-2 border border-gray-300 rounded mb-4"
+                      value={bulkActionType}
+                      onChange={e => setBulkActionType(e.target.value as 'membership' | 'status')}
+                    >
+                      <option value="membership">Update Membership Type</option>
+                      <option value="status">Update Status</option>
+                    </select>
+
+                    {bulkActionType === 'membership' && (
+                      <>
+                        <label className="block mb-2 font-medium text-gray-700">Membership Type</label>
+                        <select
+                          className="w-full p-2 border border-gray-300 rounded mb-4"
+                          value={bulkMembershipType}
+                          onChange={e => setBulkMembershipType(e.target.value)}
+                          required
+                        >
+                          <option value="">Select membership type</option>
+                          {membershipTypeOptions.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                        <button
+                          type="submit"
+                          className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700"
+                          disabled={!bulkMembershipType}
+                        >
+                          Update Membership Type
+                        </button>
+                      </>
+                    )}
+                    {bulkActionType === 'status' && (
+                      <>
+                        <label className="block mb-2 font-medium text-gray-700">Status</label>
+                        <select
+                          className="w-full p-2 border border-gray-300 rounded mb-4"
+                          value={bulkStatus}
+                          onChange={e => setBulkStatus(e.target.value)}
+                          required
+                        >
+                          <option value="">Select status</option>
+                          {statusOptions.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                        <button
+                          type="submit"
+                          className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700"
+                          disabled={!bulkStatus}
+                        >
+                          Update Status
+                        </button>
+                      </>
+                    )}
+                  </form>
+                </div>
+              </div>
+            )}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Members</h1>
@@ -243,23 +421,6 @@ const UserListingPage: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-              Category
-            </label>
-            <select
-              id="category"
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-            >
-              <option value="">All Categories</option>
-              <option value="Adult Member">Adult Member</option>
-              <option value="Youth Member">Youth Member</option>
-              <option value="Senior Member">Senior Member</option>
-            </select>
-          </div>
-
-          <div>
             <label htmlFor="membershipCategory" className="block text-sm font-medium text-gray-700 mb-1">
               Membership Type
             </label>
@@ -271,9 +432,9 @@ const UserListingPage: React.FC = () => {
             >
               <option value="">All Membership Types</option>
               <option value="Full Membership">Full Membership</option>
-              <option value="Associate Membership">Associate Membership</option>
               <option value="Honorary Membership">Honorary Membership</option>
-              <option value="Student Membership">Student Membership</option>
+              <option value="Ordinary Membership">Ordinary Membership</option>
+              <option value="Live Membership">Live Membership</option>
             </select>
           </div>
 
@@ -291,6 +452,7 @@ const UserListingPage: React.FC = () => {
               <option value="Council of Church">Council of Church</option>
               <option value="Youth Council">Youth Council</option>
               <option value="Y's Men">Y's Men</option>
+              <option value="Men's men">Men's Men</option>
               <option value="Central Club">Central Club</option>
             </select>
           </div>
@@ -405,6 +567,14 @@ const UserListingPage: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
+                  <th scope="col" className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleSelectAll}
+                      aria-label="Select all members"
+                    />
+                  </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Member
                   </th>
@@ -434,6 +604,14 @@ const UserListingPage: React.FC = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredMembers.map((member) => (
                   <tr key={member.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedUserIds.includes(member.id)}
+                        onChange={() => toggleSelectUser(member.id)}
+                        aria-label={`Select member ${member.first_name} ${member.last_name}`}
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">

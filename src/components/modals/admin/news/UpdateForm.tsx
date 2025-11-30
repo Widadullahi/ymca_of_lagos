@@ -35,7 +35,6 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
   const [imageBase64, setImageBase64] = useState<string>('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   
-  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
 
   // Helper function to convert file to base64
   const convertToBase64 = (file: File): Promise<string> => {
@@ -89,45 +88,7 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
     }
   };
 
-  const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setAttachmentFile(file);
-    }
-  };
 
-  const handleAddAttachment = async () => {
-    if (attachmentFile) {
-      try {
-        const fileType = attachmentFile.type.startsWith('image/') ? 'image' : 
-                        attachmentFile.type === 'application/pdf' ? 'pdf' : 
-                        attachmentFile.type.startsWith('video/') ? 'video' : 'document';
-        
-        // Convert file to base64
-        const base64 = await convertToBase64(attachmentFile);
-        
-        setAttachments([...attachments, { 
-          name: attachmentFile.name, 
-          url: '', // Will be set after upload or can be removed if using base64 only
-          type: fileType,
-          base64: base64,
-          file: attachmentFile // Keep for reference if needed
-        }]);
-        setAttachmentFile(null);
-        
-        // Reset the file input
-        const fileInput = document.getElementById('attachment-file') as HTMLInputElement;
-        if (fileInput) fileInput.value = '';
-      } catch (error) {
-        console.error('Error converting attachment to base64:', error);
-        alert('Error processing attachment file');
-      }
-    }
-  };
-
-  const handleRemoveAttachment = (index: number) => {
-    setAttachments(attachments.filter((_, i) => i !== index));
-  };
 
   const handleRemoveImage = () => {
     setImageFile(null);
@@ -232,7 +193,7 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
           
           {/* Attachments Section */}
           <div>
-            <h4 className="text-sm font-medium mb-2">Attachments</h4>
+            {/* <h4 className="text-sm font-medium mb-2">Attachments</h4>
             {attachments.map((attachment, index) => (
               <div key={index} className="flex justify-between items-center border p-2 rounded mb-2">
                 <div className="flex items-center space-x-2">
@@ -247,9 +208,9 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
                   Remove
                 </button>
               </div>
-            ))}
+            ))} */}
             
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <input
                 id="attachment-file"
                 type="file"
@@ -270,7 +231,7 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
               >
                 {attachmentFile ? 'Add Attachment' : 'Select File First'}
               </button>
-            </div>
+            </div> */}
           </div>
 
           <div className="flex justify-end space-x-3 mt-6 pt-4 border-t">

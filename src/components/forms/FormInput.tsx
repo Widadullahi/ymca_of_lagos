@@ -17,17 +17,18 @@ const FormInput: React.FC<FormInputProps> = ({
 }) => {
   return (
     <div className={wrapperClass}>
-      <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor={name}>
+      <label className="block text-gray-700 text-sm font-semibold mb-2" htmlFor={name}>
         {label}
       </label>
       <input
-        className={`shadow appearance-none border ${error ? 'border-red-500' : ''} rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${className}`}
+        className={`bg-white/70 backdrop-blur-md border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-200 rounded-lg w-full py-2.5 px-4 text-gray-800 placeholder-gray-400 shadow-sm ${error ? 'border-red-500 focus:ring-red-100' : ''} ${className}`}
         id={name}
         name={name}
+        autoComplete="off"
         {...rest}
       />
       {error && (
-        <p className="text-red-500 text-xs italic mt-1">{error}</p>
+        <p className="text-red-500 text-xs italic mt-1 animate-fade-in">{error}</p>
       )}
     </div>
   );

@@ -7,7 +7,7 @@ import ymca from '../assets/images/image.png';
 import { nigerianStates, ymcaUnits } from '../constants/utils';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
-import axios from 'axios';
+import { motion, } from 'framer-motion';
 
 const countries = [
   { value: 'AD', label: 'Andorra' },
@@ -347,9 +347,9 @@ const RequestForm: React.FC = () => {
   const [availableChurches, setAvailableChurches] = useState<{value: string, label: string}[]>([]);
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
-  const passportPhotoRef = useRef<HTMLInputElement>(null);
-  const validIdFileRef = useRef<HTMLInputElement>(null);
-  const signatureRef = useRef<HTMLInputElement>(null);
+  const passportPhotoRef = useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement>;
+  const validIdFileRef = useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement>;
+  const signatureRef = useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement>;
 
   const { fetchWithAuth, displayNotification } = useAuth();
 
@@ -414,7 +414,7 @@ const RequestForm: React.FC = () => {
     if (isYouthCouncil) {
       if (age <= 23) {
         // For age 1-23, look for Hi-Y or youth clubs
-        const youthClubs = allClubs.filter(club => {
+        const youthClubs = allClubs.filter((club: { value: string; label: string; }) => {
           const clubName = club.value.toLowerCase();
           const clubLabel = club.label.toLowerCase();
           
@@ -436,7 +436,7 @@ const RequestForm: React.FC = () => {
         return youthClubs;
       } else if (age >= 24 && age <= 30) {
         // For age 24-30, look for Y-Elite or young adult clubs
-        const youngAdultClubs = allClubs.filter(club => {
+        const youngAdultClubs = allClubs.filter((club: { value: string; label: string }) => {
           const clubName = club.value.toLowerCase();
           const clubLabel = club.label.toLowerCase();
           
@@ -471,12 +471,12 @@ const RequestForm: React.FC = () => {
     } else if (isCouncilOfChurch) {
       // Council of Church - show churches based on age
       if (age <= 23) {
-        return allClubs.filter(club => {
+        return allClubs.filter((club: { value: string; label: string }) => {
           const clubName = club.value.toLowerCase();
           return !clubName.includes('adult') && !clubName.includes('senior');
         });
       } else if (age >= 24 && age <= 30) {
-        return allClubs.filter(club => {
+        return allClubs.filter((club: { value: string; label: string }) => {
           const clubName = club.value.toLowerCase();
           return clubName.includes('Y-Elite');
         });
@@ -504,12 +504,12 @@ const RequestForm: React.FC = () => {
     
     if (isYouthCouncil) {
       if (age <= 23) {
-        return allChurches.filter(church => {
+        return allChurches.filter((church: {value: string, label: string}) => {
           const churchName = church.value.toLowerCase();
           return !churchName.includes('adult') && !churchName.includes('senior');
         });
       } else if (age >= 24 && age <= 30) {
-        return allChurches.filter(church => {
+        return allChurches.filter((church: {value: string, label: string}) => {
           const churchName = church.value.toLowerCase();
           return churchName.includes('Y-Elite');
         });
@@ -532,7 +532,7 @@ const RequestForm: React.FC = () => {
       }));
 
       if (formData.unit) {
-        const selectedUnit = units.find(unit => unit.value === formData.unit);
+        const selectedUnit = units.find(unit => unit.value === formData.unit) as any;
         if (selectedUnit) {
           const filteredClubs = getAvailableClubs(calculatedAge, selectedUnit);
           setAvailableClubs(filteredClubs);
@@ -547,7 +547,7 @@ const RequestForm: React.FC = () => {
             const filteredChurches = getAvailableChurches(calculatedAge, selectedUnit);
             setAvailableChurches(filteredChurches);
             
-            const currentChurchValid = filteredChurches.some(church => church.value === formData.churchName);
+            const currentChurchValid = filteredChurches.some((church: { value: string; }) => church.value === formData.churchName);
             if (formData.churchName && !currentChurchValid) {
               setFormData(prev => ({
                 ...prev,
@@ -556,7 +556,7 @@ const RequestForm: React.FC = () => {
             }
           }
           
-          const currentClubValid = filteredClubs.some(club => club.value === formData.club);
+          const currentClubValid = filteredClubs.some((club: { value: string; }) => club.value === formData.club);
           if (formData.club && !currentClubValid) {
             setFormData(prev => ({
               ...prev,
@@ -609,7 +609,7 @@ const RequestForm: React.FC = () => {
 
     // Update available clubs when unit changes
     if (name === 'unit') {
-      const selectedUnit = units.find(unit => unit.value === value);
+      const selectedUnit = units.find(unit => unit.value === value) as any;
       
       if (selectedUnit && selectedUnit.dropDown && formData.age) {
         const calculatedAge = parseInt(formData.age);
@@ -646,7 +646,7 @@ const RequestForm: React.FC = () => {
 
     // Update available churches when club is "Council Of Church"
     if (name === 'club') {
-      const selectedUnit = units.find(unit => unit.value === formData.unit);
+      const selectedUnit = units.find(unit => unit.value === formData.unit) as any;
       const isCouncilOfChurch = value.toLowerCase().includes('council of church') ;
       
       if (isCouncilOfChurch && selectedUnit && selectedUnit.churchDropDown && formData.age) {
@@ -688,7 +688,7 @@ const RequestForm: React.FC = () => {
         }));
 
         if (formData.unit) {
-          const selectedUnit = units.find(unit => unit.value === formData.unit);
+          const selectedUnit = units.find(unit => unit.value === formData.unit) as any;
           if (selectedUnit) {
             const filteredClubs = getAvailableClubs(calculatedAge, selectedUnit);
             setAvailableClubs(filteredClubs);
@@ -701,7 +701,7 @@ const RequestForm: React.FC = () => {
               const filteredChurches = getAvailableChurches(calculatedAge, selectedUnit);
               setAvailableChurches(filteredChurches);
               
-              const currentChurchValid = filteredChurches.some(church => church.value === formData.churchName);
+              const currentChurchValid = filteredChurches.some((church: { value: string; }) => church.value === formData.churchName);
               if (formData.churchName && !currentChurchValid) {
                 setFormData(prev => ({
                   ...prev,
@@ -710,7 +710,7 @@ const RequestForm: React.FC = () => {
               }
             }
             
-            const currentClubValid = filteredClubs.some(club => club.value === formData.club);
+            const currentClubValid = filteredClubs.some((club: { value: string; }) => club.value === formData.club);
             if (formData.club && !currentClubValid) {
               setFormData(prev => ({
                 ...prev,
@@ -1113,28 +1113,62 @@ const RequestForm: React.FC = () => {
   );
 
   return (
-    <div className="w-full max-w-2xl mx-auto relative">
-      {showSuccess && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-8 rounded-lg shadow-xl flex flex-col items-center">
-            <svg className="w-16 h-16 text-green-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <h2 className="text-2xl font-bold text-green-600">Application Submitted Successfully!</h2>
-          </div>
-        </div>
-      )}
-      
-      <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 py-10 px-2 flex flex-col items-center justify-center relative overflow-x-hidden">
+      {/* Animated background shapes */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-red-200 rounded-full blur-3xl opacity-20 -z-10 animate-float" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-yellow-200 rounded-full blur-3xl opacity-20 -z-10 animate-float2" />
+
+      {/* Hero Header */}
+      <div className="w-full max-w-2xl mx-auto text-center mb-8">
         <div className="flex justify-center mb-4">
           <Link to={'/'}>
-            <img src={ymca} alt="YMCA Lagos Logo" className="h-10 w-auto object-contain" />
+            <img src={ymca} alt="YMCA Lagos Logo" className="h-12 w-auto object-contain drop-shadow-lg" />
           </Link>
         </div>
-        <h2 className="text-2xl font-bold mb-6 text-center">Submit Application</h2>
-        
+        <motion.h1 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-red-600 via-red-500 to-orange-500 bg-clip-text text-transparent mb-2"
+        >
+          YMCA Membership Application
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+          className="text-gray-700 text-lg max-w-xl mx-auto mb-2"
+        >
+          Join the largest youth movement in Africa. Fill out the form below to become a member of YMCA Lagos.
+        </motion.p>
+      </div>
+
+      {showSuccess && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <motion.div 
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.4 }}
+            className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center border-t-8 border-green-400 animate-fade-in"
+          >
+            <svg className="w-16 h-16 text-green-500 mb-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <h2 className="text-2xl font-bold text-green-600 mb-2">Application Submitted Successfully!</h2>
+            <p className="text-gray-700">Thank you for joining YMCA Lagos. We will contact you soon.</p>
+          </motion.div>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto bg-white/80 backdrop-blur-md shadow-2xl rounded-2xl px-8 pt-8 pb-10 mb-8 border border-gray-100 animate-fade-in-up">
+        <h2 className="text-2xl font-bold mb-6 text-center text-gradient">Submit Application</h2>
+
         {Object.keys(fieldErrors).length > 0 && (
-          <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 shadow"
+          >
             <div className="flex items-center mb-2">
               <svg className="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -1166,13 +1200,12 @@ const RequestForm: React.FC = () => {
                 );
               })}
             </ul>
-          </div>
+          </motion.div>
         )}
-        
-        {/* Personal Information Section */}
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b pb-2">Personal Information</h3>
-          
+
+        {/* Section Divider */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b-2 border-gradient pb-2">Personal Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormInput
               label="First Name"
@@ -1445,11 +1478,11 @@ const RequestForm: React.FC = () => {
                     
                     if (isCouncilOfChurch && formData.unit) {
                       const selectedUnit = units.find(unit => unit.value === formData.unit);
-                      if (selectedUnit && selectedUnit.churchDropDown && formData.age) {
+                      if (selectedUnit && 'churchDropDown' in selectedUnit && selectedUnit.churchDropDown && formData.age) {
                         const calculatedAge = parseInt(formData.age);
                         const filteredChurches = getAvailableChurches(calculatedAge, selectedUnit);
                         setAvailableChurches(filteredChurches);
-                      } else if (selectedUnit && selectedUnit.churchDropDown) {
+                      } else if (selectedUnit && 'churchDropDown' in selectedUnit && selectedUnit.churchDropDown && Array.isArray(selectedUnit.churchDropDown)) {
                         const allChurches = selectedUnit.churchDropDown.map((church: any) => {
                           const key = Object.keys(church)[0];
                           return { value: church[key], label: church[key] };
@@ -1503,7 +1536,6 @@ const RequestForm: React.FC = () => {
                 {(() => {
                   const unitName = formData.unit;
                   const unitLabel = availableUnits.find(u => u.value === unitName)?.label || unitName;
-                  const age = parseInt(formData.age);
                   const isCouncilOfChurch = unitLabel.toLowerCase().includes('council') && unitLabel.toLowerCase().includes('church');
                   
                   // Determine the specific message based on unit type

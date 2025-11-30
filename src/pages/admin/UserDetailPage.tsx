@@ -5,6 +5,13 @@ import avatar from '../../assets/images/thumbnail-im.jpg';
 import { useAuth } from "../../context/NewAuthContext";
 import ConfirmationModal from "../../components/modals/admin/ConfirmationModal";
 
+// Modern gradient background wrapper
+const PageWrapper: React.FC<{children: React.ReactNode}> = ({ children }) => (
+  <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 py-10 px-2">
+    {children}
+  </div>
+);
+
 // Define subscription history interface
 interface SubscriptionHistory {
   id: string;
@@ -23,6 +30,42 @@ interface SubscriptionHistory {
 }
 
 const UserDetailPage: React.FC = () => {
+  // Password modal state and logic
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({ newPassword: '', confirmPassword: '' });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  const handlePasswordInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passwordData.newPassword || !passwordData.confirmPassword) {
+      displayNotification('error', 'Please fill in both password fields');
+      return;
+    }
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      displayNotification('error', 'Passwords do not match');
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      await fetchWithAuth({
+        method: 'POST',
+        path: `/admin/members/${userId}/set_password/`,
+        body: { password: passwordData.newPassword },
+      });
+      displayNotification('success', 'Password updated successfully');
+      setShowPasswordModal(false);
+      setPasswordData({ newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      displayNotification('error', 'Failed to update password');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { fetchWithAuth, displayNotification } = useAuth();
@@ -30,7 +73,7 @@ const UserDetailPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [showStatusConfirmation, setShowStatusConfirmation] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, ] = useState(false);
   const [formData, setFormData] = useState<Partial<Member>>({});
   const [subscriptionHistory, setSubscriptionHistory] = useState<SubscriptionHistory[]>([]);
   const [loadingSubscriptions, setLoadingSubscriptions] = useState<boolean>(false);
@@ -85,13 +128,7 @@ const UserDetailPage: React.FC = () => {
     }
   }, [userId, fetchWithAuth, displayNotification]);
   
-  const handleEditToggle = () => {
-    if (isEditing) {
-      // Cancel editing
-      setFormData(member || {});
-    }
-    setIsEditing(!isEditing);
-  };
+
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -101,26 +138,6 @@ const UserDetailPage: React.FC = () => {
     }));
   };
   
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!member || !formData) return;
-    
-    try {
-      await fetchWithAuth({
-        method: 'PATCH',
-        path: `/admin/members/${userId}`,
-        body: formData
-      });
-      
-      setMember({...member, ...formData});
-      setIsEditing(false);
-      displayNotification('success', 'Member information updated successfully');
-    } catch (error) {
-      console.error('Error updating member:', error);
-      displayNotification('error', 'Failed to update member information');
-    }
-  };
 
   const handleStatusChange = async () => {
     if (!member) return;
@@ -184,155 +201,112 @@ const UserDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Tab Navigation */}
-      <div className="bg-white rounded-lg mb-5 shadow">
-        <div className="border-b border-gray-200">
-          <ul className="flex flex-wrap">
-            <li className="mr-2">
-              <button
-                className={`inline-block py-4 px-6 text-base font-medium text-center border-b-2 ${
-                  activeTab === 'profile'
-                    ? 'text-blue-600 border-blue-600 font-bold'
-                    : 'text-gray-500 border-transparent hover:text-gray-600 hover:border-gray-300'
-                }`}
-                onClick={() => setActiveTab('profile')}
-              >
-                Profile Information
-              </button>
-            </li>
-            <li className="mr-2">
-              <button
-                className={`inline-block py-4 px-6 text-base font-medium text-center border-b-2 ${
-                  activeTab === 'subscription'
-                    ? 'text-blue-600 border-blue-600 font-bold'
-                    : 'text-gray-500 border-transparent hover:text-gray-600 hover:border-gray-300'
-                }`}
-                onClick={() => setActiveTab('subscription')}
-              >
-                Subscription History
-              </button>
-            </li>
-            <li className="mr-2">
-              <button
-                className={`inline-block py-4 px-6 text-base font-medium text-center border-b-2 ${
-                  activeTab === 'user_request'
-                    ? 'text-blue-600 border-blue-600 font-bold'
-                    : 'text-gray-500 border-transparent hover:text-gray-600 hover:border-gray-300'
-                }`}
-                onClick={() => setActiveTab('user_request')}
-              >
-                User Request Details
-              </button>
-            </li>
-          </ul>
+    <PageWrapper>
+      {/* Modern pill-style tab navigation */}
+      <div className="flex justify-center mb-8">
+        <div className="inline-flex bg-white rounded-full shadow p-1 gap-2">
+          <button
+            className={`px-6 py-2 rounded-full text-base font-semibold transition-colors duration-200 focus:outline-none ${
+              activeTab === 'profile'
+                ? 'bg-blue-600 text-white shadow'
+                : 'text-gray-600 hover:bg-blue-50'
+            }`}
+            onClick={() => setActiveTab('profile')}
+          >
+            Profile
+          </button>
+          <button
+            className={`px-6 py-2 rounded-full text-base font-semibold transition-colors duration-200 focus:outline-none ${
+              activeTab === 'subscription'
+                ? 'bg-blue-600 text-white shadow'
+                : 'text-gray-600 hover:bg-blue-50'
+            }`}
+            onClick={() => setActiveTab('subscription')}
+          >
+            Subscription
+          </button>
+          <button
+            className={`px-6 py-2 rounded-full text-base font-semibold transition-colors duration-200 focus:outline-none ${
+              activeTab === 'user_request'
+                ? 'bg-blue-600 text-white shadow'
+                : 'text-gray-600 hover:bg-blue-50'
+            }`}
+            onClick={() => setActiveTab('user_request')}
+          >
+            User Request
+          </button>
         </div>
       </div>
-      
-      {activeTab === 'profile' && (
-      <div className="bg-white rounded-lg shadow">
 
-        <div className="p-6">
-          <div className="flex justify-between items-start">
-            {isEditing ? (
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  name="first_name"
-                  value={formData.first_name || ''}
-                  onChange={handleInputChange}
-                  className="w-1/2 p-1 text-xl font-bold border rounded"
-                  placeholder="First Name"
-                />
-                <input
-                  type="text"
-                  name="last_name"
-                  value={formData.last_name || ''}
-                  onChange={handleInputChange}
-                  className="w-1/2 p-1 text-xl font-bold border rounded"
-                  placeholder="Last Name"
-                />
-              </div>
-            ) : (
-              <h2 className="text-xl font-bold">{member.first_name} {member.last_name}</h2>
-            )}
-            <div className="flex space-x-3">
-              {!isEditing ? (
+      {/* Card container for tab content */}
+      <div className="max-w-5xl mx-auto">
+        {activeTab === 'profile' && (
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+
+        <div className="p-8 md:p-10">
+          <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-8">
+            {/* Avatar and status */}
+            <div className="flex flex-col items-center gap-4 md:gap-6 md:w-1/4">
+              <img 
+                src={member.image || avatar} 
+                alt={`${member.first_name} ${member.last_name}`} 
+                className="h-36 w-36 md:h-44 md:w-44 rounded-full object-cover border-4 border-blue-100 shadow-lg transition-transform duration-300 hover:scale-105" 
+              />
+              <span className={`px-4 py-1 rounded-full text-xs font-semibold shadow ${member.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{member.is_active ? 'Active' : 'Inactive'}</span>
+              <div className="flex flex-col w-full gap-2 mt-2">
                 <button
-                  onClick={handleEditToggle}
-                  className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
+                  onClick={() => setShowStatusConfirmation(true)}
+                  className={`w-full px-4 py-2 rounded-lg text-white text-sm font-semibold transition-colors duration-200 shadow ${member.is_active ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}
                 >
-                  Edit
+                  {member.is_active ? 'Deactivate Member' : 'Activate Member'}
                 </button>
-              ) : (
-                <div className="flex space-x-2">
-                  <button
-                    onClick={handleSubmit}
-                    className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={handleEditToggle}
-                    className="px-3 py-1 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
-              <button
-                onClick={() => navigate('/admin/users')}
-                className="text-gray-500 hover:text-gray-700 focus:outline-none"
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="md:col-span-1">
-              <div className="flex flex-col items-center">
-                <img 
-                  src={member.image || avatar} 
-                  alt={`${member.first_name} ${member.last_name}`} 
-                  className="h-40 w-40 rounded-full object-cover border-4 border-white shadow-md" 
-                />
-                
-                <div className="mt-4 text-center">
-                  <span className={`px-3 py-1 inline-flex text-xs font-medium rounded-full shadow-sm
-                    ${member.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-                  >
-                    {member.is_active ? "Active" : "Inactive"}
-                  </span>
-                </div>
-
-                <div className="mt-6 flex flex-col w-full space-y-2">
-                  <button
-                    onClick={() => setShowStatusConfirmation(true)}
-                    className={`px-4 py-2 rounded text-white text-sm font-medium
-                      ${member.is_active 
-                        ? 'bg-red-500 hover:bg-red-600' 
-                        : 'bg-green-500 hover:bg-green-600'}`}
-                  >
-                    {member.is_active ? 'Deactivate Member' : 'Activate Member'}
-                  </button>
-                  
-                  <button
-                    onClick={() => setShowDeleteConfirmation(true)}
-                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-medium"
-                  >
-                    Delete Member
-                  </button>
-                </div>
+                <button
+                  onClick={() => setShowDeleteConfirmation(true)}
+                  className="w-full px-4 py-2 rounded-lg bg-red-50 text-red-600 font-semibold shadow hover:bg-red-100 border border-red-200 text-sm transition-colors duration-200"
+                >
+                  Delete Member
+                </button>
               </div>
             </div>
 
-            <div className="md:col-span-3">
-              <h3 className="text-base font-medium border-b pb-2 mb-4">Personal Information</h3>
+            {/* Main info and edit */}
+            <div className="flex-1 w-full">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                {isEditing ? (
+                  <div className="flex flex-col md:flex-row gap-2 w-full">
+                    <input
+                      type="text"
+                      name="first_name"
+                      value={formData.first_name || ''}
+                      onChange={handleInputChange}
+                      className="w-full md:w-1/2 p-2 text-xl font-bold border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:outline-none transition"
+                      placeholder="First Name"
+                    />
+                    <input
+                      type="text"
+                      name="last_name"
+                      value={formData.last_name || ''}
+                      onChange={handleInputChange}
+                      className="w-full md:w-1/2 p-2 text-xl font-bold border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:outline-none transition"
+                      placeholder="Last Name"
+                    />
+                  </div>
+                ) : (
+                  <h2 className="text-2xl md:text-3xl font-extrabold text-gray-800 tracking-tight">{member.first_name} {member.last_name}</h2>
+                )}
+                <button
+                  onClick={() => navigate('/admin/users')}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-700 font-medium transition-colors duration-200 shadow"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Back
+                </button>
+              </div>
+              <h3 className="text-lg font-semibold border-b pb-2 mb-4 text-blue-700">Personal Information</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <p className="text-xs text-gray-500">Email</p>
                   {isEditing ? (
@@ -341,7 +315,7 @@ const UserDetailPage: React.FC = () => {
                       name="email"
                       value={formData.email || ''}
                       onChange={handleInputChange}
-                      className="w-full p-1 text-sm border rounded"
+                      className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:outline-none transition"
                     />
                   ) : (
                     <p className="text-sm">{member.email}</p>
@@ -356,7 +330,7 @@ const UserDetailPage: React.FC = () => {
                       name="first_name"
                       value={formData.first_name || ''}
                       onChange={handleInputChange}
-                      className="w-full p-1 text-sm border rounded"
+                      className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:outline-none transition"
                     />
                   ) : (
                     <p className="text-sm">{member.first_name}</p>
@@ -370,7 +344,7 @@ const UserDetailPage: React.FC = () => {
                       name="last_name"
                       value={formData.last_name || ''}
                       onChange={handleInputChange}
-                      className="w-full p-1 text-sm border rounded"
+                      className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:outline-none transition"
                     />
                   ) : (
                     <p className="text-sm">{member.user_request?.phone_number}</p>
@@ -384,7 +358,7 @@ const UserDetailPage: React.FC = () => {
                       name="gender"
                       value={formData.gender || ''}
                       onChange={handleInputChange}
-                      className="w-full p-1 text-sm border rounded"
+                      className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:outline-none transition"
                     >
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
@@ -395,34 +369,14 @@ const UserDetailPage: React.FC = () => {
                   )}
                 </div>
                 
-                {/* <div>
-                  <p className="text-xs text-gray-500">Category</p>
-                  <p className="text-sm">{member?.category?.name || 'N/A'}</p>
-                </div> */}
-                
-                {/* <div>
-                  <p className="text-xs text-gray-500">Date of Birth</p>
-                  {isEditing ? (
-                    <input
-                      type="date"
-                      name="date_of_birth"
-                      value={formData.date_of_birth ? new Date(formData.date_of_birth).toISOString().split('T')[0] : ''}
-                      onChange={handleInputChange}
-                      className="w-full p-1 text-sm border rounded"
-                    />
-                  ) : (
-                    <p className="text-sm">{member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString() : 'N/A'}</p>
-                  )}
-                </div> */}
-                
                 <div>
                   <p className="text-xs text-gray-500">Join Date</p>
                   <p className="text-sm">{new Date(member.created_at).toLocaleDateString()}</p>
                 </div>
               </div>
 
-              <h3 className="text-base font-medium border-b pb-2 mt-6 mb-4">Location Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <h3 className="text-lg font-semibold border-b pb-2 mt-6 mb-4 text-blue-700">Location Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <p className="text-xs text-gray-500">Citizen</p>
                   {isEditing ? (
@@ -484,39 +438,9 @@ const UserDetailPage: React.FC = () => {
                 </div>
               </div>
               
-              {/* <h3 className="text-base font-medium border-b pb-2 mt-6 mb-4">Membership Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-xs text-gray-500">Unit</p>
-                  <p className="text-sm">{member.unit || 'N/A'}</p>
-                </div>
-                
-                {member.unit === 'Council of Church' && member.church && (
-                  <div>
-                    <p className="text-xs text-gray-500">Church Name</p>
-                    <p className="text-sm">{member.church?.name}</p>
-                  </div>
-                )}
-                
-                {member.unit === 'Youth Council' && member.youth_council_group && (
-                  <div>
-                    <p className="text-xs text-gray-500">Youth Council Type</p>
-                    <p className="text-sm">{member.youth_council_group?.name}</p>
-                  </div>
-                )}
-                
-                <div>
-                  <p className="text-xs text-gray-500">Membership Type</p>
-                  <p className="text-sm">{member.membership_category || 'N/A'}</p>
-                </div>
-                
-                <div>
-                  <p className="text-xs text-gray-500">Referral</p>
-                  <p className="text-sm">{member.referral || 'N/A'}</p>
-                </div>
-              </div> */}
+
               
-              <h3 className="text-base font-medium border-b pb-2 mt-6 mb-4">Next of Kin</h3>
+              <h3 className="text-lg font-semibold border-b pb-2 mt-6 mb-4 text-blue-700">Next of Kin</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-xs text-gray-500">Name</p>
@@ -539,7 +463,7 @@ const UserDetailPage: React.FC = () => {
                 </div> */}
               </div>
 
-              <h3 className="text-base font-medium border-b pb-2 mt-6 mb-4">Signature</h3>
+              <h3 className="text-lg font-semibold border-b pb-2 mt-6 mb-4 text-blue-700">Signature</h3>
               <div className="mt-2">
                 {member.signature ? (
                   <img 
@@ -551,17 +475,86 @@ const UserDetailPage: React.FC = () => {
                   <p className="text-sm text-gray-500">No signature available</p>
                 )}
               </div>
+
+              {/* Password Update Section */}
+              <h3 className="text-lg font-semibold border-b pb-2 mt-6 mb-4 text-blue-700">Change Password</h3>
+              <div className="flex items-center gap-4 mt-2">
+                <button
+                  onClick={() => setShowPasswordModal(true)}
+                  className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
+                >
+                  Update Password
+                </button>
+              </div>
+
+              {/* Password Modal */}
+              {showPasswordModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                  <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md relative max-h-screen overflow-y-auto">
+                    <button
+                      className="absolute top-4 right-4 text-gray-400 hover:text-blue-600"
+                      onClick={() => setShowPasswordModal(false)}
+                      aria-label="Close"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                    <h4 className="text-xl font-bold mb-4 text-blue-700">Update Password</h4>
+                    <form onSubmit={handlePasswordChange} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">New Password</label>
+                        <input
+                          type="password"
+                          name="newPassword"
+                          value={passwordData.newPassword}
+                          onChange={handlePasswordInputChange}
+                          className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:outline-none"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Confirm Password</label>
+                        <input
+                          type="password"
+                          name="confirmPassword"
+                          value={passwordData.confirmPassword}
+                          onChange={handlePasswordInputChange}
+                          className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:outline-none"
+                          required
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2 mt-6">
+                        <button
+                          type="button"
+                          className="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          onClick={() => setShowPasswordModal(false)}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          disabled={passwordLoading}
+                        >
+                          {passwordLoading ? 'Updating...' : 'Update Password'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
-      )}
+        )}
 
         {/* Subscription History Tab Content */}
         {activeTab === 'subscription' && (
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-6">
-            <h3 className="text-lg font-medium border-b pb-2 mb-4">Subscription History</h3>
+        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+          <div className="p-8 md:p-10">
+            <h3 className="text-lg font-semibold border-b pb-2 mb-4 text-blue-700">Subscription History</h3>
 
             {loadingSubscriptions ? (
               <div className="flex justify-center items-center py-8">
@@ -640,9 +633,9 @@ const UserDetailPage: React.FC = () => {
 
       {/* User Request Details Tab Content */}
       {activeTab === 'user_request' && (
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-6">
-            <h3 className="text-lg font-medium border-b pb-2 mb-4">User Request Details</h3>
+        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+          <div className="p-8 md:p-10">
+            <h3 className="text-lg font-semibold border-b pb-2 mb-4 text-blue-700">User Request Details</h3>
 
             {member.user_request ? (
               <div className="space-y-6">
@@ -844,8 +837,11 @@ const UserDetailPage: React.FC = () => {
       )}
 
 
-        {showStatusConfirmation && (
-          <ConfirmationModal
+        {/* Close main content container */}
+      </div>
+
+      {showStatusConfirmation && (
+        <ConfirmationModal
           isOpen={showStatusConfirmation}
           title={`${member.is_active ? 'Deactivate' : 'Activate'} Member`}
           message={`Are you sure you want to ${member.is_active ? 'deactivate' : 'activate'} this member?`}
@@ -869,7 +865,7 @@ const UserDetailPage: React.FC = () => {
           onCancel={() => setShowDeleteConfirmation(false)}
         />
       )}
-    </div>
+    </PageWrapper>
   );
 };
 

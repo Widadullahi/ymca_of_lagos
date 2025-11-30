@@ -11,7 +11,6 @@ import HeroSectionS2 from '../components/HeroSectionS2';
 import WhoAreWe from '../components/WhoAreWe.js';
 import SocialMediaBar from '../components/navigation/SocialMediaBar';
 import MainNavigation from '../components/navigation/MainNavigation';
-import aboutImage from '../assets/images/aboutus.jpg';
 import vision2030Logo from '../assets/images/Vision-2030-logos-4-1.jpg';
 
 interface Quote {
@@ -31,13 +30,7 @@ const HomePage: React.FC = () => {
     redirect_url: FRONTEND_URL + '',
   });
 
-  // Stats data
-  const [stats] = useState([
-    { number: '5000+', label: 'Annual Beneficiaries', icon: '👥' },
-    { number: '80+', label: 'Years of Service', icon: '📅' },
-    { number: '50+', label: 'Active Programs', icon: '🎯' },
-    { number: '1000+', label: 'Youth Trained', icon: '🌟' }
-  ]);
+
 
   // Quotes data
   const [quotes] = useState<Quote[]>([
@@ -248,14 +241,14 @@ const HomePage: React.FC = () => {
       />
 
       {/* Stats Section */}
-      <section className="py-16 bg-white">
+      {/* <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             variants={staggerContainer}
-            className="grid grid-cols-2 md:grid-cols-4 gap-8"
+            className="grid grid-cols-2 md:grid-cols-3 gap-8"
           >
             {stats.map((stat, index) => (
               <motion.div
@@ -272,7 +265,7 @@ const HomePage: React.FC = () => {
             ))}
           </motion.div>
         </div>
-      </section>
+      </section> */}
 
       <LatestNews />
 

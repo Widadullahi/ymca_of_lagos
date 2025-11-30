@@ -9,7 +9,6 @@ import PrivateRoute from './components/PrivateRoute';
 import UserListingPage from './pages/admin/UserListingPage';
 import UserDetailPage from './pages/admin/UserDetailPage';
 import MemberDashboard from './pages/admin/MemberDashboard';
-import UpdatesPage from './pages/UpdatesPage';
 import AdminUpdatesPage from './pages/admin/AdminUpdatesPage';
 import RoleBasedRoute from './components/RoleBasedRoute';
 import MemberDashboardMember from './pages/MemberDashboardMember';

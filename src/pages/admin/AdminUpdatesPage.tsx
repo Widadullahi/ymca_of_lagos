@@ -177,17 +177,6 @@ const AdminUpdatesPage = () => {
     setIsSubmitting(false);
   };
 
-  // Get category color classes
-  const getCategoryClasses = (category: string) => {
-    switch (category) {
-      case 'Announcements': return 'bg-blue-100 text-blue-800';
-      case 'Events': return 'bg-green-100 text-green-800';
-      case 'Prayer Requests': return 'bg-yellow-100 text-yellow-800';
-      case 'Ministries': return 'bg-purple-100 text-purple-800';
-      case 'Sermons': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -310,10 +299,8 @@ const AdminUpdatesPage = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Posted By</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attachments</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -339,23 +326,9 @@ const AdminUpdatesPage = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryClasses(update.category)}`}>
-                      {update?.category}
-                    </span>
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{update?.user?.email}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDistance(update.created_at, new Date(), { addSuffix: true })}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {update.attachments && update.attachments.length > 0 ? (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        {update?.attachments?.length} file{update?.attachments?.length > 1 ? 's' : ''}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400"></span>
-                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex space-x-2">
