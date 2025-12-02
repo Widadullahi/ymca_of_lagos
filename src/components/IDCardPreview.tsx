@@ -52,12 +52,7 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ forwardedRef }) => {
                     className="h-8 w-auto object-contain" 
                   />
                     </div>
-                    
-                    <div className="bg-red-600 px-2 py-1 sm:px-3 sm:py-2">
-                      <div className="text-white text-xs sm:text-lg font-bold">
-                        MEMBER
-                      </div>
-                    </div>
+               
                   </div>
                   
                   {/* Main Content */}
