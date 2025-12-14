@@ -579,7 +579,7 @@ const RequestForm: React.FC = () => {
     }
   }, [formData.date_of_birth, formData.unit, formData.club]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
     setTouchedFields(prev => ({

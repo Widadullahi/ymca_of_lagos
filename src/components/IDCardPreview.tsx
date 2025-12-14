@@ -218,7 +218,7 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ forwardedRef }) => {
                   </div>
                   
                   <div className="flex justify-center items-center">
-                    <div className="border-t border-current w-20 sm:w-24 text-center">
+                    <div className=" w-20 sm:w-24 text-center">
                       <p className="text-xs mt-1">Authorised Signature</p>
                     </div>
                   </div>
