@@ -23,6 +23,43 @@ interface YouthCouncilGroup {
   name: string;
 }
 
+interface UserRequest {
+  id: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  email: string;
+  citizen: string;
+  country: string;
+  state: string;
+  lga: string;
+  unit: string;
+  club: string;
+  age: string;
+  gender: string;
+  date_of_birth: string;
+  place_of_birth: string | null;
+  home_address: string | null;
+  office_address: string | null;
+  profession: string;
+  religion: string;
+  church_name: string | null;
+  occupation: string;
+  marital_status: string;
+  valid_id_number: string | null;
+  passport_photo: string;
+  valid_id_file: string | null;
+  signature: string | null;
+  next_of_kin: string | null;
+  referral_source: string | null;
+  referral_name: string | null;
+  referred_by: string;
+  address: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface UserProfile {
   id: string;
   email: string;
@@ -36,6 +73,7 @@ interface UserProfile {
   card: Card;
   role: string;
   youth_council_group: YouthCouncilGroup;
+  user_request: UserRequest | null;
   created_at: string;
 }
 
@@ -71,6 +109,7 @@ const ProfileManagementPage: React.FC = () => {
       id: '',
       name: ''
     },
+    user_request: null,
     created_at: ''
   });
 
@@ -457,63 +496,269 @@ const ProfileManagementPage: React.FC = () => {
             </div>
             
             <div className="md:w-2/3">
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Name</h3>
-                  <p className="mt-1">{getFullName()}</p>
+              {profile?.role === 'Member' && profile?.user_request ? (
+                /* Show detailed user_request data for Members */
+                <div className="space-y-6">
+                  {/* Personal Information Section */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Personal Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Full Name</h4>
+                        <p className="mt-1">{profile.user_request.first_name} {profile.user_request.last_name}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Email</h4>
+                        <p className="mt-1">{profile.user_request.email}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Phone Number</h4>
+                        <p className="mt-1">{profile.user_request.phone_number}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Gender</h4>
+                        <p className="mt-1 capitalize">{profile.user_request.gender}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Date of Birth</h4>
+                        <p className="mt-1">{profile.user_request.date_of_birth ? formatDate(profile.user_request.date_of_birth) : 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Age</h4>
+                        <p className="mt-1">{profile.user_request.age} years</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Place of Birth</h4>
+                        <p className="mt-1">{profile.user_request.place_of_birth || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Marital Status</h4>
+                        <p className="mt-1 capitalize">{profile.user_request.marital_status}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Location Information Section */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Location Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Citizenship</h4>
+                        <p className="mt-1">{profile.user_request.citizen}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Country</h4>
+                        <p className="mt-1">{profile.user_request.country}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">State</h4>
+                        <p className="mt-1">{profile.user_request.state}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">LGA</h4>
+                        <p className="mt-1">{profile.user_request.lga}</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <h4 className="text-sm font-medium text-gray-500">Address</h4>
+                        <p className="mt-1">{profile.user_request.address}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Home Address</h4>
+                        <p className="mt-1">{profile.user_request.home_address || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Office Address</h4>
+                        <p className="mt-1">{profile.user_request.office_address || 'Not provided'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* YMCA Information Section */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">YMCA Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Unit</h4>
+                        <p className="mt-1">{profile.user_request.unit}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Club</h4>
+                        <p className="mt-1">{profile.user_request.club}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Card ID</h4>
+                        <p className="mt-1">{profile?.card?.id_number || 'No ID issued'}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Card Status</h4>
+                        <p className="mt-1">
+                          {profile?.card?.is_active ? 
+                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Active</span> : 
+                            <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">Inactive</span>
+                          }
+                          {profile?.card?.expired && 
+                            <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Expired</span>
+                          }
+                          {!profile?.card?.expired && profile?.card?.days_remaining > 0 &&
+                            <span className="ml-2 text-xs text-gray-500">({profile.card.days_remaining} days remaining)</span>
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Professional Information Section */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Professional Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Profession</h4>
+                        <p className="mt-1">{profile.user_request.profession}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Occupation</h4>
+                        <p className="mt-1">{profile.user_request.occupation}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Religious Information Section */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Religious Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Religion</h4>
+                        <p className="mt-1">{profile.user_request.religion}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Church Name</h4>
+                        <p className="mt-1">{profile.user_request.church_name || 'Not provided'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Identification Section */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Identification</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Valid ID Number</h4>
+                        <p className="mt-1">{profile.user_request.valid_id_number || 'Not provided'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Referral Information Section */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Referral Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Next of Kin</h4>
+                        <p className="mt-1">{profile.user_request.next_of_kin || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Referred By</h4>
+                        <p className="mt-1 capitalize">{profile.user_request.referred_by}</p>
+                      </div>
+                      {profile.user_request.referred_by === 'yes' && (
+                        <>
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">Referral Source</h4>
+                            <p className="mt-1">{profile.user_request.referral_source || 'Not provided'}</p>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">Referral Name</h4>
+                            <p className="mt-1">{profile.user_request.referral_name || 'Not provided'}</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Request Status Section */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Request Status</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Status</h4>
+                        <p className="mt-1">
+                          <span className={`px-2 py-1 rounded-full text-xs capitalize ${
+                            profile.user_request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            profile.user_request.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                            profile.user_request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {profile.user_request.status}
+                          </span>
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Request Date</h4>
+                        <p className="mt-1">{formatDate(profile.user_request.created_at)}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Email</h3>
-                  <p className="mt-1">{profile?.email}</p>
+              ) : (
+                /* Show basic profile data for non-Members or without user_request */
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Name</h3>
+                    <p className="mt-1">{getFullName()}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Email</h3>
+                    <p className="mt-1">{profile?.email}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Phone Number</h3>
+                    <p className="mt-1">{profile?.phone_number || 'Not provided'}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Gender</h3>
+                    <p className="mt-1">{profile?.gender || 'Not specified'}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Role</h3>
+                    <p className="mt-1">{profile?.role || 'Member'}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Unit</h3>
+                    <p className="mt-1">{profile?.unit || 'Not assigned'}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Youth Council Group</h3>
+                    <p className="mt-1">{profile?.youth_council_group?.name || 'Not assigned'}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Card ID</h3>
+                    <p className="mt-1">{profile?.card?.id_number || 'No ID issued'}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Card Status</h3>
+                    <p className="mt-1">
+                      {profile?.card?.is_active ? 
+                        <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Active</span> : 
+                        <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">Inactive</span>
+                      }
+                      {profile?.card?.expired && 
+                        <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Expired</span>
+                      }
+                      {!profile?.card?.expired && profile?.card?.days_remaining &&
+                        <span className="ml-2 text-xs text-gray-500">({profile.card.days_remaining} days remaining)</span>
+                      }
+                    </p>
+                  </div>
                 </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Phone Number</h3>
-                  <p className="mt-1">{profile?.phone_number || 'Not provided'}</p>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Gender</h3>
-                  <p className="mt-1">{profile?.gender || 'Not specified'}</p>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Role</h3>
-                  <p className="mt-1">{profile?.role || 'Member'}</p>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Unit</h3>
-                  <p className="mt-1">{profile?.unit || 'Not assigned'}</p>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Youth Council Group</h3>
-                  <p className="mt-1">{profile?.youth_council_group?.name || 'Not assigned'}</p>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Card ID</h3>
-                  <p className="mt-1">{profile?.card?.id_number || 'No ID issued'}</p>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Card Status</h3>
-                  <p className="mt-1">
-                    {profile?.card?.is_active ? 
-                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Active</span> : 
-                      <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">Inactive</span>
-                    }
-                    {profile?.card?.expired && 
-                      <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Expired</span>
-                    }
-                    {!profile?.card?.expired && profile?.card?.days_remaining &&
-                      <span className="ml-2 text-xs text-gray-500">({profile.card.days_remaining} days remaining)</span>
-                    }
-                  </p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         )}

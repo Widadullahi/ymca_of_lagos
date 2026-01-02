@@ -8,11 +8,62 @@ import ymca from '../assets/images/image.png'
 interface IDCardPreviewProps {
   forwardedRef?: React.Ref<HTMLDivElement>;
 }
+
+// Function to get card color scheme based on membership type
+const getCardColorScheme = (membershipType: string) => {
+  switch (membershipType) {
+    case 'full':
+      return {
+        bg: 'bg-gradient-to-br from-blue-600 to-blue-800',
+        text: 'text-white',
+        accent: 'text-blue-200',
+        pattern: '#3b82f6', // blue-500
+        patternOpacity: '0.1'
+      };
+    case 'ordinary':
+      return {
+        bg: 'bg-gradient-to-br from-green-600 to-green-800',
+        text: 'text-white',
+        accent: 'text-green-200',
+        pattern: '#22c55e', // green-500
+        patternOpacity: '0.1'
+      };
+    case 'honorary':
+      return {
+        bg: 'bg-gradient-to-br from-purple-600 to-purple-800',
+        text: 'text-white',
+        accent: 'text-purple-200',
+        pattern: '#a855f7', // purple-500
+        patternOpacity: '0.1'
+      };
+    case 'life':
+      return {
+        bg: 'bg-gradient-to-br from-purple-600 to-pink-700',
+        text: 'text-white',
+        accent: 'text-purple-200',
+        pattern: '#f43f5e', // rose-500
+        patternOpacity: '0.1'
+      };
+    default:
+      // Default white card
+      return {
+        bg: 'bg-white',
+        text: 'text-gray-700',
+        accent: 'text-red-600',
+        pattern: '#f87171', // red-400
+        patternOpacity: '0.1'
+      };
+  }
+};
+
 // Updated IDCardPreview component with QR code
 const IDCardPreview: React.FC<IDCardPreviewProps> = ({ forwardedRef }) => {
 
   const { user } = useAuth();
   const verificationUrl = `${window.location.origin}/verify/#verify=${user?.card?.id_number}`;
+  
+  // Get color scheme based on membership type
+  const colorScheme = getCardColorScheme( 'life');
   
   return (
     <div className="w-full  bg-gray-100 p-4" ref={forwardedRef}>
@@ -23,7 +74,7 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ forwardedRef }) => {
           {/* Front of ID Card */}
           <div className="relative">
             <div 
-              className="bg-white rounded-lg overflow-hidden shadow-xl"
+              className={`${colorScheme.bg} rounded-lg overflow-hidden shadow-xl`}
               style={{
                 width: 'min(90vw, 400px)',
                 height: 'calc(min(90vw, 400px) * 0.63)', // Credit card ratio (1.586:1 inverted = 0.63)
@@ -34,15 +85,15 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ forwardedRef }) => {
               <div className="relative h-full w-full">
                 {/* Background pattern */}
                 <div 
-                  className="absolute inset-0 bg-white opacity-30" 
+                  className="absolute inset-0 opacity-30" 
                   style={{ 
-                    backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23f87171' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M10 0l10 10-10 10L0 10z'/%3E%3C/g%3E%3C/svg%3E\")",
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23${colorScheme.pattern.substring(1)}' fill-opacity='${colorScheme.patternOpacity}' fill-rule='evenodd'%3E%3Cpath d='M10 0l10 10-10 10L0 10z'/%3E%3C/g%3E%3C/svg%3E")`,
                     backgroundSize: "20px 20px"
                   }}
                 />
                 
                 {/* Card Content */}
-                <div className="relative p-3 sm:p-4 h-full flex flex-col text-xs sm:text-sm">
+                <div className={`relative p-3 sm:p-4 h-full flex flex-col text-xs sm:text-sm ${colorScheme.text}`}>
                   {/* Header */}
                   <div className="flex justify-between items-start mb-2 sm:mb-3">
                     <div className="flex items-center">
@@ -68,7 +119,7 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ forwardedRef }) => {
                     </div>
                     
                     {/* Info Section */}
-                    <div className="flex-grow min-w-0 text-gray-700">
+                    <div className="flex-grow min-w-0">
                       <div className="space-y-1">
                         <h3 className="text-xs sm:text-xl">{user?.last_name?.toUpperCase() || ''}</h3>
                         <h4 className="text-xs sm:text-lg mb-1">{user?.first_name?.toUpperCase() || ''}</h4>
@@ -78,17 +129,17 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ forwardedRef }) => {
                       <div className="space-y-1">
                         <div className="flex flex-col sm:flex-row sm:gap-2">
                           <span className="font-normal text-xs whitespace-nowrap">Registration No.:</span>
-                          <span className="text-red-600 font-medium text-xs break-all">{user?.card?.id_number || ''}</span>
+                          <span className={`${colorScheme.accent} font-medium text-xs break-all`}>{user?.card?.id_number || ''}</span>
                         </div>
                         
                         <div className="flex flex-row gap-1 items-center">
                           <span className="font-normal text-xs whitespace-nowrap">Category:</span>
-                          <span className="text-red-600 font-medium text-xs">{user?.category?.name || 'FULL MEMBER'}</span>
+                          <span className={`${colorScheme.accent} font-medium text-xs uppercase`}>{user?.membership_type?.replace('_', ' ') || 'FULL MEMBER'}</span>
                         </div>
                         
                         <div className="flex flex-row gap-1 items-center">
                           <span className="font-normal text-xs whitespace-nowrap">Expired At:</span>
-                          <span className="text-red-600 font-medium text-xs">{user?.card?.expired_at || ''}</span>
+                          <span className={`${colorScheme.accent} font-medium text-xs`}>{user?.card?.expired_at || ''}</span>
                         </div>
                         
                         <div className="mt-1 flex gap-1 items-center">
@@ -101,7 +152,7 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ forwardedRef }) => {
                                 className="h-full object-contain"
                               />
                             ) : (
-                              <div className="border-b border-gray-400 h-full w-16"></div> 
+                              <div className="border-b border-current h-full w-16"></div> 
                             )}
                           </div>
                         </div>
@@ -110,11 +161,13 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ forwardedRef }) => {
                     
                     {/* QR Code */}
                     <div className="flex flex-col items-center ml-1 sm:ml-2 flex-shrink-0">
-                      <QRCodeSVG 
-                        value={verificationUrl}
-                        size={35}
-                      />
-                      <p className="text-xs text-gray-500 mt-1 text-center leading-tight">
+                      <div className="bg-white p-1 rounded">
+                        <QRCodeSVG 
+                          value={verificationUrl}
+                          size={35}
+                        />
+                      </div>
+                      <p className="text-xs mt-1 text-center leading-tight">
                         Scan to<br/>verify
                       </p>
                     </div>
@@ -127,7 +180,7 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ forwardedRef }) => {
           {/* Back of ID Card */}
           <div className="relative">
             <div 
-              className="bg-white rounded-lg overflow-hidden shadow-xl text-gray-700"
+              className={`${colorScheme.bg} rounded-lg overflow-hidden shadow-xl`}
               style={{
                 width: 'min(90vw, 400px)',
                 height: 'calc(min(90vw, 400px) * 0.63)',
@@ -138,15 +191,15 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ forwardedRef }) => {
               <div className="relative h-full">
                 {/* Background pattern */}
                 <div 
-                  className="absolute inset-0 bg-white opacity-30" 
+                  className="absolute inset-0 opacity-30" 
                   style={{ 
-                    backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23f87171' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M10 0l10 10-10 10L0 10z'/%3E%3C/g%3E%3C/svg%3E\")",
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23${colorScheme.pattern.substring(1)}' fill-opacity='${colorScheme.patternOpacity}' fill-rule='evenodd'%3E%3Cpath d='M10 0l10 10-10 10L0 10z'/%3E%3C/g%3E%3C/svg%3E")`,
                     backgroundSize: "20px 20px"
                   }}
                 />
                 
                 {/* Card Content */}
-                <div className="relative p-4 sm:p-6 text-center h-full w-full flex flex-col justify-center">
+                <div className={`relative p-4 sm:p-6 text-center h-full w-full flex flex-col justify-center ${colorScheme.text}`}>
                   <p className="text-xs sm:text-sm mb-1">This ID card remains the property of</p>
                   <h2 className="text-sm sm:text-lg font-bold mb-1">YMCA OF LAGOS</h2>
                   <p className="text-xs sm:text-sm mb-1">77, Awolowo S/W Road Ikoyi, Lagos.</p>
@@ -158,14 +211,14 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ forwardedRef }) => {
                   {/* Signature */}
                   <div className="h-6 sm:h-8 mb-2">
                     <img 
-                      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 30'%3E%3Cpath d='M10,15 C20,5 30,25 40,15 C50,5 60,25 70,15 C80,5 90,25 95,15' stroke='black' fill='none' stroke-width='1'/%3E%3C/svg%3E" 
+                      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 30'%3E%3Cpath d='M10,15 C20,5 30,25 40,15 C50,5 60,25 70,15 C80,5 90,25 95,15' stroke='white' fill='none' stroke-width='1'/%3E%3C/svg%3E" 
                       alt="Official Signature" 
                       className="h-full object-contain mx-auto"
                     />
                   </div>
                   
                   <div className="flex justify-center items-center">
-                    <div className="border-t border-gray-400 w-20 sm:w-24 text-center">
+                    <div className=" w-20 sm:w-24 text-center">
                       <p className="text-xs mt-1">Authorised Signature</p>
                     </div>
                   </div>

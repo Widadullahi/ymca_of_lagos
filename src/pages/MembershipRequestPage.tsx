@@ -264,10 +264,10 @@ const countries = [
 const units = ymcaUnits;
 
 interface FormData {
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   email: string;
-  phoneNumber: string;
+  phone_number: string;
   citizen: string;
   country: string;
   state: string;
@@ -285,9 +285,10 @@ interface FormData {
   churchName: string;
   occupation: string;
   marital_status: string;
+  address: string;
   validIdType: string;
   validIdFile: File | null;
-  passportPhoto: File | null;
+  passport_photo: File | null;
   signature: File | null;
   nextOfKinName: string;
   nextOfKinNumber: string;
@@ -299,10 +300,10 @@ interface FormData {
 const RequestForm: React.FC = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>({
-    firstName: '',
-    lastName: '',
+    first_name: '',
+    last_name: '',
     email: '',
-    phoneNumber: '',
+    phone_number: '',
     citizen: 'Nigerian',
     country: 'NG',
     state: '',
@@ -320,9 +321,10 @@ const RequestForm: React.FC = () => {
     churchName: '',
     occupation: '',
     marital_status: '',
+    address: '',
     validIdType: '',
     validIdFile: null,
-    passportPhoto: null,
+    passport_photo: null,
     signature: null,
     nextOfKinName: '',
     nextOfKinNumber: '',
@@ -338,7 +340,7 @@ const RequestForm: React.FC = () => {
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [dragActive, setDragActive] = useState({ 
-    passportPhoto: false, 
+    passport_photo: false, 
     validIdFile: false, 
     signature: false 
   });
@@ -347,7 +349,7 @@ const RequestForm: React.FC = () => {
   const [availableChurches, setAvailableChurches] = useState<{value: string, label: string}[]>([]);
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
-  const passportPhotoRef = useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement>;
+  const passport_photoRef = useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement>;
   const validIdFileRef = useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement>;
   const signatureRef = useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement>;
 
@@ -577,7 +579,7 @@ const RequestForm: React.FC = () => {
     }
   }, [formData.date_of_birth, formData.unit, formData.club]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
     setTouchedFields(prev => ({
@@ -740,7 +742,7 @@ const RequestForm: React.FC = () => {
     }
   };
 
-  const handleFileChange = (file: File, field: 'passportPhoto' | 'validIdFile' | 'signature') => {
+  const handleFileChange = (file: File, field: 'passport_photo' | 'validIdFile' | 'signature') => {
     if (file) {
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
       
@@ -770,7 +772,7 @@ const RequestForm: React.FC = () => {
         const reader = new FileReader();
         reader.onload = (e) => {
           const result = e.target?.result as string;
-          if (field === 'passportPhoto') {
+          if (field === 'passport_photo') {
             setPhotoPreview(result);
           } else if (field === 'validIdFile') {
             setIdPreview(result);
@@ -788,7 +790,7 @@ const RequestForm: React.FC = () => {
     }
   };
 
-  const handleDrag = (e: React.DragEvent, field: 'passportPhoto' | 'validIdFile' | 'signature') => {
+  const handleDrag = (e: React.DragEvent, field: 'passport_photo' | 'validIdFile' | 'signature') => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === "dragenter" || e.type === "dragover") {
@@ -798,7 +800,7 @@ const RequestForm: React.FC = () => {
     }
   };
 
-  const handleDrop = (e: React.DragEvent, field: 'passportPhoto' | 'validIdFile' | 'signature') => {
+  const handleDrop = (e: React.DragEvent, field: 'passport_photo' | 'validIdFile' | 'signature') => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(prev => ({ ...prev, [field]: false }));
@@ -825,15 +827,16 @@ const RequestForm: React.FC = () => {
     
     // Required field validations
     const requiredFields = {
-      firstName: 'First name is required',
-      lastName: 'Last name is required',
-      phoneNumber: 'Phone number is required',
+      first_name: 'First name is required',
+      last_name: 'Last name is required',
+      phone_number: 'Phone number is required',
       country: 'Country is required',
       state: 'State is required',
       unit: 'Unit is required',
+      address: 'Address is required',
       validIdType: 'Please select a valid ID type',
       validIdFile: 'ID document is required',
-      passportPhoto: 'Passport photo is required',
+      passport_photo: 'Passport photo is required',
     };
 
     Object.entries(requiredFields).forEach(([field, message]) => {
@@ -843,8 +846,8 @@ const RequestForm: React.FC = () => {
     });
 
     // Phone number format validation
-    if (formData.phoneNumber && !/^[\+]?[0-9\s\-\(\)]{10,}$/.test(formData.phoneNumber.trim())) {
-      errors.phoneNumber = 'Please enter a valid phone number';
+    if (formData.phone_number && !/^[\+]?[0-9\s\-\(\)]{10,}$/.test(formData.phone_number.trim())) {
+      errors.phone_number = 'Please enter a valid phone number';
     }
 
     // Club validation
@@ -896,8 +899,8 @@ const RequestForm: React.FC = () => {
 
   const scrollToFirstError = (errorFields: string[]) => {
     const fieldOrder = [
-      'firstName', 'lastName', 'phoneNumber', 'country', 'state', 
-      'unit', 'club', 'churchName', 'validIdType', 'validIdFile', 'passportPhoto'
+      'first_name', 'last_anme', 'phone_number', 'country', 'state', 
+      'unit', 'club', 'churchName', 'validIdType', 'validIdFile', 'passport_photo'
     ];
     
     const firstErrorField = fieldOrder.find(field => errorFields.includes(field));
@@ -951,10 +954,10 @@ const RequestForm: React.FC = () => {
         setShowSuccess(false);
         // Reset form
         setFormData({
-          firstName: '',
-          lastName: '',
+          first_name: '',
+          last_name: '',
           email: '',
-          phoneNumber: '',
+          phone_number: '',
           citizen: 'Nigerian',
           country: 'NG',
           state: '',
@@ -972,9 +975,10 @@ const RequestForm: React.FC = () => {
           churchName: '',
           occupation: '',
           marital_status: '',
+          address: '',
           validIdType: '',
           validIdFile: null,
-          passportPhoto: null,
+          passport_photo: null,
           signature: null,
           nextOfKinName: '',
           nextOfKinNumber: '',
@@ -990,7 +994,7 @@ const RequestForm: React.FC = () => {
         setAvailableChurches([]);
         
         // Reset file inputs
-        [passportPhotoRef, validIdFileRef, signatureRef].forEach(ref => {
+        [passport_photoRef, validIdFileRef, signatureRef].forEach(ref => {
           if (ref.current) ref.current.value = '';
         });
       }, 3000);
@@ -1003,12 +1007,12 @@ const RequestForm: React.FC = () => {
         const fieldErrorMessages: Record<string, string> = {};
         
         const fieldMapping: Record<string, string> = {
-          'first_name': 'firstName',
-          'last_name': 'lastName',
-          'phone_number': 'phoneNumber',
+          'first_name': 'first_name',
+          'last_name': 'last_name',
+          'phone_number': 'phone_number',
           'valid_id_type': 'validIdType',
           'valid_id_file': 'validIdFile',
-          'passport_photo': 'passportPhoto',
+          'passport_photo': 'passport_photo',
         };
         
         Object.keys(serverErrors).forEach(field => {
@@ -1044,7 +1048,7 @@ const RequestForm: React.FC = () => {
     dragActiveKey,
     fileRef
   }: {
-    field: 'passportPhoto' | 'validIdFile' | 'signature';
+    field: 'passport_photo' | 'validIdFile' | 'signature';
     label: string;
     accept?: string;
     required?: boolean;
@@ -1103,7 +1107,7 @@ const RequestForm: React.FC = () => {
               src={preview} 
               alt={`${label} preview`} 
               className={`${
-                field === 'passportPhoto' ? 'w-32 h-32' : 'w-48 h-32'
+                field === 'passport_photo' ? 'w-32 h-32' : 'w-48 h-32'
               } object-cover border-2 border-gray-300 rounded`} 
             />
           </div>
@@ -1178,9 +1182,9 @@ const RequestForm: React.FC = () => {
             <ul className="list-disc list-inside space-y-1 text-sm">
               {Object.entries(fieldErrors).map(([field, error]) => {
                 const fieldLabels: Record<string, string> = {
-                  firstName: 'First Name',
-                  lastName: 'Last Name',
-                  phoneNumber: 'Phone Number',
+                  first_name: 'First Name',
+                  last_name: 'Last Name',
+                  phone_number: 'Phone Number',
                   country: 'Country',
                   state: 'State',
                   lga: 'LGA',
@@ -1189,7 +1193,7 @@ const RequestForm: React.FC = () => {
                   churchName: 'Church Name',
                   validIdType: 'Valid ID Type',
                   validIdFile: 'ID Document',
-                  passportPhoto: 'Passport Photo',
+                  passport_photo: 'Passport Photo',
                   signature: 'Signature',
                 };
                 const fieldLabel = fieldLabels[field] || field;
@@ -1209,26 +1213,26 @@ const RequestForm: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormInput
               label="First Name"
-              name="firstName"
+              name="first_name"
               type="text"
               placeholder="Enter your first name"
-              value={formData.firstName}
+              value={formData.first_name}
               onChange={handleInputChange}
-              error={fieldErrors.firstName}
+              error={fieldErrors.first_name}
               required
-              className={getInputBorderColor('firstName', formData.firstName)}
+              className={getInputBorderColor('first_name', formData.first_name)}
             />
 
             <FormInput
               label="Last Name"
-              name="lastName"
+              name="last_name"
               type="text"
               placeholder="Enter your last name"
-              value={formData.lastName}
+              value={formData.last_name}
               onChange={handleInputChange}
-              error={fieldErrors.lastName}
+              error={fieldErrors.last_name}
               required
-              className={getInputBorderColor('lastName', formData.lastName)}
+              className={getInputBorderColor('last_name', formData.last_name)}
             />
 
             <FormInput
@@ -1244,14 +1248,14 @@ const RequestForm: React.FC = () => {
 
             <FormInput
               label="Phone Number"
-              name="phoneNumber"
+              name="phone_number"
               type="tel"
               placeholder="Enter your phone number"
-              value={formData.phoneNumber}
+              value={formData.phone_number}
               onChange={handleInputChange}
-              error={fieldErrors.phoneNumber}
+              error={fieldErrors.phone_number}
               required
-              className={getInputBorderColor('phoneNumber', formData.phoneNumber)}
+              className={getInputBorderColor('phone_number', formData.phone_number)}
             />
 
             <FormSelect
@@ -1618,6 +1622,25 @@ const RequestForm: React.FC = () => {
             )}
           </div>
 
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Address <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              name="address"
+              value={formData.address}
+              onChange={handleInputChange}
+              onBlur={() => setTouchedFields(prev => ({ ...prev, address: true }))}
+              placeholder="Enter your full residential address"
+              rows={3}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${getInputBorderColor('address', formData.address)}`}
+              required
+            />
+            {fieldErrors.address && (
+              <p className="mt-1 text-sm text-red-600">{fieldErrors.address}</p>
+            )}
+          </div>
+
           <FormInput
             label="Next of Kin Name"
             name="nextOfKinName"
@@ -1697,12 +1720,12 @@ const RequestForm: React.FC = () => {
           <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b pb-2">Photo Upload</h3>
           
           <FileUploadField
-            field="passportPhoto"
+            field="passport_photo"
             label="Passport Photo"
             required={true}
             preview={photoPreview}
-            dragActiveKey="passportPhoto"
-            fileRef={passportPhotoRef}
+            dragActiveKey="passport_photo"
+            fileRef={passport_photoRef}
           />
         </div>
 
