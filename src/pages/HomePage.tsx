@@ -556,15 +556,15 @@ const HomePage: React.FC = () => {
                 Become a Member
               </motion.button>
               
-              <motion.button
+              <motion.a
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
-                onClick={() => navigate('/about-us')}
+                href='/about-us'
                 className="border-2 border-red-700 text-red-700 font-bold py-3 px-8 rounded-full hover:bg-red-700 hover:text-white transition-colors"
               >
                 Learn More About Us
-              </motion.button>
+              </motion.a>
             </div>
           </motion.div>
         </div>
