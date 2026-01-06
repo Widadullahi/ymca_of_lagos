@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaFacebook, FaInstagram, FaGithub, FaBehance, FaPinterest, FaTwitter, FaDribbble } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import SocialMediaBar from '../components/navigation/SocialMediaBar';
 import MainNavigation from '../components/navigation/MainNavigation';
