@@ -520,7 +520,7 @@ const AboutMeV2: React.FC = () => {
           )}
           
           {/* Social Media Icons */}
-          <div className="flex justify-center gap-6 mt-12">
+          {/* <div className="flex justify-center gap-6 mt-12">
             <a href="#" className="text-2xl text-gray-600 hover:text-blue-600 transition-colors duration-300"><FaFacebook /></a>
             <a href="#" className="text-2xl text-gray-600 hover:text-pink-600 transition-colors duration-300"><FaInstagram /></a>
             <a href="#" className="text-2xl text-gray-600 hover:text-gray-800 transition-colors duration-300"><FaGithub /></a>
@@ -528,7 +528,7 @@ const AboutMeV2: React.FC = () => {
             <a href="#" className="text-2xl text-gray-600 hover:text-red-600 transition-colors duration-300"><FaPinterest /></a>
             <a href="#" className="text-2xl text-gray-600 hover:text-blue-400 transition-colors duration-300"><FaTwitter /></a>
             <a href="#" className="text-2xl text-gray-600 hover:text-pink-500 transition-colors duration-300"><FaDribbble /></a>
-          </div>
+          </div> */}
         </div>
       </section>
 
