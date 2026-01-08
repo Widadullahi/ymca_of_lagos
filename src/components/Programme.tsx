@@ -135,7 +135,7 @@ export default function Programme() {
             variants={fadeInUp}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Programmes & Committees</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Committees</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Our specialized committees focus on holistic youth development through diverse programs and initiatives
             </p>

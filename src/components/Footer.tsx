@@ -31,7 +31,7 @@ const Footer: React.FC<FooterProps> = ({ openDonationModal, logo }) => {
               <li>Who we are</li>
               <li>Our core values</li>
               <li>Words of wisdom</li>
-              <li>Programmes & Committees</li>
+              <li>Committees</li>
             </ul>
           </div>
 
