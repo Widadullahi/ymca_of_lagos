@@ -350,15 +350,16 @@ const HomePage: React.FC = () => {
             variants={fadeInUp}
             className="text-center mt-12"
           >
-            <motion.button
+            <motion.a
               variants={buttonVariants}
               whileHover="hover"
               whileTap="tap"
-              onClick={() => navigate('/about-us')}
+              href='/about-us'
+              // onClick={() => navigate('/about-us')}
               className="border-2 border-red-600 text-red-600 font-bold py-3 px-8 rounded-full hover:bg-red-600 hover:text-white transition-all duration-300"
             >
               Explore All Sections
-            </motion.button>
+            </motion.a>
           </motion.div>
         </div>
       </section>
