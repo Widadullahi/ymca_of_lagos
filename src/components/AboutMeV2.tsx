@@ -4,7 +4,7 @@ import SocialMediaBar from '../components/navigation/SocialMediaBar';
 import MainNavigation from '../components/navigation/MainNavigation';
 import ImpactSection from './ImpactSection';
 import vission2030 from '../assets/images/Vision-2030-logos-4-1.jpg'
-import about from '../assets/images/aboutus.jpg'
+import about from '../assets/images/new/142B7111.jpg'
 import { useAuth } from '../context/NewAuthContext'
 import theirlogo from '../assets/images/image.png'; // Make sure to import your logo
 import Footer from './Footer';

@@ -13,6 +13,9 @@ import SocialMediaBar from '../components/navigation/SocialMediaBar';
 import MainNavigation from '../components/navigation/MainNavigation';
 import vision2030Logo from '../assets/images/Vision-2030-logos-4-1.jpg';
 import Footer from '../components/Footer';
+import aboutUsImage from '../assets/images/new/142B7111.jpg';
+import historyImage from '../assets/images/new/142B7178.jpg';
+import donateImage from '../assets/images/new/142B7217.jpg';
 
 interface Quote {
   id: string;
@@ -195,28 +198,28 @@ const HomePage: React.FC = () => {
       description: 'Learn about our rich history, mission, and the team behind YMCA Lagos', 
       link: '/about-us', 
       icon: '🏛️',
-      image: '/images/about-us-preview.jpg'
+      image: aboutUsImage
     },
     { 
     title: 'Vision 2030', 
     description: 'The Four Pillars of Impact: To achieve Vision 2030, YMCA of Lagos will focus on four strategic areas and work toward 12 strategic goals.', 
     link: '/vision-2030', 
     icon: '🌍',
-    image: '/images/vision-2030-preview.jpg'
+    image: vision2030Logo
   },
     { 
       title: 'YMCA History', 
       description: 'Explore our journey from 1844 to present day across the globe', 
       link: '/history', 
       icon: '📜',
-      image: '/images/history-preview.jpg'
+      image: historyImage
     },
     { 
       title: 'Donate', 
       description: 'Support our mission and make a difference in young lives', 
       link: '#donate', 
       icon: '❤️',
-      image: '/images/donate-preview.jpg',
+      image: donateImage,
       action: openDonationModal
     },
   ]);
