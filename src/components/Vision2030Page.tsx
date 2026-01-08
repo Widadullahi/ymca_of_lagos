@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import SocialMediaBar from '../components/navigation/SocialMediaBar';
 import MainNavigation from '../components/navigation/MainNavigation';
@@ -7,6 +6,9 @@ import MainNavigation from '../components/navigation/MainNavigation';
 // Import your assets
 import theirlogo from '../assets/images/image.png';
 import vision2030Logo from '../assets/images/Vision-2030-logos-4-1.jpg';
+import vision2030Pdf from '../assets/pdf/YMCA_Vision2030_Endorsed.pdf';
+import practicalGuidePdf from '../assets/pdf/Practical-Guide-for-YMCAs.pdf';
+import Footer from './Footer';
 
 const Vision2030Page: React.FC = () => {
   const [, setIsDonationModalOpen] = useState<boolean>(false);
@@ -14,6 +16,15 @@ const Vision2030Page: React.FC = () => {
   const openDonationModal = () => {
     setIsDonationModalOpen(true);
     document.body.style.overflow = 'hidden';
+  };
+
+  const handleDownloadPdf = (pdfUrl: string, fileName: string) => {
+    const link = document.createElement('a');
+    link.href = pdfUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const pillars = [
@@ -32,7 +43,7 @@ const Vision2030Page: React.FC = () => {
     {
       icon: '🌍',
       title: 'Sustainable Planet',
-      description: 'Youth for climate justice and sustainability, promoting environmental awareness and action in Lagos communities.',
+      description: 'We advocate for environmental awareness and support sustainable solutions in Lagos communities.',
       color: 'from-green-500 to-green-600'
     },
     {
@@ -155,57 +166,13 @@ const Vision2030Page: React.FC = () => {
               </p>
               <p>
                 For YMCA of Lagos, Vision 2030 represents our commitment to scaling impact and 
-                empowering young people across Nigeria to drive the African Renaissance forward.
+                empowering young people across Lagos State to drive the African Renaissance forward.
               </p>
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Mission & Vision Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto"
-          >
-            <motion.div variants={slideInLeft} className="bg-white p-8 rounded-2xl shadow-lg">
-              <div className="flex items-center mb-6">
-                <div className="bg-blue-600 text-white p-3 rounded-full mr-4">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-800">Our Mission</h3>
-              </div>
-              <p className="text-gray-700 leading-relaxed">
-                YMCA of Lagos is a community-based organization that seeks to empower 
-                young people for service to their immediate communities and the 
-                nation without any form of discrimination, aligned with Vision 2030's global objectives.
-              </p>
-            </motion.div>
-
-            <motion.div variants={slideInLeft} className="bg-white p-8 rounded-2xl shadow-lg">
-              <div className="flex items-center mb-6">
-                <div className="bg-purple-600 text-white p-3 rounded-full mr-4">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-800">Our Vision</h3>
-              </div>
-              <p className="text-gray-700 leading-relaxed">
-                Empowering young people for the African Renaissance through the 
-                implementation of Vision 2030's four pillars across Lagos and Nigeria.
-              </p>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
 
       {/* Global Impact Section */}
       <section className="py-16 bg-white">
@@ -232,10 +199,16 @@ const Vision2030Page: React.FC = () => {
                     as screened at the Accelerator Summit in Mombasa, October 2024.
                   </p>
                   <div className="space-y-4">
-                    <button className="w-full bg-red-600 text-white py-3 px-6 rounded-lg hover:bg-red-700 transition-colors font-semibold">
+                    <button 
+                      onClick={() => handleDownloadPdf(vision2030Pdf, 'YMCA_Vision2030_Endorsed.pdf')}
+                      className="w-full bg-red-600 text-white py-3 px-6 rounded-lg hover:bg-red-700 transition-colors font-semibold"
+                    >
                       Read Vision 2030
                     </button>
-                    <button className="w-full border-2 border-red-600 text-red-600 py-3 px-6 rounded-lg hover:bg-red-600 hover:text-white transition-colors font-semibold">
+                    <button 
+                      onClick={() => handleDownloadPdf(practicalGuidePdf, 'Practical-Guide-for-YMCAs.pdf')}
+                      className="w-full border-2 border-red-600 text-red-600 py-3 px-6 rounded-lg hover:bg-red-600 hover:text-white transition-colors font-semibold"
+                    >
                       Download the Practical Guide on Implementing Vision 2030
                     </button>
                   </div>
@@ -286,7 +259,7 @@ const Vision2030Page: React.FC = () => {
                 className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
               >
                 <div className={`bg-gradient-to-r ${pillar.color} p-6 text-white text-center`}>
-                  <div className="text-4xl mb-4">{pillar.icon}</div>
+                  {/* <div className="text-4xl mb-4">{pillar.icon}</div> */}
                   <h3 className="text-xl font-bold">{pillar.title}</h3>
                 </div>
                 <div className="p-6">
@@ -364,127 +337,20 @@ const Vision2030Page: React.FC = () => {
             <p className="text-xl mb-8 opacity-90">
               Join us in building the future of Africa through youth empowerment and sustainable development
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {/* <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button className="bg-white text-red-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
                 Learn More About Africa Renaissance
               </button>
               <button className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-red-600 transition-colors">
                 Get Involved
               </button>
-            </div>
+            </div> */}
           </motion.div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-800 text-white py-14">
-        <div className="container mx-auto px-4">
-          {/* Top Section */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            {/* Column 1 - About */}
-            <div>
-              <img 
-                src={theirlogo}
-                alt="YMCA Logo"
-                className="h-12 mb-6"
-              />
-              <p className="text-gray-400 leading-relaxed">
-                77 Awolowo Road, Ikoyi, Lagos, Nigeria
-              </p>
-            </div>
-
-            {/* Column 2 - Jump To */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Jump to...</h3>
-              <ul className="space-y-2 text-gray-300">
-                <li><Link to="/" className="hover:text-white transition-colors">Home</Link></li>
-                <li><Link to="/about-us" className="hover:text-white transition-colors">About us</Link></li>
-                <li>Who we are</li>
-                <li>What we do</li>
-                <li>News</li>
-                <li>Africa Renaissance Hub</li>
-              </ul>
-            </div>
-
-            {/* Column 3 - Join Us */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Join us...</h3>
-              <ul className="space-y-2 text-gray-300">
-                <li>Membership</li>
-                <li>Partnerships</li>
-                <li>Volunteer</li>
-              </ul>
-            </div>
-
-            {/* Column 4 - Contact */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Get in touch...</h3>
-              <p className="flex items-center space-x-3 text-gray-300">
-                <span>📞</span>
-                <span>Hostel: 08102977099</span>
-              </p>
-              <p className="flex items-center space-x-3 text-gray-300 mt-2">
-                <span>📞</span>
-                <span>Admin: 09026802928</span>
-              </p>
-              <p className="flex items-center space-x-3 text-gray-300 mt-2">
-                <span>📞</span>
-                <span>Programmes: 09026114628</span>
-              </p>
-              <p className="flex items-center space-x-3 text-gray-300 mt-2">
-                <span>✉️</span>
-                <span>info@ymcaoflagos.org</span>
-              </p>
-            </div>
-          </div>
-
-          {/* Newsletter & Social Media */}
-          <div className="mt-12 pt-8 border-t border-gray-700">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <h3 className="text-lg font-semibold mb-4">CONTACT | NEWSLETTER</h3>
-                <div className="flex space-x-4">
-                  {['Facebook', 'X (Twitter)', 'Instagram', 'LinkedIn', 'Spotify', 'YouTube', 'Flickr'].map((platform) => (
-                    <a key={platform} href="#" className="text-gray-400 hover:text-white transition-colors">
-                      {platform}
-                    </a>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Our News by Day</h3>
-                <div className="text-gray-400">
-                  <p>November 2025</p>
-                  {/* Calendar would go here */}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* CTA + Bottom Section */}
-          <div className="mt-12 flex flex-col md:flex-row justify-between items-center">
-            <button 
-              onClick={openDonationModal}
-              className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-lg font-semibold transition-colors duration-300"
-            >
-              DONATE
-            </button>
-
-            <Link 
-              to="/contact" 
-              className="mt-6 md:mt-0 text-gray-300 hover:text-white transition-colors"
-            >
-              Contact Us
-            </Link>
-          </div>
-
-          {/* Bottom line */}
-          <div className="mt-10 pt-6 border-t border-gray-700 text-center text-gray-400">
-            <p>All Rights Reserved © 2025 YMCA Lagos | Africa Vision 2030 Co-branding</p>
-            <p className="text-sm mt-2">Website by YMCA Lagos</p>
-          </div>
-        </div>
-      </footer>
+      <Footer openDonationModal={openDonationModal} logo={theirlogo} />
     </div>
   );
 };

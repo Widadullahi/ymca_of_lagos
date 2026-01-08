@@ -386,15 +386,15 @@ const HomePage: React.FC = () => {
               <p className="mb-8 opacity-90">
                 Discover how YMCA of Lagos is implementing the four pillars of Vision 2030 to drive sustainable development and youth empowerment.
               </p>
-              <motion.button
+              <motion.a
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
-                onClick={() => navigate('/vision-2030')}
+                href='/vision-2030'
                 className="bg-white text-red-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
               >
                 Explore Vision 2030
-              </motion.button>
+              </motion.a>
             </motion.div>
             
             <motion.div

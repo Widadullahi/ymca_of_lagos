@@ -313,7 +313,7 @@ const AboutMeV2: React.FC = () => {
             ]
           },
           {
-            content: 'Through our guiding philosophy, "Subject to Citizen," we inspire young people to move from passive observers to active citizens individuals who take ownership of their communities, champion social justice, and drive meaningful transformation.',
+            content: 'Through our programmes we inspire young people to move from passive observers to active citizens who take ownership of their communities, champion social justice, and drive meaningful transformation.',
             highlightedText: [
               { text: "Subject to Citizen,", className: " font-semibold" }
             ]

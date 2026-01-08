@@ -24,7 +24,7 @@ const Footer: React.FC<FooterProps> = ({ openDonationModal, logo }) => {
           </div>
 
           {/* Column 2 - Jump To */}
-          <div>
+          {/* <div>
             <h3 className="text-lg font-semibold mb-4">Jump to...</h3>
             <ul className="space-y-2 text-gray-300">
               <li>Latest News</li>
@@ -33,15 +33,16 @@ const Footer: React.FC<FooterProps> = ({ openDonationModal, logo }) => {
               <li>Words of wisdom</li>
               <li>Committees</li>
             </ul>
-          </div>
+          </div> */}
 
           {/* Column 3 - Join Us */}
           <div>
             <h3 className="text-lg font-semibold mb-4">Join us...</h3>
             <ul className="space-y-2 text-gray-300">
-              <li>Membership</li>
-              <li>Partnerships</li>
-              <li>Volunteer</li>
+              <li>
+                <a href="/membership-request">Membership</a>
+                
+              </li>
             </ul>
           </div>
 

@@ -82,7 +82,11 @@ export default function CoreValue() {
                 >
                     <h2 className="text-4xl font-bold text-gray-900 mb-4">Our Core Values</h2>
                     <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                    At the YMCA of Lagos, our core values serve as the heartbeat of everything we do. They reflect our unwavering commitment to empowering individuals, strengthening communities, and promoting holistic development spiritually, mentally, and physically. These principles guide our decisions, inspire our programs, and shape the way we interact with every person we serve. Through compassion, integrity, respect, and service, we strive to create an inclusive environment where everyone has the opportunity to grow, belong, and make a positive impact in society.
+                    At the YMCA of Lagos, our core values serve as the heartbeat of everything we do. 
+                    They reflect our commitment to empowering individuals, strengthening communities and 
+                    promoting development spiritually, mentally, and physically. These principles guide our decisions, 
+                    our programs, and shape the way we interact with every person we serve. We strive to create an inclusive 
+                    environment where everyone has the opportunity to grow, belong, and make a positive impact in society.
                     </p>
                 </motion.div>
 

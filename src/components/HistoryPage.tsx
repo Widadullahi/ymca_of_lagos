@@ -186,7 +186,7 @@ const HistoryPage: React.FC = () => {
             <p className="text-xl md:text-2xl mb-8 leading-relaxed">
               A legacy of faith, service, and youth empowerment since 1844
             </p>
-            <div className="flex justify-center">
+            {/* <div className="flex justify-center">
               <Link 
                 to="/about" 
                 className="bg-white text-red-700 font-bold py-3 px-6 rounded-full hover:bg-gray-100 transition-colors duration-300 inline-flex items-center"
@@ -196,7 +196,7 @@ const HistoryPage: React.FC = () => {
                 </svg>
                 Back to About
               </Link>
-            </div>
+            </div> */}
           </motion.div>
         </div>
       </section>
