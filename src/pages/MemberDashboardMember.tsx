@@ -124,7 +124,7 @@ const MemberDashboardMember: React.FC = () => {
                     : "bg-red-100 text-red-800"
                 }`}>
                   
-                  {user?.card?.first_time ? "IN ACTIVE" :  !user?.card?.expired ? "ACTIVE" : "EXPIRED"}
+                  {user?.card?.first_time ? "INACTIVE" :  !user?.card?.expired ? "ACTIVE" : "EXPIRED"}
                   {/* {!user?.card?.expired ? "ACTIVE" : "EXPIRED"} */}
                 </span>
               </div>

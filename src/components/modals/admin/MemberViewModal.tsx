@@ -89,7 +89,7 @@ const MemberViewModal: React.FC<{
                   <span className={`px-3 py-1 inline-flex text-sm font-medium rounded-full 
                     ${member.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
                   >
-                    {member.is_active ? "Active" : "In Active"}
+                    {member.is_active ? "Active" : "Inactive"}
                   </span>
                 </div>
               </div>

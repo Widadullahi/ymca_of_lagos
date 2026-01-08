@@ -644,7 +644,7 @@ const UserListingPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                         ${member.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {member.is_active ? "Active" : "In Active"}
+                        {member.is_active ? "Active" : "Inactive"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
