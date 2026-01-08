@@ -12,6 +12,7 @@ import WhoAreWe from '../components/WhoAreWe.js';
 import SocialMediaBar from '../components/navigation/SocialMediaBar';
 import MainNavigation from '../components/navigation/MainNavigation';
 import vision2030Logo from '../assets/images/Vision-2030-logos-4-1.jpg';
+import Footer from '../components/Footer';
 
 interface Quote {
   id: string;
@@ -571,83 +572,7 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-800 text-white py-14">
-        <div className="container mx-auto px-4">
-          {/* Top Section */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            {/* Column 1 - About */}
-            <div>
-              <img 
-                src={theirlogo}
-                alt="YMCA Logo"
-                className="h-12 mb-6"
-              />
-              <p className="text-gray-400 leading-relaxed">
-                77 Awolowo Road, Ikoyi, Lagos, Nigeria
-              </p>
-            </div>
-
-            {/* Column 2 - Jump To */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Jump to...</h3>
-              <ul className="space-y-2 text-gray-300">
-                <li>Latest News</li>
-                <li>Who we are</li>
-                <li>Our core values</li>
-                <li>Words of wisdom</li>
-                <li>Programmes & Committees</li>
-              </ul>
-            </div>
-
-            {/* Column 3 - Join Us */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Join us...</h3>
-              <ul className="space-y-2 text-gray-300">
-                <li>Membership</li>
-                <li>Partnerships</li>
-                <li>Volunteer</li>
-              </ul>
-            </div>
-
-            {/* Column 4 - Contact */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Get in touch...</h3>
-              <p className="flex items-center space-x-3 text-gray-300">
-                <span>📞</span>
-                <span>Hostel: 08102977099</span>
-              </p>
-              <p className="flex items-center space-x-3 text-gray-300 mt-2">
-                <span>📞</span>
-                <span>Admin: 09026802928</span>
-              </p>
-              <p className="flex items-center space-x-3 text-gray-300 mt-2">
-                <span>📞</span>
-                <span>Programmes: 09026114628</span>
-              </p>
-              <p className="flex items-center space-x-3 text-gray-300 mt-2">
-                <span>✉️</span>
-                <span>info@ymcaoflagos.org</span>
-              </p>
-            </div>
-          </div>
-
-          {/* CTA + Bottom Section */}
-          <div className="mt-12 flex flex-col md:flex-row justify-between items-center">
-            {/* Red CTA Button */}
-            <button 
-              onClick={openDonationModal}
-              className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-lg font-semibold transition-colors duration-300"
-            >
-              Donate
-            </button>
-          </div>
-
-          {/* Bottom line */}
-          <div className="mt-10 pt-6 border-t border-gray-700 text-center text-gray-400">
-            © 2025 YMCA Lagos. All rights reserved.
-          </div>
-        </div>
-      </footer>
+      <Footer openDonationModal={openDonationModal} logo={theirlogo} />
 
       {/* Donation Modal */}
       <AnimatePresence>

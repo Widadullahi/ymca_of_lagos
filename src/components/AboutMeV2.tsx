@@ -7,15 +7,22 @@ import vission2030 from '../assets/images/Vision-2030-logos-4-1.jpg'
 import about from '../assets/images/aboutus.jpg'
 import { useAuth } from '../context/NewAuthContext'
 import theirlogo from '../assets/images/image.png'; // Make sure to import your logo
+import Footer from './Footer';
+import DonationModal from './modals/DonationModal';
 
 const AboutMeV2: React.FC = () => {
   const statsRef = useRef<HTMLDivElement>(null);
   const hasAnimated = useRef(false);
-  const [, setIsDonationModalOpen] = useState<boolean>(false);
+  const [isDonationModalOpen, setIsDonationModalOpen] = useState<boolean>(false);
   
   const openDonationModal = () => {
     setIsDonationModalOpen(true);
     document.body.style.overflow = 'hidden';
+  };
+
+  const closeDonationModal = () => {
+    setIsDonationModalOpen(false);
+    document.body.style.overflow = 'auto';
   };
 
   const stats2 = [
@@ -532,92 +539,10 @@ const AboutMeV2: React.FC = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-800 text-white py-14">
-        <div className="container mx-auto px-4">
-          {/* Top Section */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            {/* Column 1 - About */}
-            <div>
-              <img 
-                src={theirlogo}
-                alt="YMCA Logo"
-                className="h-12 mb-6"
-              />
-              <p className="text-gray-400 leading-relaxed">
-                77 Awolowo Road, Ikoyi, Lagos, Nigeria
-              </p>
-            </div>
+      <Footer openDonationModal={openDonationModal} logo={theirlogo} />
 
-            {/* Column 2 - Jump To */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Jump to...</h3>
-              <ul className="space-y-2 text-gray-300">
-                <li>Latest News</li>
-                <li>Who we are</li>
-                <li>Our core values</li>
-                <li>Words of wisdom</li>
-                <li>Programmes & Committees</li>
-              </ul>
-            </div>
-
-            {/* Column 3 - Join Us */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Join us...</h3>
-              <ul className="space-y-2 text-gray-300">
-                <li>Membership</li>
-                <li>Partnerships</li>
-                <li>Volunteer</li>
-              </ul>
-            </div>
-
-            {/* Column 4 - Contact */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Get in touch...</h3>
-              <p className="flex items-center space-x-3 text-gray-300">
-                <span>📞</span>
-                <span>Hostel: 08102977099</span>
-              </p>
-              <p className="flex items-center space-x-3 text-gray-300 mt-2">
-                <span>📞</span>
-                <span>Admin: 09026802928</span>
-              </p>
-              <p className="flex items-center space-x-3 text-gray-300 mt-2">
-                <span>📞</span>
-                <span>Programmes: 09026114628</span>
-              </p>
-              <p className="flex items-center space-x-3 text-gray-300 mt-2">
-                <span>✉️</span>
-                <span>info@ymcaoflagos.org</span>
-              </p>
-            </div>
-          </div>
-
-          {/* CTA + Bottom Section */}
-          <div className="mt-12 flex flex-col md:flex-row justify-between items-center">
-            {/* Red CTA Button */}
-            <button 
-              onClick={openDonationModal}
-              className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-lg font-semibold transition-colors duration-300"
-            >
-              Donate
-            </button>
-
-            {/* Language - commented out as per your code */}
-            {/* <div className="mt-6 md:mt-0 flex items-center space-x-2">
-              🌍 
-              <select className="bg-black border border-gray-700 px-3 py-2 text-gray-300">
-                <option>EN</option>
-                <option>FR</option>
-              </select>
-            </div> */}
-          </div>
-
-          {/* Bottom line */}
-          <div className="mt-10 pt-6 border-t border-gray-700 text-center text-gray-400">
-            © 2025 YMCA Lagos. All rights reserved.
-          </div>
-        </div>
-      </footer>
+      {/* Donation Modal */}
+      <DonationModal isOpen={isDonationModalOpen} onClose={closeDonationModal} />
     </div>
     </div>
   );
