@@ -323,7 +323,7 @@ const HomePage: React.FC = () => {
                 {/* Content */}
                 <div className="p-6">
                   <div className="flex items-start mb-3">
-                    <span className="text-2xl mr-3">{link.icon}</span>
+                    {/* <span className="text-2xl mr-3">{link.icon}</span> */}
                     <h3 className="text-lg font-bold text-gray-900 group-hover:text-red-600 transition-colors">
                       {link.title}
                     </h3>
