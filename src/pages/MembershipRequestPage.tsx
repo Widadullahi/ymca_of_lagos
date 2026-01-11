@@ -411,24 +411,29 @@ const RequestForm: React.FC = () => {
     // Check for Council of Church
     const isCouncilOfChurch = unitName.includes('council') && unitName.includes('church');
     
-    console.log('Unit analysis:', { isYouthCouncil, isYsMen, isCentralClub, isCouncilOfChurch });
     
     if (isYouthCouncil) {
       if (age <= 23) {
+
+        console.log(allClubs)
         // For age 1-23, look for Hi-Y or youth clubs
-        const youthClubs = allClubs.filter((club: { value: string; label: string; }) => {
-          const clubName = club.value.toLowerCase();
-          const clubLabel = club.label.toLowerCase();
-          
-          const isYouthClub = 
-            clubName.includes('Hi-Y') || clubLabel.includes('Hi-Y') ||
-            clubName.includes('hi-y') || clubLabel.includes('hi-y') ;
-          
-          console.log('Club:', club.value, 'Is Youth Council?', isYouthClub);
-          return isYouthClub;
-        });
+        const youthClubs = allClubs.filter(
+          (club: { value: string; label: string }) => {
+            const normalize = (str: string) =>
+              str.toLowerCase().replace(/\s+/g, '');
+
+            const clubName = normalize(club.value);
+            const clubLabel = normalize(club.label);
+
+            const isYouthClub =
+              clubName.includes('hi-y') || clubLabel.includes('hi-y');
+
+            console.log('Club:', club.value, 'Is Youth Club?', isYouthClub);
+            return isYouthClub;
+          }
+        );
+
         
-        console.log('Youth Council found for age', age, ':', youthClubs);
         
         if (youthClubs.length === 0) {
           console.log('No specific youth clubs found, showing all clubs as fallback');
@@ -460,7 +465,6 @@ const RequestForm: React.FC = () => {
         return youngAdultClubs;
       } else {
         // Age 31+ cannot join Youth Council
-        console.log('Age 31+ cannot join Youth Council');
         return [];
       }
     } else if (isYsMen || isCentralClub) {
@@ -1469,7 +1473,10 @@ const RequestForm: React.FC = () => {
 
             {availableClubs.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Church/Club</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {formData?.unit?.toLowerCase().includes('council of church') ? <>Church</> : <>Club</>}
+                </label>
+
                 <Select
                   options={availableClubs}
                   value={availableClubs.find(option => option.value === formData.club) || null}
@@ -1497,7 +1504,7 @@ const RequestForm: React.FC = () => {
                       setAvailableChurches([]);
                     }
                   }}
-                  placeholder="Select Church/Club"
+                  placeholder="Select"
                   isSearchable
                   noOptionsMessage={() => "No church found"}
                   className={getInputBorderColor('church', formData.club)}
