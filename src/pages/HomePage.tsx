@@ -341,26 +341,6 @@ const HomePage: React.FC = () => {
               </motion.div>
             ))}
           </motion.div>
-
-          {/* View All Button */}
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeInUp}
-            className="text-center mt-12"
-          >
-            <motion.a
-              variants={buttonVariants}
-              whileHover="hover"
-              whileTap="tap"
-              href='/about-us'
-              // onClick={() => navigate('/about-us')}
-              className="border-2 border-red-600 text-red-600 font-bold py-3 px-8 rounded-full hover:bg-red-600 hover:text-white transition-all duration-300"
-            >
-              Explore All Sections
-            </motion.a>
-          </motion.div>
         </div>
       </section>
 
@@ -520,7 +500,7 @@ const HomePage: React.FC = () => {
             viewport={{ once: true }}
             variants={fadeInUp}
           >
-            <h2 className="text-3xl font-bold mb-4">Urgent Support Needed</h2>
+            <h2 className="text-3xl font-bold mb-4">Support Needed</h2>
             <p className="text-xl mb-6 max-w-2xl mx-auto opacity-90">
               Your donation today can transform a young person's life. Help us continue our vital work in youth empowerment and community development.
             </p>
