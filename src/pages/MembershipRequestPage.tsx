@@ -386,96 +386,74 @@ const RequestForm: React.FC = () => {
       console.log('No clubs available - missing required data');
       return [];
     }
-    
-    const allClubs = selectedUnit.dropDown.map((club: any) => {
+
+    let allClubs = selectedUnit.dropDown.map((club: any) => {
       const key = Object.keys(club)[0];
       return { value: club[key], label: club[key] };
     });
-    
-    console.log('Available clubs in', selectedUnit.label, ':', allClubs);
-    console.log('User age:', age);
-    
+
+    // For users 35+, completely hide Y’s men and central club from the dropdown
+    if (age >= 35) {
+      allClubs = allClubs.filter(
+        (club: { value: string; label: string }) => {
+          const v = club.value.trim().toLowerCase();
+          return v !== "y's men" && v !== 'central club';
+        }
+      );
+    }
+
     const unitName = selectedUnit.label.toLowerCase();
     const unitValue = selectedUnit.value.toLowerCase();
-    
+
     // Check for Youth Council
     const isYouthCouncil = unitName.includes('youth') || unitValue.includes('youth');
-    
+
     // Check for Y's Men
-    const isYsMen = unitName.includes("y's men") || unitValue.includes("y's men") || 
-                   unitName.includes('ys men') || unitValue.includes('ys men');
-    
+    const isYsMen = unitName.includes("y's men") || unitValue.includes("y's men") ||
+      unitName.includes('ys men') || unitValue.includes('ys men');
+
     // Check for Central Club
     const isCentralClub = unitName.includes('central') || unitValue.includes('central');
-    
+
     // Check for Council of Church
     const isCouncilOfChurch = unitName.includes('council') && unitName.includes('church');
-    
-    
+
     if (isYouthCouncil) {
       if (age <= 23) {
-
-        console.log(allClubs)
-        // For age 1-23, look for Hi-Y or youth clubs
         const youthClubs = allClubs.filter(
           (club: { value: string; label: string }) => {
             const normalize = (str: string) =>
               str.toLowerCase().replace(/\s+/g, '');
-
             const clubName = normalize(club.value);
             const clubLabel = normalize(club.label);
-
-            const isYouthClub =
-              clubName.includes('hi-y') || clubLabel.includes('hi-y');
-
-            console.log('Club:', club.value, 'Is Youth Club?', isYouthClub);
-            return isYouthClub;
+            return clubName.includes('hi-y') || clubLabel.includes('hi-y');
           }
         );
-
-        
-        
         if (youthClubs.length === 0) {
-          console.log('No specific youth clubs found, showing all clubs as fallback');
           return allClubs;
         }
-        
         return youthClubs;
       } else if (age >= 24 && age <= 30) {
-        // For age 24-30, look for Y-Elite or young adult clubs
         const youngAdultClubs = allClubs.filter((club: { value: string; label: string }) => {
           const clubName = club.value.toLowerCase();
           const clubLabel = club.label.toLowerCase();
-          
-          const isYoungAdultClub = 
-            clubName.includes('Y-Elite') || clubLabel.includes('Y-Elite') ||
-            clubName.includes('y-elite') || clubLabel.includes('y-elite');
-          
-          console.log('Club:', club.value, 'Is Youth Council?', isYoungAdultClub);
-          return isYoungAdultClub;
+          return clubName.includes('y-elite') || clubLabel.includes('y-elite');
         });
-        
-        console.log('Youth Council found for age', age, ':', youngAdultClubs);
-        
         if (youngAdultClubs.length === 0) {
-          console.log('No specific young adult clubs found, showing all clubs as fallback');
           return allClubs;
         }
-        
         return youngAdultClubs;
       } else {
-        // Age 31+ cannot join Youth Council
         return [];
       }
     } else if (isYsMen || isCentralClub) {
-      // Y's Men and Central Club are only for adults (31+)
-      if (age >= 31) {
+      // Y's Men and Central Club are only for adults (31+), but 35+ cannot join
+      if (age >= 31 && age < 35) {
         return allClubs;
       } else {
         return [];
       }
     } else if (isCouncilOfChurch) {
-      // Council of Church - show churches based on age
       if (age <= 23) {
         return allClubs.filter((club: { value: string; label: string }) => {
           const clubName = club.value.toLowerCase();
@@ -484,14 +462,12 @@ const RequestForm: React.FC = () => {
       } else if (age >= 24 && age <= 30) {
         return allClubs.filter((club: { value: string; label: string }) => {
           const clubName = club.value.toLowerCase();
-          return clubName.includes('Y-Elite');
+          return clubName.includes('y-elite');
         });
       } else {
-        return allClubs; // Age 31+ can join any church
+        return allClubs;
       }
     } else {
-      // For other adult units, show all clubs
-      console.log('Adult unit - showing all clubs');
       return allClubs;
     }
   };
