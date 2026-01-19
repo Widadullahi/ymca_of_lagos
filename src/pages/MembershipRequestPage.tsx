@@ -392,8 +392,8 @@ const RequestForm: React.FC = () => {
       return { value: club[key], label: club[key] };
     });
 
-    // For users 35+, completely hide Y’s men and central club from the dropdown
-    if (age >= 35) {
+    // For users 31+, completely hide Y’s men and central club from the dropdown
+    if (age >= 31) {
       allClubs = allClubs.filter(
         (club: { value: string; label: string }) => {
           const v = club.value.trim().toLowerCase();
