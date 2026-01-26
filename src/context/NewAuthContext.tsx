@@ -14,10 +14,10 @@ interface AuthContextType {
   fetchWithAuth: (params: any) => Promise<any>;
   displayNotification: (type: string, text: any) => void;
   setUser: React.Dispatch<React.SetStateAction<any>>;
-  BACKEND_URL:string;
-  FRONTEND_URL:string;
+  BACKEND_URL: string;
+  FRONTEND_URL: string;
   fetchUserProfile: () => void;
-  setAuthToken:React.Dispatch<React.SetStateAction<any>>;
+  setAuthToken: React.Dispatch<React.SetStateAction<any>>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // setGlobalLoadingText("Setting up profile...")
       setGlobalLoading(true);
-      
+
 
       const data = await fetchWithAuth({
         method: 'GET',
@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(data?.data);
     } catch (error) {
       console.error('Error fetching user profile:', error);
-    }finally{
+    } finally {
       setGlobalLoading(false);
     }
   };
@@ -90,7 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthToken(data?.data?.tokens);
       localStorage.setItem('tokens', JSON.stringify(data?.data?.tokens));
       setUser(data?.data?.user);
-      
+
     } catch (error) {
       console.error('Error fetching user profile:', error);
     }
@@ -156,14 +156,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     queryParams = {},
     body = null,
     isFormData = false,
-    isAthenticated=true,
+    isAthenticated = true,
+    responseType = 'json',
   }: {
     method?: string;
     path: string;
     queryParams?: Record<string, any>;
     body?: any;
     isFormData?: boolean;
-    isAthenticated?:boolean
+    isAthenticated?: boolean;
+    responseType?: 'json' | 'blob';
   }) {
     const accessToken = authToken?.access_token;
     const refreshToken = authToken?.refresh_token;
@@ -176,10 +178,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       url = `${url}?${query}`;
     }
     const headers: Record<string, string> = {}
-    if (!isFormData){
-      headers['Content-Type']= 'application/json';
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
     }
-    
+
     // Include the access token in the Authorization header if available
     if (isAthenticated && accessToken) {
       headers['Authorization'] = `Bearer ${accessToken}`;
@@ -231,6 +233,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (!response.ok) {
       handleErrorResponse(response);
+    }
+
+    if (responseType === 'blob') {
+      return response.blob();
     }
 
     return response.json();

@@ -6,11 +6,12 @@ import AddUserModal from '../../components/modals/admin/AddUserModal';
 import EditMemberModal from '../../components/modals/admin/EditMemberModal';
 import { useAuth } from '../../context/NewAuthContext';
 import { Member } from '../../types/types';
+import ViewIDCardModal from '../../components/modals/admin/ViewIDCardModal';
 
 const UserListingPage: React.FC = () => {
   // State
   const navigate = useNavigate();
-  const { fetchWithAuth} = useAuth();
+  const { fetchWithAuth } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [filteredMembers, setFilteredMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,12 +27,13 @@ const UserListingPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [hasNextPage, setHasNextPage] = useState<boolean>(false);
 
-  const [churches, setChurches] = useState<{value: string, label: string}[]>([]);
-  const [youthGroups, setYouthGroups] = useState<{value: string, label: string}[]>([]);
+  const [churches, setChurches] = useState<{ value: string, label: string }[]>([]);
+  const [youthGroups, setYouthGroups] = useState<{ value: string, label: string }[]>([]);
 
   // New state for modals
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
+  const [viewingCardMember, setViewingCardMember] = useState<Member | null>(null);
 
   // Bulk selection state
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
@@ -54,7 +56,7 @@ const UserListingPage: React.FC = () => {
   async function fetchMembers(page = 1, append = false) {
     setIsLoadingMore(append);
     if (!append) setIsLoading(true);
-    
+
     try {
       const response = await fetchWithAuth({
         method: 'GET',
@@ -71,7 +73,7 @@ const UserListingPage: React.FC = () => {
       setCurrentPage(page)
     } catch (error) {
       console.error('Error fetching members:', error);
-    }finally{
+    } finally {
       setIsLoading(false);
       setIsLoadingMore(false);
     }
@@ -85,19 +87,19 @@ const UserListingPage: React.FC = () => {
 
   async function fetchChurches() {
     if (!fetchWithAuth) return;
-    
+
     try {
       const data = await fetchWithAuth({
         method: 'GET',
         path: `/churches`,
       });
-      
+
       // Transform the API response to our form format
       const formattedChurches = data?.data?.map((church: any) => ({
         value: church.id,
         label: church.name
       }));
-      
+
       setChurches(formattedChurches);
     } catch (error) {
       console.error('Error fetching churches:', error);
@@ -106,19 +108,19 @@ const UserListingPage: React.FC = () => {
 
   async function fetchYouthGroups() {
     if (!fetchWithAuth) return;
-    
+
     try {
       const data = await fetchWithAuth({
         method: 'GET',
         path: `/youth-groups`,
       });
-      
+
       // Transform the API response to our form format
       const formattedGroups = data?.data?.map((group: any) => ({
         value: group.id,
         label: group.name
       }));
-      
+
       setYouthGroups(formattedGroups);
     } catch (error) {
       console.error('Error fetching youth groups:', error);
@@ -126,9 +128,9 @@ const UserListingPage: React.FC = () => {
   }
 
   useEffect(() => {
-      fetchMembers()
-      fetchYouthGroups();
-      fetchChurches();
+    fetchMembers()
+    fetchYouthGroups();
+    fetchChurches();
   }, []);
 
   // Apply filters
@@ -138,9 +140,9 @@ const UserListingPage: React.FC = () => {
     // Apply search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      result = result.filter(member => 
-        member?.first_name.toLowerCase().includes(term) || 
-        member?.last_name.toLowerCase().includes(term) || 
+      result = result.filter(member =>
+        member?.first_name.toLowerCase().includes(term) ||
+        member?.last_name.toLowerCase().includes(term) ||
         member?.email.toLowerCase().includes(term) ||
         member?.phone_number.toLowerCase().includes(term)
       );
@@ -156,9 +158,9 @@ const UserListingPage: React.FC = () => {
       result = result.filter(member => {
         if (statusFilter === 'Active') {
           return member.is_active;
-          } else if (statusFilter === 'Inactive') {
-            return !member.is_active;
-          }
+        } else if (statusFilter === 'Inactive') {
+          return !member.is_active;
+        }
       });
     }
 
@@ -207,6 +209,35 @@ const UserListingPage: React.FC = () => {
     setStateFilter('');
   };
 
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const response = await fetchWithAuth({
+        method: 'GET',
+        path: '/admin/members/export/',
+        responseType: 'blob', // We need this to handle binary data
+      });
+
+      // Create a blob from the response
+      const blob = new Blob([response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'members_list.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export members list. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const AddUserButtonSection = () => (
     <div className="flex space-x-3">
       <button
@@ -220,6 +251,20 @@ const UserListingPage: React.FC = () => {
         className="px-4 py-2 border border-indigo-600 text-indigo-600 rounded-md hover:bg-indigo-50"
       >
         Bulk Upload
+      </button>
+      <button
+        onClick={handleExport}
+        disabled={isExporting}
+        className="px-4 py-2 border border-green-600 text-green-600 rounded-md hover:bg-green-50 flex items-center disabled:opacity-50"
+      >
+        {isExporting ? (
+          <>
+            <span className="animate-spin h-4 w-4 mr-2 border-t-2 border-b-2 border-green-600 rounded-full"></span>
+            Exporting...
+          </>
+        ) : (
+          'Export Members'
+        )}
       </button>
     </div>
   );
@@ -275,25 +320,25 @@ const UserListingPage: React.FC = () => {
     if (selectedUserIds.length === 0) return;
     try {
       if (bulkActionType === 'membership' && bulkMembershipType) {
-          await fetchWithAuth({
-            method: 'POST',
-            path: '/admin/members/bulk-update-membership-type/',
-            body: {
-              user_ids: selectedUserIds,
-              membership_type: bulkMembershipType,
-            },
-            headers: { 'Content-Type': 'application/json' },
-          });
+        await fetchWithAuth({
+          method: 'POST',
+          path: '/admin/members/bulk-update-membership-type/',
+          body: {
+            user_ids: selectedUserIds,
+            membership_type: bulkMembershipType,
+          },
+          headers: { 'Content-Type': 'application/json' },
+        });
       } else if (bulkActionType === 'status' && bulkStatus) {
-          await fetchWithAuth({
-            method: 'POST',
-            path: '/admin/members/bulk-update-status/',
-            body: {
-              user_ids: selectedUserIds,
-              is_active: bulkStatus === 'active',
-            },
-            headers: { 'Content-Type': 'application/json' },
-          });
+        await fetchWithAuth({
+          method: 'POST',
+          path: '/admin/members/bulk-update-status/',
+          body: {
+            user_ids: selectedUserIds,
+            is_active: bulkStatus === 'active',
+          },
+          headers: { 'Content-Type': 'application/json' },
+        });
       }
       // Refresh members and clear selection
       await fetchMembers();
@@ -307,92 +352,92 @@ const UserListingPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen relative">
-            {/* Floating action bar for bulk actions */}
-            {showActionBar && (
-              <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-30 bg-white shadow-lg rounded-lg px-6 py-3 flex items-center space-x-4 border border-gray-200">
-                <span className="text-gray-700 font-medium">{selectedUserIds.length} selected</span>
-                <button
-                  className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
-                  onClick={handleBulkAction}
-                >
-                  Take Action
-                </button>
-              </div>
-            )}
+      {/* Floating action bar for bulk actions */}
+      {showActionBar && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-30 bg-white shadow-lg rounded-lg px-6 py-3 flex items-center space-x-4 border border-gray-200">
+          <span className="text-gray-700 font-medium">{selectedUserIds.length} selected</span>
+          <button
+            className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+            onClick={handleBulkAction}
+          >
+            Take Action
+          </button>
+        </div>
+      )}
 
-            {/* Modal for choosing bulk action (membership type or status update) */}
-            {showBulkActionModal && (
-              <div className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-40">
-                <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md relative">
-                  <button
-                    className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-                    onClick={closeBulkActionModal}
-                    aria-label="Close"
+      {/* Modal for choosing bulk action (membership type or status update) */}
+      {showBulkActionModal && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md relative">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+              onClick={closeBulkActionModal}
+              aria-label="Close"
+            >
+              &times;
+            </button>
+            <h2 className="text-lg font-bold mb-4">Bulk Action</h2>
+            <form onSubmit={handleBulkUpdate}>
+              <label className="block mb-2 font-medium text-gray-700">Action</label>
+              <select
+                className="w-full p-2 border border-gray-300 rounded mb-4"
+                value={bulkActionType}
+                onChange={e => setBulkActionType(e.target.value as 'membership' | 'status')}
+              >
+                <option value="membership">Update Membership Type</option>
+                <option value="status">Update Status</option>
+              </select>
+
+              {bulkActionType === 'membership' && (
+                <>
+                  <label className="block mb-2 font-medium text-gray-700">Membership Type</label>
+                  <select
+                    className="w-full p-2 border border-gray-300 rounded mb-4"
+                    value={bulkMembershipType}
+                    onChange={e => setBulkMembershipType(e.target.value)}
+                    required
                   >
-                    &times;
+                    <option value="">Select membership type</option>
+                    {membershipTypeOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="submit"
+                    className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700"
+                    disabled={!bulkMembershipType}
+                  >
+                    Update Membership Type
                   </button>
-                  <h2 className="text-lg font-bold mb-4">Bulk Action</h2>
-                  <form onSubmit={handleBulkUpdate}>
-                    <label className="block mb-2 font-medium text-gray-700">Action</label>
-                    <select
-                      className="w-full p-2 border border-gray-300 rounded mb-4"
-                      value={bulkActionType}
-                      onChange={e => setBulkActionType(e.target.value as 'membership' | 'status')}
-                    >
-                      <option value="membership">Update Membership Type</option>
-                      <option value="status">Update Status</option>
-                    </select>
-
-                    {bulkActionType === 'membership' && (
-                      <>
-                        <label className="block mb-2 font-medium text-gray-700">Membership Type</label>
-                        <select
-                          className="w-full p-2 border border-gray-300 rounded mb-4"
-                          value={bulkMembershipType}
-                          onChange={e => setBulkMembershipType(e.target.value)}
-                          required
-                        >
-                          <option value="">Select membership type</option>
-                          {membershipTypeOptions.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </select>
-                        <button
-                          type="submit"
-                          className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700"
-                          disabled={!bulkMembershipType}
-                        >
-                          Update Membership Type
-                        </button>
-                      </>
-                    )}
-                    {bulkActionType === 'status' && (
-                      <>
-                        <label className="block mb-2 font-medium text-gray-700">Status</label>
-                        <select
-                          className="w-full p-2 border border-gray-300 rounded mb-4"
-                          value={bulkStatus}
-                          onChange={e => setBulkStatus(e.target.value)}
-                          required
-                        >
-                          <option value="">Select status</option>
-                          {statusOptions.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </select>
-                        <button
-                          type="submit"
-                          className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700"
-                          disabled={!bulkStatus}
-                        >
-                          Update Status
-                        </button>
-                      </>
-                    )}
-                  </form>
-                </div>
-              </div>
-            )}
+                </>
+              )}
+              {bulkActionType === 'status' && (
+                <>
+                  <label className="block mb-2 font-medium text-gray-700">Status</label>
+                  <select
+                    className="w-full p-2 border border-gray-300 rounded mb-4"
+                    value={bulkStatus}
+                    onChange={e => setBulkStatus(e.target.value)}
+                    required
+                  >
+                    <option value="">Select status</option>
+                    {statusOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="submit"
+                    className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700"
+                    disabled={!bulkStatus}
+                  >
+                    Update Status
+                  </button>
+                </>
+              )}
+            </form>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Members</h1>
@@ -660,6 +705,12 @@ const UserListingPage: React.FC = () => {
                       >
                         View
                       </button>
+                      <button
+                        onClick={() => setViewingCardMember(member)}
+                        className="text-green-600 hover:text-green-900"
+                      >
+                        Card
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -670,7 +721,7 @@ const UserListingPage: React.FC = () => {
       )}
 
       {filteredMembers.length > 0 && hasNextPage && (
-        <button 
+        <button
           onClick={loadMoreMembers}
           disabled={isLoadingMore}
           className="w-full mt-4 text-indigo-600 font-medium py-2 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-50"
@@ -714,6 +765,13 @@ const UserListingPage: React.FC = () => {
         isOpen={showBulkUploadModal}
         closeModal={() => setShowBulkUploadModal(false)}
         onUploadMembers={fetchMembers}
+      />
+
+      {/* View ID Card Modal */}
+      <ViewIDCardModal
+        isOpen={!!viewingCardMember}
+        closeModal={() => setViewingCardMember(null)}
+        member={viewingCardMember}
       />
     </div>
   );
