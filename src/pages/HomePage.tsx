@@ -531,15 +531,16 @@ const HomePage: React.FC = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <motion.button
+              <motion.a
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
-                onClick={() => navigate('/membership-request')}
+                // onClick={() => navigate('/membership-request')}
+                href='/membership-request'
                 className="bg-red-700 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-red-800 transition-colors"
               >
                 Become a Member
-              </motion.button>
+              </motion.a>
               
               <motion.a
                 variants={buttonVariants}
