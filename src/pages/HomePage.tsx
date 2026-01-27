@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/NewAuthContext';
 import CoreValue from '../components/CoreValue.js';
 import Programme from '../components/Programme.js';
-import ymcaHeroImage from '../assets/images/ymca-world.png';
+import ymcaHeroImage from '../assets/images/ymca-world.jpg';
 import theirlogo from '../assets/images/logo.png';
 import LatestNews from '../components/LatestNews.js';
 import HeroSectionS2 from '../components/HeroSectionS2';
@@ -13,9 +13,9 @@ import SocialMediaBar from '../components/navigation/SocialMediaBar';
 import MainNavigation from '../components/navigation/MainNavigation';
 import vision2030Logo from '../assets/images/Vision-2030-logos-4-1.jpg';
 import Footer from '../components/Footer';
-import aboutUsImage from '../assets/images/new/142B7111.jpg';
-import historyImage from '../assets/images/new/142B7178.jpg';
-import donateImage from '../assets/images/new/142B7217.jpg';
+import aboutUsImage from '../assets/images/image4.jpg';
+import historyImage from '../assets/images/image1.jpg';
+import donateImage from '../assets/images/image10.jpg';
 
 interface Quote {
   id: string;

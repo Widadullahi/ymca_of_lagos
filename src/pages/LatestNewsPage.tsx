@@ -10,7 +10,7 @@ export default function LatestNewsPage() {
       <SocialMediaBar />
       <MainNavigation openDonationModal={openDonationModal} />
       <div className="min-h-screen bg-gray-100">
-        <LatestNews showAll={true}/>
+        <LatestNews />
       </div>
     </>
   );

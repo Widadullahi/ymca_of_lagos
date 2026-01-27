@@ -5,7 +5,7 @@ import LoginForm from '../components/Login';
 import { User } from '../types/types';
 import { Link, NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import ymcaWorldImg from '../assets/images/ymca-world.png';
+import ymcaWorldImg from '../assets/images/image2.jpg';
 import ymca from '../assets/images/image.png'
 const LoginPage: React.FC = () => {
 
