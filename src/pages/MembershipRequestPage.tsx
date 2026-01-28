@@ -294,8 +294,8 @@ interface FormData {
   occupation: string;
   marital_status: string;
   address: string;
-  validIdType: string;
-  validIdFile: File | null;
+  valid_id_type: string;
+  valid_id_file: File | null;
   passport_photo: File | null;
   signature: File | null;
   nextOfKinName: string;
@@ -330,8 +330,8 @@ const RequestForm: React.FC = () => {
     occupation: '',
     marital_status: '',
     address: '',
-    validIdType: '',
-    validIdFile: null,
+    valid_id_type: '',
+    valid_id_file: null,
     passport_photo: null,
     signature: null,
     nextOfKinName: '',
@@ -349,7 +349,7 @@ const RequestForm: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [dragActive, setDragActive] = useState({ 
     passport_photo: false, 
-    validIdFile: false, 
+    valid_id_file: false, 
     signature: false 
   });
   const [availableClubs, setAvailableClubs] = useState<{value: string, label: string}[]>([]);
@@ -359,7 +359,7 @@ const RequestForm: React.FC = () => {
   const [dateOfBirth, setDateOfBirth] = useState<Date | null>(null);
 
   const passport_photoRef = useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement>;
-  const validIdFileRef = useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement>;
+  const valid_id_fileRef = useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement>;
   const signatureRef = useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement>;
 
   const { fetchWithAuth, displayNotification } = useAuth();
@@ -787,7 +787,7 @@ const RequestForm: React.FC = () => {
     }
   };
 
-  const handleFileChange = (file: File, field: 'passport_photo' | 'validIdFile' | 'signature') => {
+  const handleFileChange = (file: File, field: 'passport_photo' | 'valid_id_file' | 'signature') => {
     if (file) {
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
       
@@ -819,7 +819,7 @@ const RequestForm: React.FC = () => {
           const result = e.target?.result as string;
           if (field === 'passport_photo') {
             setPhotoPreview(result);
-          } else if (field === 'validIdFile') {
+          } else if (field === 'valid_id_file') {
             setIdPreview(result);
           } else if (field === 'signature') {
             setSignaturePreview(result);
@@ -835,7 +835,7 @@ const RequestForm: React.FC = () => {
     }
   };
 
-  const handleDrag = (e: React.DragEvent, field: 'passport_photo' | 'validIdFile' | 'signature') => {
+  const handleDrag = (e: React.DragEvent, field: 'passport_photo' | 'valid_id_file' | 'signature') => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === "dragenter" || e.type === "dragover") {
@@ -845,7 +845,7 @@ const RequestForm: React.FC = () => {
     }
   };
 
-  const handleDrop = (e: React.DragEvent, field: 'passport_photo' | 'validIdFile' | 'signature') => {
+  const handleDrop = (e: React.DragEvent, field: 'passport_photo' | 'valid_id_file' | 'signature') => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(prev => ({ ...prev, [field]: false }));
@@ -879,8 +879,8 @@ const RequestForm: React.FC = () => {
       state: 'Please select your state',
       unit: 'Please select a unit',
       address: 'Please enter your address',
-      validIdType: 'Please select a valid ID type',
-      validIdFile: 'Please upload your ID document',
+      valid_id_type: 'Please select a valid ID type',
+      valid_id_file: 'Please upload your ID document',
       passport_photo: 'Please upload your passport photo',
       date_of_birth: 'Please select your date of birth',
     };
@@ -991,7 +991,7 @@ const RequestForm: React.FC = () => {
   const scrollToFirstError = (errorFields: string[]) => {
     const fieldOrder = [
       'first_name', 'last_name', 'phone_number', 'country', 'state', 
-      'unit', 'club', 'churchName', 'date_of_birth', 'validIdType', 'validIdFile', 'passport_photo'
+      'unit', 'club', 'churchName', 'date_of_birth', 'valid_id_type', 'valid_id_file', 'passport_photo'
     ];
     
     const firstErrorField = fieldOrder.find(field => errorFields.includes(field));
@@ -1067,8 +1067,8 @@ const RequestForm: React.FC = () => {
           occupation: '',
           marital_status: '',
           address: '',
-          validIdType: '',
-          validIdFile: null,
+          valid_id_type: '',
+          valid_id_file: null,
           passport_photo: null,
           signature: null,
           nextOfKinName: '',
@@ -1086,7 +1086,7 @@ const RequestForm: React.FC = () => {
         setAvailableChurches([]);
         
         // Reset file inputs
-        [passport_photoRef, validIdFileRef, signatureRef].forEach(ref => {
+        [passport_photoRef, valid_id_fileRef, signatureRef].forEach(ref => {
           if (ref.current) ref.current.value = '';
         });
       }, 3000);
@@ -1102,8 +1102,8 @@ const RequestForm: React.FC = () => {
           'first_name': 'first_name',
           'last_name': 'last_name',
           'phone_number': 'phone_number',
-          'valid_id_type': 'validIdType',
-          'valid_id_file': 'validIdFile',
+          'valid_id_type': 'valid_id_type',
+          'valid_id_file': 'valid_id_file',
           'passport_photo': 'passport_photo',
           'date_of_birth': 'date_of_birth',
         };
@@ -1141,7 +1141,7 @@ const RequestForm: React.FC = () => {
     dragActiveKey,
     fileRef
   }: {
-    field: 'passport_photo' | 'validIdFile' | 'signature';
+    field: 'passport_photo' | 'valid_id_file' | 'signature';
     label: string;
     accept?: string;
     required?: boolean;
@@ -1790,22 +1790,22 @@ const RequestForm: React.FC = () => {
           
           <FormSelect
             label="Valid ID Type"
-            name="validIdType"
+            name="valid_id_type"
             options={validIdOptions}
-            value={formData.validIdType}
+            value={formData.valid_id_type}
             onChange={handleInputChange}
-            error={fieldErrors.validIdType}
+            error={fieldErrors.valid_id_type}
             required
-            className={getInputBorderColor('validIdType', formData.validIdType)}
+            className={getInputBorderColor('valid_id_type', formData.valid_id_type)}
           />
 
           <FileUploadField
-            field="validIdFile"
+            field="valid_id_file"
             label="ID Document"
             required={true}
             preview={idPreview}
-            dragActiveKey="validIdFile"
-            fileRef={validIdFileRef}
+            dragActiveKey="valid_id_file"
+            fileRef={valid_id_fileRef}
           />
         </div>
 
