@@ -51,13 +51,13 @@ export default function LatestNewsAndUpcomingEvents() {
           // Use type if available, fallback to category
           const updateType = item.type || (item.category === 'Events' ? 'upcoming-event' : 'latest-news');
           const category = item.category || getCategoryFromType(updateType);
-          
+
           // Fix image duplication issue
           const allImages = Array.from(new Set([
             item.image,
             ...(item.images || [])
           ])).filter(Boolean) as string[];
-          
+
           return {
             id: item.id,
             title: item.title,
@@ -131,11 +131,11 @@ export default function LatestNewsAndUpcomingEvents() {
     return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800 border-gray-200';
   };
 
-  const newsUpdates = updates.filter(u => 
+  const newsUpdates = updates.filter(u =>
     u.type === 'latest-news' || u.category !== 'Events'
   ).slice(0, 5);
 
-  const eventUpdates = updates.filter(u => 
+  const eventUpdates = updates.filter(u =>
     u.type === 'upcoming-event' || u.category === 'Events'
   ).slice(0, 5);
 
@@ -224,12 +224,12 @@ export default function LatestNewsAndUpcomingEvents() {
                       <p className="text-gray-600 mb-6 line-clamp-4 flex-grow">{update.content}</p>
                       <div className="mt-auto">
                         <div className="flex items-center text-sm text-gray-500 mb-4">
-                          <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                          {/* <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
                             <span className="text-red-600 font-semibold text-sm">
                               {update.postedBy[0]?.toUpperCase() || '?'}
                             </span>
-                          </div>
-                          <span>By {update.postedBy}</span>
+                          </div> */}
+                          {/* <span>By {update.postedBy}</span> */}
                         </div>
                         <motion.button
                           onClick={() => openModal(update)}
@@ -256,7 +256,7 @@ export default function LatestNewsAndUpcomingEvents() {
             </h3>
             {eventUpdates.length > 0 && (
               <a
-                href="/events"
+                href="/news"
                 className="text-green-600 hover:text-green-800 font-medium flex items-center gap-2 transition-colors"
               >
                 See All Events →
@@ -340,7 +340,7 @@ export default function LatestNewsAndUpcomingEvents() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+              className="bg-white rounded-xl max-w-2xl w-full max-h-[70vh] overflow-y-auto shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
@@ -361,16 +361,6 @@ export default function LatestNewsAndUpcomingEvents() {
                   </button>
                 </div>
                 <div className="flex items-center mt-4 text-sm text-gray-500">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-red-600 font-semibold text-sm">
-                        {selectedUpdate.postedBy[0]?.toUpperCase() || '?'}
-                      </span>
-                    </div>
-                    <span>By {selectedUpdate.postedBy}</span>
-                    <span className="mx-2">•</span>
-                    <span>{formatDate(selectedUpdate.postedAt)}</span>
-                  </div>
                 </div>
               </div>
 
@@ -388,7 +378,7 @@ export default function LatestNewsAndUpcomingEvents() {
                           e.currentTarget.src = 'https://via.placeholder.com/800x400?text=Image+Not+Available';
                         }}
                       />
-                      
+
                       {selectedUpdate.images.length > 1 && (
                         <>
                           <button
@@ -409,7 +399,7 @@ export default function LatestNewsAndUpcomingEvents() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
                           </button>
-                          
+
                           {/* Image Indicators */}
                           <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
                             {selectedUpdate.images.map((_, idx) => (
@@ -421,7 +411,7 @@ export default function LatestNewsAndUpcomingEvents() {
                               />
                             ))}
                           </div>
-                          
+
                           {/* Image Counter */}
                           <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white text-sm px-3 py-1 rounded-full">
                             {currentImageIndex + 1} / {selectedUpdate.images.length}
@@ -429,7 +419,7 @@ export default function LatestNewsAndUpcomingEvents() {
                         </>
                       )}
                     </div>
-                    
+
                     {/* Thumbnails */}
                     {selectedUpdate.images.length > 1 && (
                       <div className="flex space-x-2 mt-4 overflow-x-auto pb-2">
