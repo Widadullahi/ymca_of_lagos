@@ -29,12 +29,10 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState(categories[0] || '');
-  const [postedBy, setPostedBy] = useState('');
   const [, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [imageBase64, setImageBase64] = useState<string>('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  
 
   // Helper function to convert file to base64
   const convertToBase64 = (file: File): Promise<string> => {
@@ -51,14 +49,12 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
       setTitle(update.title);
       setContent(update.content);
       setCategory(update.category);
-      setPostedBy(update.postedBy);
       setImagePreview(update.imageUrl || '');
       setAttachments(update.attachments || []);
     } else {
       setTitle('');
       setContent('');
       setCategory(categories[0] || '');
-      setPostedBy('');
       setImageFile(null);
       setImagePreview('');
       setImageBase64('');
@@ -88,8 +84,6 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
     }
   };
 
-
-
   const handleRemoveImage = () => {
     setImageFile(null);
     setImagePreview('');
@@ -109,13 +103,11 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
       title,
       content,
       category,
-      postedBy,
       postedAt: isEditing && update ? update.postedAt : new Date(),
       imageBase64: imageBase64 || undefined,
       imageUrl: !imageBase64 && isEditing ? update?.imageUrl : imageBase64,
       attachments: attachments.length > 0 ? attachments : undefined
     };
-
 
     console.log(updateData)
 
@@ -144,15 +136,6 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
             onChange={(e) => setTitle(e.target.value)} 
             required 
           />
-          
-          {/* <select 
-            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
-            value={category} 
-            onChange={(e) => setCategory(e.target.value)} 
-            required
-          >
-            {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-          </select> */}
           
           <textarea 
             placeholder="Content" 
@@ -193,45 +176,6 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
           
           {/* Attachments Section */}
           <div>
-            {/* <h4 className="text-sm font-medium mb-2">Attachments</h4>
-            {attachments.map((attachment, index) => (
-              <div key={index} className="flex justify-between items-center border p-2 rounded mb-2">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm bg-gray-100 px-2 py-1 rounded">{attachment.type}</span>
-                  <span>{attachment.name}</span>
-                </div>
-                <button 
-                  type="button" 
-                  onClick={() => handleRemoveAttachment(index)} 
-                  className="text-red-500 hover:text-red-700 font-medium"
-                >
-                  Remove
-                </button>
-              </div>
-            ))} */}
-            
-            {/* <div className="space-y-2">
-              <input
-                id="attachment-file"
-                type="file"
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,image/*,video/*"
-                onChange={handleAttachmentChange}
-                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              {attachmentFile && (
-                <div className="text-sm text-gray-600">
-                  Selected: {attachmentFile.name} ({(attachmentFile.size / 1024 / 1024).toFixed(2)} MB)
-                </div>
-              )}
-              <button 
-                type="button" 
-                onClick={handleAddAttachment} 
-                disabled={!attachmentFile}
-                className="w-full p-2 bg-blue-500 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                {attachmentFile ? 'Add Attachment' : 'Select File First'}
-              </button>
-            </div> */}
           </div>
 
           <div className="flex justify-end space-x-3 mt-6 pt-4 border-t">

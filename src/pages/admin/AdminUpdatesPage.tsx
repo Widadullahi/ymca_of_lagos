@@ -10,30 +10,17 @@ interface Attachment {
   type: string;
 }
 
-// Define the form data interface that UpdateForm will use
-// interface UpdateFormData {
-//   title: string;
-//   content: string;
-//   category: string;
-//   image?: File | string; // Allow string for Base64
-//   attachments?: (File | string)[]; // Allow string array for Base64
-//   removeImage?: boolean;
-// }
-
 export interface Update {
-  user: any;
-  created_at: string | number | Date;
   id: string;
   title: string;
   content: string;
   category: string;
   imageUrl?: string;
-  postedBy: string;
+  created_at: string | number | Date;
   postedAt: Date;
   attachments?: Attachment[];
 }
 
-// Props interface to receive fetchWithAuth from parent component
 const AdminUpdatesPage = () => {
   const { fetchWithAuth } = useAuth();
   const [updates, setUpdates] = useState<Update[]>([]);
@@ -50,20 +37,10 @@ const AdminUpdatesPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Categories for filtering
-  const categories = ['All', 'Announcements', 'Events', 'Prayer Requests', 'Ministries', 'Sermons'];
+  const categories = ['All','Latest News', 'Upcoming Events'];
 
   // Initialize API with fetchWithAuth
   const postsApi = createPostsApi(fetchWithAuth);
-
-  // // Helper function to convert file to Base64
-  // const fileToBase64 = (file: File): Promise<string> => {
-  //   return new Promise((resolve, reject) => {
-  //     const reader = new FileReader();
-  //     reader.readAsDataURL(file);
-  //     reader.onload = () => resolve(reader.result as string);
-  //     reader.onerror = (error) => reject(error);
-  //   });
-  // };
 
   // Fetch updates from API
   const fetchUpdates = async () => {
@@ -106,13 +83,6 @@ const AdminUpdatesPage = () => {
     setUpdateToEdit(null);
     setIsFormOpen(true);
   };
-
-  // // Open form to edit update
-  // const handleEditUpdate = (update: Update) => {
-  //   setUpdateToEdit(update);
-  //   setIsEditing(true);
-  //   setIsFormOpen(true);
-  // };
 
   // Delete update
   const handleDeleteUpdate = async (id: string) => {
@@ -245,21 +215,6 @@ const AdminUpdatesPage = () => {
           </div>
         </div>
 
-        {/* Category filter */}
-        {/* <div className="flex-shrink-0">
-          <select
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-          >
-            {categories.map(category => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        </div> */}
-
         {/* Refresh button */}
         <div className="flex-shrink-0">
           <button
@@ -299,7 +254,6 @@ const AdminUpdatesPage = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Posted By</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
@@ -326,19 +280,11 @@ const AdminUpdatesPage = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{update?.user?.email}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDistance(update.created_at, new Date(), { addSuffix: true })}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex space-x-2">
-                      {/* <button 
-                        onClick={() => handleEditUpdate(update)}
-                        disabled={isSubmitting}
-                        className="text-blue-600 hover:text-blue-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Edit
-                      </button> */}
                       <button 
                         onClick={() => handleDeleteUpdate(update.id)}
                         disabled={isSubmitting}

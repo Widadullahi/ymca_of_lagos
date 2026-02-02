@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-
 interface UpdateFormData {
   title: string;
   content: string;
