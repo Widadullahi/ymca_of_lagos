@@ -5,83 +5,103 @@ import { useAuth } from '../context/NewAuthContext';
 import { FaIdCard, FaCalendarAlt, FaCreditCard, FaCheck} from 'react-icons/fa';
 import { BiErrorCircle } from 'react-icons/bi';
 
-
 const MemberDashboardMember: React.FC = () => {
-  const { user,fetchWithAuth ,FRONTEND_URL, displayNotification} = useAuth();
+  const { user, fetchWithAuth, FRONTEND_URL, displayNotification } = useAuth();
   const [greeting, setGreeting] = useState('');
+  const [expiryDate, setExpiryDate] = useState<string>('');
+  const [daysRemaining, setDaysRemaining] = useState<number>(0);
+  const [isExpired, setIsExpired] = useState<boolean>(false);
   const navigate = useNavigate();
 
+  // Function to calculate May 31st of the following year
+  const getMay31Expiry = (): Date => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    
+    // Check if current date is after May 31st
+    // If after May 31st, expiry is May 31st of NEXT year
+    // If before or on May 31st, expiry is May 31st of CURRENT year
+    const expiryYear = now.getMonth() > 4 ? currentYear + 1 : currentYear;
+    return new Date(expiryYear, 4, 31); // May is month 4 (0-indexed)
+  };
+
+  // Function to calculate days remaining until May 31st
+  const calculateDaysRemaining = (expiryDate: Date): number => {
+    const now = new Date();
+    const timeDiff = expiryDate.getTime() - now.getTime();
+    const days = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    return Math.max(0, days);
+  };
+
+  // Function to format date as YYYY-MM-DD
+  const formatDate = (date: Date): string => {
+    return date.toISOString().split('T')[0];
+  };
+
   useEffect(() => {
-  const hour = new Date().getHours();
-  let greetingMessage = '';
-  
-  if (hour < 12) greetingMessage = 'Good Morning';
-  else if (hour < 17) greetingMessage = 'Good Afternoon';
-  else greetingMessage = 'Good Evening';
+    // Set greeting
+    const hour = new Date().getHours();
+    let greetingMessage = '';
+    
+    if (hour < 12) greetingMessage = 'Good Morning';
+    else if (hour < 17) greetingMessage = 'Good Afternoon';
+    else greetingMessage = 'Good Evening';
 
-  setGreeting(greetingMessage);
+    setGreeting(greetingMessage);
 
-  if (user?.role === 'Admin') {
-    navigate('/admin/dashboard');
-  }
-
-}, [user]); // 👈 Add user here
-
-
-
-  async function handleRenewSubscription(renew:boolean){
-
-    try {
-        const response = await fetchWithAuth({
-          method: 'POST',
-          path: `/membership/demo`,
-          body: {}
-        });
-        console.log(response)
-        // refresh window
-        window.location.reload();
-      } catch (error) {
-        console.error('Error fetching churches:', error);
-        displayNotification('error','Failed to load churches', );
-      }
-
-
-    // navigate('/payment');
-    const payload  = {
-      redirect_url : FRONTEND_URL + '/payment',
+    // Redirect admin
+    if (user?.role === 'Admin') {
+      navigate('/admin/dashboard');
     }
-    if (renew) {
-      try {
-        const response = await fetchWithAuth({
-          method: 'POST',
-          path: `/membership/renewal`,
-          body: payload
-        });
-        window.location = response?.data?.payment_url
-      } catch (error) {
-        console.error('Error fetching churches:', error);
-        displayNotification('error','Failed to load churches', );
-      }
-    } else {
-        try {
-          const response = await fetchWithAuth({
-            method: 'POST',
-            path: `/membership/activation`,
-            body: payload
-          });
-          window.location = response?.data?.payment_url
-        } catch (error) {
-          console.error('Error fetching churches:', error);
-          displayNotification('error','Failed to load churches', );
-        }
-      }
+
+    // Calculate expiry date and status
+    if (user) {
+      const may31Expiry = getMay31Expiry();
+      const formattedExpiry = formatDate(may31Expiry);
+      const remainingDays = calculateDaysRemaining(may31Expiry);
+      
+      setExpiryDate(formattedExpiry);
+      setDaysRemaining(remainingDays);
+      setIsExpired(remainingDays === 0);
+    }
+  }, [user, navigate]);
+
+  async function handleRenewSubscription(renew: boolean) {
+    // First payment for demo (you might want to adjust this logic)
+    try {
+      const response = await fetchWithAuth({
+        method: 'POST',
+        path: `/membership/demo`,
+        body: {}
+      });
+      console.log(response);
+      window.location.reload();
+    } catch (error) {
+      console.error('Error fetching churches:', error);
+      displayNotification('error', 'Failed to load churches');
+    }
+
+    const payload = {
+      redirect_url: FRONTEND_URL + '/payment',
+    };
+    
+    try {
+      const path = renew ? '/membership/renewal' : '/membership/activation';
+      const response = await fetchWithAuth({
+        method: 'POST',
+        path: path,
+        body: payload
+      });
+      window.location.href = response?.data?.payment_url;
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      displayNotification('error', 'Failed to process payment');
+    }
   };
 
   const handleViewDigitalId = () => {
     navigate('/myid');
-    console.log('Viewing Card')
   };
-
 
   if (!user) {
     return (
@@ -90,6 +110,10 @@ const MemberDashboardMember: React.FC = () => {
       </div>
     );
   }
+
+  // Determine membership status
+  const isFirstTime = user?.card?.first_time || false;
+  const membershipActive = !isFirstTime && !isExpired;
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -119,35 +143,33 @@ const MemberDashboardMember: React.FC = () => {
                   <p className="opacity-80">{user?.unit}</p>
                 </div>
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  user?.card?.first_time ? "bg-yellow-100 text-red-800" : !user?.card?.expired 
+                  isFirstTime ? "bg-yellow-100 text-red-800" : membershipActive
                     ? "bg-green-100 text-green-800" 
                     : "bg-red-100 text-red-800"
                 }`}>
-                  
-                  {user?.card?.first_time ? "INACTIVE" :  !user?.card?.expired ? "ACTIVE" : "EXPIRED"}
-                  {/* {!user?.card?.expired ? "ACTIVE" : "EXPIRED"} */}
+                  {isFirstTime ? "INACTIVE" : membershipActive ? "ACTIVE" : "EXPIRED"}
                 </span>
               </div>
               
               <div className="mt-4 space-y-1 text-sm">
                 <p>Member ID: {user?.card?.id_number || 'N/A'}</p>
                 <p>Email: {user?.email}</p>
-                {user?.card?.first_time}
-                {user?.card?.expired}
                 {user?.church && <p>Church: {user?.church?.name}</p>}
                 {user?.youth_council_group && <p>Group: {user?.youth_council_group?.name}</p>}
               </div>
               
               <div className="mt-4 text-xs flex items-center">
                 <FaCalendarAlt size={12} className="mr-1" />
-                {user?.card?.first_time ? "Not a member yet" : !user?.card?.expired 
-                  ? `Valid until: ${user?.card?.expired_at}`
-                  : 'Membership expired'}
+                {isFirstTime 
+                  ? "Not a member yet" 
+                  : membershipActive 
+                    ? `Valid until: ${expiryDate}`
+                    : `Expired on: ${expiryDate}`}
               </div>
             </div>
           </div>
           
-          {!user?.card?.expired && (
+          {membershipActive && (
             <div className="bg-gray-50 px-6 py-4 flex justify-between">
               <button 
                 onClick={handleViewDigitalId}
@@ -163,145 +185,141 @@ const MemberDashboardMember: React.FC = () => {
               </button>
             </div>
           )}
-          
         </div>
         
         {/* Subscription Status */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className={`px-6 py-4 border-b ${user?.card?.first_time ? "bg-yellow-50" : !user?.card?.expired ? "bg-green-50" : "bg-red-50"}`}>
+          <div className={`px-6 py-4 border-b ${
+            isFirstTime ? "bg-yellow-50" : membershipActive ? "bg-green-50" : "bg-red-50"
+          }`}>
             <div className="flex items-center">
-              {user?.card?.first_time ? <BiErrorCircle className="mr-2 text-yellow-500" size={20} /> :!user?.card?.expired 
-                ? <FaCheck className="mr-2 text-green-500" size={20} />
-                : <BiErrorCircle className="mr-2 text-red-500" size={20} />
-              }
+              {isFirstTime ? (
+                <BiErrorCircle className="mr-2 text-yellow-500" size={20} />
+              ) : membershipActive ? (
+                <FaCheck className="mr-2 text-green-500" size={20} />
+              ) : (
+                <BiErrorCircle className="mr-2 text-red-500" size={20} />
+              )}
               <h2 className="text-lg font-semibold">Membership Status</h2>
             </div>
           </div>
           
           <div className="p-6">
-            {user?.card?.first_time ? (
+            {isFirstTime ? (
               <div>
-              <div className="flex items-center mb-4">
-                <div className="w-16 h-16 rounded-full bg-yellow-100 flex items-center justify-center mr-4">
-                  <BiErrorCircle size={32} className="text-yellow-500" />
+                <div className="flex items-center mb-4">
+                  <div className="w-16 h-16 rounded-full bg-yellow-100 flex items-center justify-center mr-4">
+                    <BiErrorCircle size={32} className="text-yellow-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">Inactive Membership</h3>
+                    <p className="text-sm text-gray-600">Your digital ID is not activated yet</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Membership expires annually on May 31st
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-lg">Active Membership</h3>
-                  <p className="text-sm text-gray-600">Your digital ID is not activated yet</p>
-                </div>
-              </div>
-
-              
-              <div className="mt-4">
+                
+                <div className="mt-4">
                   <button 
-                    onClick={()=> handleRenewSubscription(false)}
+                    onClick={() => handleRenewSubscription(false)}
                     className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     <FaCreditCard size={16} className="mr-2" />
                     Start Membership
                   </button>
                 </div>
-            </div>
-            ): (
-              !user?.card?.expired ? (
-                <div>
-                  <div className="flex items-center mb-4">
-                    <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mr-4">
-                      <FaCheck size={32} className="text-green-500" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg">Active Membership</h3>
-                      <p className="text-sm text-gray-600">Your digital ID is valid and active</p>
-                    </div>
+              </div>
+            ) : membershipActive ? (
+              <div>
+                <div className="flex items-center mb-4">
+                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                    <FaCheck size={32} className="text-green-500" />
                   </div>
-                  
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <div className="flex justify-between mb-2">
-                      <span>Days Remaining:</span>
-                      <span className="font-bold">{user?.card?.days_remaining} days</span>
-                    </div>
-                    
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div 
-                        className="bg-blue-600 h-2.5 rounded-full" 
-                        style={{ width: `${Math.min(100, (user?.card?.days_remaining / 180) * 100)}%` }}
-                      ></div>
-                    </div>
-                    
-                    <p className="text-xs text-gray-600 mt-2">
-                      Expires on: {user?.card?.expired_at}
+                  <div>
+                    <h3 className="font-bold text-lg">Active Membership</h3>
+                    <p className="text-sm text-gray-600">Your digital ID is valid and active</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Annual membership - Expires May 31st
                     </p>
                   </div>
-                  
-                  {user?.card?.days_remaining < 30 && (
-                    <div className="mt-4">
-                      <p className="text-amber-600 mb-2">
-                        {user?.card?.days_remaining < 7 
-                          ? "Your membership expires very soon!" 
-                          : "Your membership will expire soon."}
-                      </p>
-                      <button 
-                        onClick={()=> handleRenewSubscription(true)}
-                        className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      >
-                        <FaCreditCard size={16} className="mr-2" />
-                        Renew Now
-                      </button>
-                    </div>
-                  )}
                 </div>
-              ) : (
-                <div>
-                  <div className="flex items-center mb-6">
-                    <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mr-4">
-                      <BiErrorCircle size={32} className="text-red-500" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg">Expired Membership</h3>
-                      <p className="text-sm text-gray-600">Your digital ID is currently inactive</p>
-                    </div>
+                
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="flex justify-between mb-2">
+                    <span>Days Remaining:</span>
+                    <span className="font-bold">{daysRemaining} days</span>
                   </div>
                   
-                  <div className="bg-red-50 p-4 rounded-lg mb-4">
-                    <p>Your membership has expired or is inactive. Please renew your subscription to continue accessing all member benefits.</p>
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div 
+                      className="bg-blue-600 h-2.5 rounded-full" 
+                      style={{ width: `${Math.min(100, (daysRemaining / 365) * 100)}%` }}
+                    ></div>
                   </div>
                   
-                  <button 
-                    onClick={()=> handleRenewSubscription(true)}
-                    className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    <FaCreditCard size={16} className="mr-2" />
-                    Make Payment Now
-                  </button>
+                  <p className="text-xs text-gray-600 mt-2">
+                    Expires on: {expiryDate}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Annual expiry date: May 31st
+                  </p>
                 </div>
-              )
+                
+                {daysRemaining < 60 && (
+                  <div className="mt-4">
+                    <p className="text-amber-600 mb-2">
+                      {daysRemaining < 30 
+                        ? "Your membership expires soon!" 
+                        : "Your membership expiry is approaching."}
+                    </p>
+                    <button 
+                      onClick={() => handleRenewSubscription(true)}
+                      className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      <FaCreditCard size={16} className="mr-2" />
+                      Renew Now
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center mb-6">
+                  <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mr-4">
+                    <BiErrorCircle size={32} className="text-red-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">Expired Membership</h3>
+                    <p className="text-sm text-gray-600">Your digital ID is currently inactive</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Membership expired on May 31st
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="bg-red-50 p-4 rounded-lg mb-4">
+                  <p className="text-sm">
+                    Your annual membership expired on {expiryDate}. 
+                    Renew your subscription to continue accessing all member benefits.
+                  </p>
+                  <p className="text-sm mt-2 font-medium">
+                    Note: All memberships expire annually on May 31st
+                  </p>
+                </div>
+                
+                <button 
+                  onClick={() => handleRenewSubscription(true)}
+                  className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <FaCreditCard size={16} className="mr-2" />
+                  Renew Membership Now
+                </button>
+              </div>
             )}
-            
           </div>
         </div>
       </div>
-      
-      {/* Quick Actions Section */}
-      {/* <div className="mt-8">
-        <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button 
-            onClick={() => navigate('/events')}
-            className="h-24 border border-gray-200 rounded-lg hover:bg-gray-50 flex flex-col items-center justify-center transition-colors"
-          >
-            <span className="text-2xl mb-1">📅</span>
-            <span className="text-sm font-medium">Events</span>
-          </button>
-          
-          <button 
-            onClick={() => navigate('/help')}
-            className="h-24 border border-gray-200 rounded-lg hover:bg-gray-50 flex flex-col items-center justify-center transition-colors"
-          >
-            <span className="text-2xl mb-1">❓</span>
-            <span className="text-sm font-medium">Help</span>
-          </button>
-        </div>
-      </div> */}
     </div>
   );
 };
