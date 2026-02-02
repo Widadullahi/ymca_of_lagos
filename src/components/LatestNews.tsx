@@ -46,17 +46,13 @@ export default function LatestNewsAndUpcomingEvents() {
     return () => document.body.classList.remove('overflow-hidden');
   }, [isModalOpen]);
 
-  const getCategoryFromType = (type: string): string => {
-    return type === 'upcoming-event' ? 'Events' : 'Announcements';
-  };
-
   useEffect(() => {
     const fetchUpdates = async () => {
       try {
         const response = await fetchWithAuth({ method: 'GET', path: `/posts` });
         const normalized = (response?.data || []).map((item: any) => {
           const updateType = item.type || (item.category === 'Events' ? 'upcoming-event' : 'latest-news');
-          const category = item.category || getCategoryFromType(updateType);
+          const category = item.category || (updateType === 'upcoming-event' ? 'Events' : 'Announcements');
           
           const allImages = Array.from(new Set([
             item.image,
@@ -123,17 +119,6 @@ export default function LatestNewsAndUpcomingEvents() {
   const prevImage = (images: string[]) => setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
 
   const formatDate = (date: Date) => format(date, 'MMMM do, yyyy');
-
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      'Events': 'bg-green-100 text-green-800 border-green-200',
-      'Announcements': 'bg-blue-100 text-blue-800 border-blue-200',
-      'Prayer Requests': 'bg-purple-100 text-purple-800 border-purple-200',
-      'Ministries': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      'Sermons': 'bg-red-100 text-red-800 border-red-200',
-    };
-    return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800 border-gray-200';
-  };
 
   const newsUpdates = updates.filter(u => 
     u.type === 'latest-news' || u.category !== 'Events'
@@ -215,10 +200,8 @@ export default function LatestNewsAndUpcomingEvents() {
                         </div>
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                      <div className="absolute bottom-4 left-4 right-4 space-y-2">
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getCategoryColor(update.category)} border`}>
-                          {update.category}
-                        </span>
+                      <div className="absolute bottom-4 left-4 right-4">
+                        {/* Removed category tag from here */}
                         <p className="text-white text-sm opacity-90">{formatDate(update.postedAt)}</p>
                       </div>
                     </div>
@@ -230,14 +213,7 @@ export default function LatestNewsAndUpcomingEvents() {
                         {truncateContent(update.content, 30)}
                       </p>
                       <div className="mt-auto">
-                        <div className="flex items-center text-sm text-gray-500 mb-4">
-                          <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
-                            <span className="text-red-600 font-semibold text-sm">
-                              {update.postedBy[0]?.toUpperCase() || '?'}
-                            </span>
-                          </div>
-                          <span>By {update.postedBy}</span>
-                        </div>
+                        {/* Removed posted by section from here */}
                         <motion.button
                           onClick={() => openModal(update)}
                           whileHover={{ scale: 1.05 }}
@@ -263,7 +239,7 @@ export default function LatestNewsAndUpcomingEvents() {
             </h3>
             {eventUpdates.length > 0 && (
               <a
-                href="/events"
+                href="/news"
                 className="text-green-600 hover:text-green-800 font-medium flex items-center gap-2 transition-colors"
               >
                 See All Events →
@@ -307,11 +283,7 @@ export default function LatestNewsAndUpcomingEvents() {
                           <span className="text-gray-400">No image</span>
                         </div>
                       )}
-                      <div className="absolute top-4 left-4">
-                        <span className="bg-white/90 text-green-800 px-3 py-1 rounded-full text-sm font-semibold shadow-md">
-                          Event
-                        </span>
-                      </div>
+                      {/* Removed the event badge from here */}
                     </div>
                     <div className="p-6 flex flex-col flex-grow">
                       <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-red-600 transition-colors">
@@ -322,7 +294,7 @@ export default function LatestNewsAndUpcomingEvents() {
                         {truncateContent(update.content, 20)}
                       </p>
                       <div className="mt-auto flex items-center justify-between text-sm">
-                        <span className="text-gray-500">By {update.postedBy}</span>
+                        <span className="text-gray-500">{formatDate(update.postedAt)}</span> {/* Replaced postedBy with date */}
                         <span className="text-red-600 font-medium">View Details →</span>
                       </div>
                     </div>
@@ -355,10 +327,8 @@ export default function LatestNewsAndUpcomingEvents() {
               <div className="sticky top-0 bg-white z-10 border-b border-gray-200 p-6">
                 <div className="flex justify-between items-start">
                   <div>
-                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getCategoryColor(selectedUpdate.category)} border mb-3`}>
-                      {selectedUpdate.category}
-                    </span>
-                    <h2 className="text-2xl font-bold text-gray-900">{selectedUpdate.title}</h2>
+                    {/* Removed category tag from modal header */}
+                    <h2 className="text-2xl font-bold text-gray-900 mt-3">{selectedUpdate.title}</h2>
                   </div>
                   <button
                     onClick={closeModal}
@@ -369,16 +339,8 @@ export default function LatestNewsAndUpcomingEvents() {
                   </button>
                 </div>
                 <div className="flex items-center mt-4 text-sm text-gray-500">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-red-600 font-semibold text-sm">
-                        {selectedUpdate.postedBy[0]?.toUpperCase() || '?'}
-                      </span>
-                    </div>
-                    <span>By {selectedUpdate.postedBy}</span>
-                    <span className="mx-2">•</span>
-                    <span>{formatDate(selectedUpdate.postedAt)}</span>
-                  </div>
+                  {/* Removed posted by info from modal */}
+                  <span>{formatDate(selectedUpdate.postedAt)}</span>
                 </div>
               </div>
 
@@ -465,7 +427,6 @@ export default function LatestNewsAndUpcomingEvents() {
 
                   {/* Content - Full content in modal */}
                   <div className="mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Full Story</h3>
                     <div className="prose max-w-none">
                       <p className="text-gray-700 whitespace-pre-line leading-relaxed">
                         {selectedUpdate.content}

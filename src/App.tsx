@@ -67,7 +67,12 @@ const App: React.FC = () => {
         <Route path="/admin/users/:userId" element={<RoleBasedRoute element={<UserDetailPage />}  requiredRole="Admin"/>} />
         <Route path="/admin/membership-request" element={<RoleBasedRoute element={<MemberRequestListing />}  requiredRole="Admin"/>} />
         <Route path="/admin/membership-request/:requestId" element={<RoleBasedRoute element={<MemberRequestDetailPage />}  requiredRole="Admin"/>} />
+        
+        {/* Admin Updates Routes */}
         <Route path="/admin/updates" element={<RoleBasedRoute element={<AdminUpdatesPage />}  requiredRole="Admin"/>} />
+        <Route path="/admin/updates/create" element={<RoleBasedRoute element={<AdminUpdatesPage />}  requiredRole="Admin"/>} />
+        <Route path="/admin/updates/edit/:id" element={<RoleBasedRoute element={<AdminUpdatesPage />}  requiredRole="Admin"/>} />
+        
         <Route path="/admin/account" element={<RoleBasedRoute element={<ProfileManagementPage />}  requiredRole="Admin"/>} />
         <Route path="*" element={<Navigate to={user?.role == "Admin" ? "/admin/dashboard" : "/dashboard"} />} />
       </Routes>
