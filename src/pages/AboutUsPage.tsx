@@ -4,6 +4,7 @@ import CoreValue from '../components/CoreValue';
 import { useAuth } from '../context/NewAuthContext';
 import SocialMediaBar from '../components/navigation/SocialMediaBar';
 import MainNavigation from '../components/navigation/MainNavigation';
+import CoreValue from '../components/CoreValue.js';
 
 const AboutUsPage: React.FC = () => {
 
@@ -54,28 +55,6 @@ const AboutUsPage: React.FC = () => {
   };
 
 
-  const facilities = [
-    {
-      title: "Camp Facility",
-      description: "A space dedicated to youth camps, retreats, and leadership training.",
-      icon: "🏕️"
-    },
-    {
-      title: "Transient Hostel",
-      description: "Affordable accommodation services for individuals and groups on transit.",
-      icon: "🏨"
-    },
-    {
-      title: "Basketball Court",
-      description: "Promoting physical fitness, teamwork, and sportsmanship through recreational activities.",
-      icon: "🏀"
-    },
-    {
-      title: "Multi-Purpose Hall",
-      description: "A space dedicated to implementing various programmes.",
-      icon: "🏛️"
-    }
-  ];
 
 
   useEffect(() => {

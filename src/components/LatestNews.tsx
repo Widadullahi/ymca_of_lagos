@@ -22,6 +22,13 @@ interface Update {
   attachments?: Attachment[];
 }
 
+// Function to truncate content to a maximum number of words
+const truncateContent = (content: string, maxWords: number = 30): string => {
+  const words = content.split(' ');
+  if (words.length <= maxWords) return content;
+  return words.slice(0, maxWords).join(' ') + '...';
+};
+
 export default function LatestNewsAndUpcomingEvents() {
   const { fetchWithAuth, displayNotification } = useAuth();
   const [updates, setUpdates] = useState<Update[]>([]);
@@ -48,11 +55,9 @@ export default function LatestNewsAndUpcomingEvents() {
       try {
         const response = await fetchWithAuth({ method: 'GET', path: `/posts` });
         const normalized = (response?.data || []).map((item: any) => {
-          // Use type if available, fallback to category
           const updateType = item.type || (item.category === 'Events' ? 'upcoming-event' : 'latest-news');
           const category = item.category || getCategoryFromType(updateType);
           
-          // Fix image duplication issue
           const allImages = Array.from(new Set([
             item.image,
             ...(item.images || [])
@@ -118,7 +123,6 @@ export default function LatestNewsAndUpcomingEvents() {
   const prevImage = (images: string[]) => setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
 
   const formatDate = (date: Date) => format(date, 'MMMM do, yyyy');
-  // const formatDateShort = (date: Date) => format(date, 'MMM dd');
 
   const getCategoryColor = (category: string) => {
     const colors = {
@@ -155,7 +159,7 @@ export default function LatestNewsAndUpcomingEvents() {
           Latest News & Upcoming Events
         </h2>
         <p className="text-gray-600 text-lg text-center mb-16 max-w-3xl mx-auto">
-          Stay up to date with what's happening in our community — from inspiring stories to exciting upcoming events.
+          Stay up to date with what's happening in our community from inspiring stories to exciting upcoming events.
         </p>
 
         {/* Featured News - 3 equal cards in a row */}
@@ -221,7 +225,10 @@ export default function LatestNewsAndUpcomingEvents() {
 
                     <div className="p-6 flex flex-col flex-grow">
                       <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2">{update.title}</h3>
-                      <p className="text-gray-600 mb-6 line-clamp-4 flex-grow">{update.content}</p>
+                      {/* FIX: Truncate content in card (max 30 words) */}
+                      <p className="text-gray-600 mb-6 line-clamp-4 flex-grow">
+                        {truncateContent(update.content, 30)}
+                      </p>
                       <div className="mt-auto">
                         <div className="flex items-center text-sm text-gray-500 mb-4">
                           <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
@@ -310,8 +317,9 @@ export default function LatestNewsAndUpcomingEvents() {
                       <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-red-600 transition-colors">
                         {update.title}
                       </h3>
+                      {/* FIX: Truncate content in card (max 20 words for events) */}
                       <p className="text-gray-600 mb-6 line-clamp-3 flex-grow text-sm">
-                        {update.content}
+                        {truncateContent(update.content, 20)}
                       </p>
                       <div className="mt-auto flex items-center justify-between text-sm">
                         <span className="text-gray-500">By {update.postedBy}</span>
@@ -326,7 +334,7 @@ export default function LatestNewsAndUpcomingEvents() {
         </div>
       </div>
 
-      {/* Modal - Complete version */}
+      {/* Modal - Complete version with full content */}
       <AnimatePresence mode="wait">
         {isModalOpen && selectedUpdate && (
           <motion.div
@@ -340,7 +348,7 @@ export default function LatestNewsAndUpcomingEvents() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+              className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
@@ -374,119 +382,126 @@ export default function LatestNewsAndUpcomingEvents() {
                 </div>
               </div>
 
-              {/* Modal Content */}
-              <div className="p-6">
-                {/* Image Gallery */}
-                {selectedUpdate.images && selectedUpdate.images.length > 0 && (
-                  <div className="mb-8">
-                    <div className="relative">
-                      <img
-                        src={selectedUpdate.images[currentImageIndex]}
-                        alt={`${selectedUpdate.title} - Image ${currentImageIndex + 1}`}
-                        className="w-full h-96 object-cover rounded-lg"
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://via.placeholder.com/800x400?text=Image+Not+Available';
-                        }}
-                      />
+              {/* Modal Content - Scrollable */}
+              <div className="flex-grow overflow-y-auto">
+                <div className="p-6">
+                  {/* Image Gallery - Carousel */}
+                  {selectedUpdate.images && selectedUpdate.images.length > 0 && (
+                    <div className="mb-8">
+                      <div className="relative">
+                        <img
+                          src={selectedUpdate.images[currentImageIndex]}
+                          alt={`${selectedUpdate.title} - Image ${currentImageIndex + 1}`}
+                          className="w-full h-96 object-cover rounded-lg"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://via.placeholder.com/800x400?text=Image+Not+Available';
+                          }}
+                        />
+                        
+                        {selectedUpdate.images.length > 1 && (
+                          <>
+                            <button
+                              onClick={() => prevImage(selectedUpdate.images!)}
+                              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 transition-all"
+                              aria-label="Previous image"
+                            >
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => nextImage(selectedUpdate.images!)}
+                              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 transition-all"
+                              aria-label="Next image"
+                            >
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                            
+                            {/* Image Indicators */}
+                            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                              {selectedUpdate.images.map((_, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() => setCurrentImageIndex(idx)}
+                                  className={`w-3 h-3 rounded-full ${idx === currentImageIndex ? 'bg-white' : 'bg-white bg-opacity-50'}`}
+                                  aria-label={`Go to image ${idx + 1}`}
+                                />
+                              ))}
+                            </div>
+                            
+                            {/* Image Counter */}
+                            <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white text-sm px-3 py-1 rounded-full">
+                              {currentImageIndex + 1} / {selectedUpdate.images.length}
+                            </div>
+                          </>
+                        )}
+                      </div>
                       
+                      {/* Thumbnails */}
                       {selectedUpdate.images.length > 1 && (
-                        <>
-                          <button
-                            onClick={() => prevImage(selectedUpdate.images!)}
-                            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
-                            aria-label="Previous image"
-                          >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => nextImage(selectedUpdate.images!)}
-                            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
-                            aria-label="Next image"
-                          >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </button>
-                          
-                          {/* Image Indicators */}
-                          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                            {selectedUpdate.images.map((_, idx) => (
-                              <button
-                                key={idx}
-                                onClick={() => setCurrentImageIndex(idx)}
-                                className={`w-2 h-2 rounded-full ${idx === currentImageIndex ? 'bg-white' : 'bg-white bg-opacity-50'}`}
-                                aria-label={`Go to image ${idx + 1}`}
+                        <div className="flex space-x-2 mt-4 overflow-x-auto pb-2">
+                          {selectedUpdate.images.map((img, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => setCurrentImageIndex(idx)}
+                              className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 ${idx === currentImageIndex ? 'border-red-500' : 'border-transparent'}`}
+                            >
+                              <img
+                                src={img}
+                                alt={`Thumbnail ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.src = 'https://via.placeholder.com/80x80?text=Thumb';
+                                }}
                               />
-                            ))}
-                          </div>
-                          
-                          {/* Image Counter */}
-                          <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white text-sm px-3 py-1 rounded-full">
-                            {currentImageIndex + 1} / {selectedUpdate.images.length}
-                          </div>
-                        </>
+                            </button>
+                          ))}
+                        </div>
                       )}
                     </div>
-                    
-                    {/* Thumbnails */}
-                    {selectedUpdate.images.length > 1 && (
-                      <div className="flex space-x-2 mt-4 overflow-x-auto pb-2">
-                        {selectedUpdate.images.map((img, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => setCurrentImageIndex(idx)}
-                            className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 ${idx === currentImageIndex ? 'border-red-500' : 'border-transparent'}`}
-                          >
-                            <img
-                              src={img}
-                              alt={`Thumbnail ${idx + 1}`}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.src = 'https://via.placeholder.com/80x80?text=Thumb';
-                              }}
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                  )}
 
-                {/* Content */}
-                <div className="prose max-w-none mb-8">
-                  <p className="text-gray-700 whitespace-pre-line">{selectedUpdate.content}</p>
-                </div>
-
-                {/* Attachments */}
-                {selectedUpdate.attachments && selectedUpdate.attachments.length > 0 && (
-                  <div className="border-t border-gray-200 pt-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Attachments</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedUpdate.attachments.map((attachment, idx) => (
-                        <a
-                          key={idx}
-                          href={attachment.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                          <div className="flex-shrink-0 mr-4">
-                            {getAttachmentIcon(attachment.type)}
-                          </div>
-                          <div className="flex-grow min-w-0">
-                            <p className="font-medium text-gray-900 truncate">{attachment.name}</p>
-                            <p className="text-sm text-gray-500 uppercase">{attachment.type}</p>
-                          </div>
-                          <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </a>
-                      ))}
+                  {/* Content - Full content in modal */}
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Full Story</h3>
+                    <div className="prose max-w-none">
+                      <p className="text-gray-700 whitespace-pre-line leading-relaxed">
+                        {selectedUpdate.content}
+                      </p>
                     </div>
                   </div>
-                )}
+
+                  {/* Attachments */}
+                  {selectedUpdate.attachments && selectedUpdate.attachments.length > 0 && (
+                    <div className="border-t border-gray-200 pt-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Attachments</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {selectedUpdate.attachments.map((attachment, idx) => (
+                          <a
+                            key={idx}
+                            href={attachment.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            <div className="flex-shrink-0 mr-4">
+                              {getAttachmentIcon(attachment.type)}
+                            </div>
+                            <div className="flex-grow min-w-0">
+                              <p className="font-medium text-gray-900 truncate">{attachment.name}</p>
+                              <p className="text-sm text-gray-500 uppercase">{attachment.type}</p>
+                            </div>
+                            <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Modal Footer */}
