@@ -73,7 +73,7 @@ interface FormData {
 
 // Country options
 const countries = [
-   { value: 'AD', label: 'Andorra' },
+  { value: 'AD', label: 'Andorra' },
   { value: 'AE', label: 'United Arab Emirates' },
   { value: 'AF', label: 'Afghanistan' },
   { value: 'AG', label: 'Antigua and Barbuda' },
@@ -331,7 +331,7 @@ const units: UnitOption[] = [
     label: 'Council of Church',
     dropDown: [{ 'Council of Church': 'Council of Church' }],
     churchDropDown: [
-       { "METHODIST CHURCH CATHEDRAL, PALM AVENUE, LAGOS": "METHODIST CHURCH CATHEDRAL, PALM AVENUE, LAGOS" },
+      { "METHODIST CHURCH CATHEDRAL, PALM AVENUE, LAGOS": "METHODIST CHURCH CATHEDRAL, PALM AVENUE, LAGOS" },
       { "ST. JOHN ANG. CHURCH, IJU ISHAGA, LAGOS.": "ST. JOHN ANG. CHURCH, IJU ISHAGA, LAGOS." },
       { "CHRIST ANGLICAN CHURCH, AMUWO ODOFIN, MILE 2, LAGOS.": "CHRIST ANGLICAN CHURCH, AMUWO ODOFIN, MILE 2, LAGOS." },
       { "METHODIST CHURCH NIGERIA, OPEBI, LAGOS.": "METHODIST CHURCH NIGERIA, OPEBI, LAGOS." },
@@ -451,6 +451,48 @@ const validIdOptions = [
   { value: 'others', label: 'Others' },
 ];
 
+// Mobile-friendly Select component wrapper
+const MobileFriendlySelect = (props: any) => {
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  return (
+    <Select
+      {...props}
+      menuPortalTarget={isMobile ? document.body : undefined}
+      menuPosition={isMobile ? "fixed" : "absolute"}
+      classNamePrefix="react-select"
+      styles={{
+        menuPortal: base => ({ ...base, zIndex: 9999 }),
+        menu: base => ({ 
+          ...base, 
+          zIndex: 9999,
+          position: isMobile ? 'fixed' : 'absolute',
+        }),
+        control: base => ({
+          ...base,
+          minHeight: '44px',
+          fontSize: '16px'
+        }),
+        menuList: base => ({
+          ...base,
+          maxHeight: isMobile ? '60vh' : '300px'
+        })
+      }}
+    />
+  );
+};
+
 const RequestForm: React.FC = () => {
   const navigate = useNavigate();
   const { fetchWithAuth, displayNotification } = useAuth();
@@ -503,11 +545,51 @@ const RequestForm: React.FC = () => {
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
   const [dateOfBirth, setDateOfBirth] = useState<Date | null>(null);
   const [ageValidationMessage, setAgeValidationMessage] = useState<string>('');
+  const [isMobile, setIsMobile] = useState(false);
 
   // Refs
   const passportPhotoRef = useRef<HTMLInputElement>(null);
   const validIdFileRef = useRef<HTMLInputElement>(null);
   const signatureRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Check for mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Prevent iOS zoom on input focus
+  useEffect(() => {
+    if (isMobile) {
+      const metaViewport = document.querySelector('meta[name="viewport"]');
+      const originalContent = metaViewport?.getAttribute('content') || '';
+      
+      const preventZoom = () => {
+        if (metaViewport) {
+          metaViewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+        }
+      };
+      
+      const restoreZoom = () => {
+        if (metaViewport) {
+          metaViewport.setAttribute('content', originalContent);
+        }
+      };
+      
+      preventZoom();
+      
+      return () => {
+        restoreZoom();
+      };
+    }
+  }, [isMobile]);
 
   // Calculate age from date of birth
   const calculateAge = useCallback((dateString: string): number => {
@@ -1020,6 +1102,56 @@ const RequestForm: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 py-10 px-2 flex flex-col items-center justify-center relative overflow-x-hidden">
+      {/* Add mobile-specific styles */}
+      <style jsx global>{`
+        /* Prevent iOS zoom on input focus */
+        @media screen and (max-width: 768px) {
+          input, select, textarea {
+            font-size: 16px !important;
+          }
+          
+          .react-select__control {
+            min-height: 44px !important;
+          }
+          
+          .react-select__menu {
+            z-index: 9999 !important;
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            width: 90vw !important;
+            max-width: 400px !important;
+            max-height: 60vh !important;
+            overflow-y: auto !important;
+          }
+          
+          .react-datepicker-popper {
+            z-index: 9999 !important;
+          }
+          
+          .react-datepicker {
+            font-size: 14px !important;
+          }
+          
+          .react-datepicker__input-container input {
+            font-size: 16px !important;
+          }
+        }
+        
+        /* Ensure form doesn't overflow on mobile */
+        @media screen and (max-width: 640px) {
+          .form-container {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+          }
+          
+          .grid-cols-1 {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
+
       {/* Animated background shapes */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-red-200 rounded-full blur-3xl opacity-20 -z-10 animate-float" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-yellow-200 rounded-full blur-3xl opacity-20 -z-10 animate-float2" />
@@ -1066,7 +1198,16 @@ const RequestForm: React.FC = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto bg-white/80 backdrop-blur-md shadow-2xl rounded-2xl px-8 pt-8 pb-10 mb-8 border border-gray-100">
+      <form 
+        ref={formRef}
+        onSubmit={handleSubmit} 
+        className="w-full max-w-2xl mx-auto bg-white/80 backdrop-blur-md shadow-2xl rounded-2xl px-4 md:px-8 pt-8 pb-10 mb-8 border border-gray-100 form-container"
+        style={{ 
+          position: 'relative',
+          zIndex: 1,
+          overflow: 'visible'
+        }}
+      >
         <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Submit Application</h2>
 
         {Object.keys(fieldErrors).length > 0 && (
@@ -1166,7 +1307,7 @@ const RequestForm: React.FC = () => {
                 dateFormat="dd/MM/yyyy"
                 locale="en-GB"
                 placeholderText="DD/MM/YYYY"
-                className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${getInputBorderColor('date_of_birth', formData.date_of_birth)}`}
+                className={`shadow appearance-none border rounded w-full py-3 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${getInputBorderColor('date_of_birth', formData.date_of_birth)}`}
                 required
                 showYearDropdown
                 yearDropdownItemNumber={100}
@@ -1189,7 +1330,7 @@ const RequestForm: React.FC = () => {
                 name="age"
                 value={formData.age || ''}
                 readOnly
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 bg-gray-100 cursor-not-allowed"
+                className="shadow appearance-none border rounded w-full py-3 px-3 text-gray-700 bg-gray-100 cursor-not-allowed"
                 placeholder="Age will be calculated automatically"
               />
               <p className="text-xs text-gray-500 mt-1">Calculated automatically from date of birth</p>
@@ -1243,21 +1384,21 @@ const RequestForm: React.FC = () => {
             {formData.citizen === 'Foreigner' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                <CreatableSelect
+                <MobileFriendlySelect
                   options={countries}
                   value={formData.country ? countries.find(option => option.value === formData.country) || { value: formData.country, label: formData.country } : null}
-                  onChange={(selectedOption) => {
+                  onChange={(selectedOption: any) => {
                     setTouchedFields(prev => ({ ...prev, country: true }));
                     setFormData({ ...formData, country: selectedOption ? selectedOption.value : '' });
                   }}
-                  onCreateOption={(inputValue) => {
+                  onCreateOption={(inputValue: string) => {
                     setTouchedFields(prev => ({ ...prev, country: true }));
                     setFormData({ ...formData, country: inputValue });
                   }}
                   placeholder="Select or type a country"
                   isSearchable
                   noOptionsMessage={() => "No country found"}
-                  formatCreateLabel={(inputValue) => `Create "${inputValue}"`}
+                  formatCreateLabel={(inputValue: string) => `Create "${inputValue}"`}
                   className={getInputBorderColor('country', formData.country)}
                 />
                 {fieldErrors.country && <p className="mt-1 text-sm text-red-600">{fieldErrors.country}</p>}
@@ -1267,10 +1408,10 @@ const RequestForm: React.FC = () => {
             {formData.citizen === 'Nigerian' ? (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
-                <Select
+                <MobileFriendlySelect
                   options={nigerianStates}
                   value={nigerianStates.find(option => option.value === formData.state) || null}
-                  onChange={(selectedOption) => {
+                  onChange={(selectedOption: any) => {
                     setTouchedFields(prev => ({ ...prev, state: true }));
                     setFormData({ ...formData, state: selectedOption ? selectedOption.value : '' });
                   }}
@@ -1368,7 +1509,7 @@ const RequestForm: React.FC = () => {
               onBlur={() => setTouchedFields(prev => ({ ...prev, address: true }))}
               placeholder="Enter your full residential address"
               rows={3}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-all ${getInputBorderColor('address', formData.address)}`}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:outline-none transition-all ${getInputBorderColor('address', formData.address)}`}
               required
             />
             {fieldErrors.address && (
@@ -1386,10 +1527,10 @@ const RequestForm: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Unit *
             </label>
-            <Select
+            <MobileFriendlySelect
               options={units}
               value={units.find(u => u.value === formData.unit)}
-              onChange={(option) => handleSelectChange('unit', option?.value)}
+              onChange={(option: any) => handleSelectChange('unit', option?.value)}
               placeholder="Select a unit"
               className={getInputBorderColor('unit', formData.unit)}
             />
@@ -1413,10 +1554,10 @@ const RequestForm: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Club *
               </label>
-              <Select
+              <MobileFriendlySelect
                 options={availableClubs}
                 value={availableClubs.find(c => c.value === formData.club)}
-                onChange={(option) => handleSelectChange('club', option?.value)}
+                onChange={(option: any) => handleSelectChange('club', option?.value)}
                 placeholder="Select a club"
                 className={getInputBorderColor('club', formData.club)}
               />
@@ -1447,10 +1588,10 @@ const RequestForm: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Select Church *
               </label>
-              <Select
+              <MobileFriendlySelect
                 options={availableChurches}
                 value={availableChurches.find(c => c.value === formData.churchName)}
-                onChange={(option) => handleSelectChange('churchName', option?.value)}
+                onChange={(option: any) => handleSelectChange('churchName', option?.value)}
                 placeholder="Select your church"
                 className={getInputBorderColor('churchName', formData.churchName)}
               />
@@ -1618,7 +1759,7 @@ const RequestForm: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transform transition-all duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02]'}`}
+            className={`w-full bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white font-bold py-4 px-4 rounded-lg focus:outline-none focus:shadow-outline transform transition-all duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02]'}`}
           >
             {loading ? (
               <span className="flex items-center justify-center">

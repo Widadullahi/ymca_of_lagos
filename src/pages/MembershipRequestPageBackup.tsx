@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/NewAuthContext';
 import FormInput from '../components/forms/FormInput';
 import FormSelect from '../components/forms/FormSelect';
 import { Link, useNavigate } from 'react-router-dom';
 import ymca from '../assets/images/image.png';
-import { nigerianStates, ymcaUnits } from '../constants/utils';
+import { nigerianStates } from '../constants/utils';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { motion } from 'framer-motion';
@@ -12,13 +12,68 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { registerLocale } from "react-datepicker";
 import { enGB } from "date-fns/locale/en-GB";
-import { format } from "date-fns";
+import { format, differenceInYears } from "date-fns";
 
-// Register British English locale for DatePicker
+// Register locale
 registerLocale("en-GB", enGB);
 
+// Types
+interface UnitOption {
+  value: string;
+  label: string;
+  dropDown?: Array<{ [key: string]: string }>;
+  churchDropDown?: Array<{ [key: string]: string }>;
+}
+
+interface ClubOption {
+  value: string;
+  label: string;
+}
+
+interface FormData {
+  // Personal Info
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
+  gender: string;
+  date_of_birth: string;
+  age: string;
+  marital_status: string;
+  citizen: string;
+  
+  // Location
+  country: string;
+  state: string;
+  lga: string;
+  address: string;
+  
+  // YMCA Info
+  unit: string;
+  club: string;
+  churchName: string;
+  
+  // Professional & Religious
+  profession: string;
+  occupation: string;
+  religion: string;
+  
+  // Identification
+  validIdType: string;
+  validIdFile: File | null;
+  passport_photo: File | null;
+  signature: File | null;
+  
+  // Next of Kin & Referral
+  nextOfKinName: string;
+  nextOfKinNumber: string;
+  referredBy: string;
+  referralName: string;
+}
+
+// Country options
 const countries = [
-  { value: 'AD', label: 'Andorra' },
+   { value: 'AD', label: 'Andorra' },
   { value: 'AE', label: 'United Arab Emirates' },
   { value: 'AF', label: 'Afghanistan' },
   { value: 'AG', label: 'Antigua and Barbuda' },
@@ -269,78 +324,169 @@ const countries = [
   { value: 'ZW', label: 'Zimbabwe' }
 ];
 
-const units = ymcaUnits;
+// Unit options - YMCA Lagos Units
+const units: UnitOption[] = [
+  {
+    value: 'Council of Church',
+    label: 'Council of Church',
+    dropDown: [{ 'Council of Church': 'Council of Church' }],
+    churchDropDown: [
+       { "METHODIST CHURCH CATHEDRAL, PALM AVENUE, LAGOS": "METHODIST CHURCH CATHEDRAL, PALM AVENUE, LAGOS" },
+      { "ST. JOHN ANG. CHURCH, IJU ISHAGA, LAGOS.": "ST. JOHN ANG. CHURCH, IJU ISHAGA, LAGOS." },
+      { "CHRIST ANGLICAN CHURCH, AMUWO ODOFIN, MILE 2, LAGOS.": "CHRIST ANGLICAN CHURCH, AMUWO ODOFIN, MILE 2, LAGOS." },
+      { "METHODIST CHURCH NIGERIA, OPEBI, LAGOS.": "METHODIST CHURCH NIGERIA, OPEBI, LAGOS." },
+      { "ST. PETER'S ANG. CHURCH, KONGO-AGBADO, LAGOS.": "ST. PETER'S ANG. CHURCH, KONGO-AGBADO, LAGOS." },
+      { "METHODIST CHURCH OF NIGERIA, TABON-TABON, AGEGE, LAGOS.": "METHODIST CHURCH OF NIGERIA, TABON-TABON, AGEGE, LAGOS." },
+      { "METHODIST CHURCH NIGERIA, FESTAC TOWN, LAGOS.": "METHODIST CHURCH NIGERIA, FESTAC TOWN, LAGOS." },
+      { "ST. PETER'S ANG. CHURCH, ABULE EGBA, LAGOS.": "ST. PETER'S ANG. CHURCH, ABULE EGBA, LAGOS." },
+      { "ST. DAVIDS ANGLICAN CHURCH LAFIAGI, LAGOS.": "ST. DAVIDS ANGLICAN CHURCH LAFIAGI, LAGOS." },
+      { "EBENEZER AFRICAN CHURCH, EGBEDA, LAGOS.": "EBENEZER AFRICAN CHURCH, EGBEDA, LAGOS." },
+      { "FIRST BAPTIST CHURCH, IJU, LAGOS.": "FIRST BAPTIST CHURCH, IJU, LAGOS." },
+      { "FIRST AFRICAN CHURCH, IPAJA, LAGOS.": "FIRST AFRICAN CHURCH, IPAJA, LAGOS." },
+      { "SAVIOUR'S AFRICAN CHURCH, ORILE AGBADO, LAGOS.": "SAVIOUR'S AFRICAN CHURCH, ORILE AGBADO, LAGOS." },
+      { "METHODIST CHURCH NIGERIA, ORILE AGEGE, LAGOS.": "METHODIST CHURCH NIGERIA, ORILE AGEGE, LAGOS." },
+      { "C & S MOVT. CHURCH WORLWIDE (AMAZING GRACE), IYANA IPAJA, LAGOS.": "C & S MOVT. CHURCH WORLWIDE (AMAZING GRACE), IYANA IPAJA, LAGOS." },
+      { "ST. MARY'S ANGLICAN CHURCH, AJASA COMMAND, LAGOS.": "ST. MARY'S ANGLICAN CHURCH, AJASA COMMAND, LAGOS." },
+      { "ST. MICHAEL ANG. CHURCH, SUBERU OJE, ALAGBADO, LAGOS.": "ST. MICHAEL ANG. CHURCH, SUBERU OJE, ALAGBADO, LAGOS." },
+      { "ST. PETERS ANG. CHURCH, AKUTE, LAGOS.": "ST. PETERS ANG. CHURCH, AKUTE, LAGOS." },
+      { "ST. PAUL'S ANG. CHURCH, SANGO AGEGE, LAGOS.": "ST. PAUL'S ANG. CHURCH, SANGO AGEGE, LAGOS." },
+      { "WILLIAMS MEMORIAL METHODFIST CHRURCH, EBUTE METTA, LAGOS.": "WILLIAMS MEMORIAL METHODFIST CHRURCH, EBUTE METTA, LAGOS." },
+      { "IJERO BAPTIST CHURCH, EBUTE-METTA, LAGOS.": "IJERO BAPTIST CHURCH, EBUTE-METTA, LAGOS." },
+      { "ST. STEPHEN ANGLICAN CHURCH, (OWEH) IGBOGI, LAGOS.": "ST. STEPHEN ANGLICAN CHURCH, (OWEH) IGBOGI, LAGOS." },
+      { "ALL SAINT ANGLICAN CHURCH, YABA, LAGOS.": "ALL SAINT ANGLICAN CHURCH, YABA, LAGOS." },
+      { "AFRICAN CHURCH BETHEL ABULE - OJA, LAGOS.": "AFRICAN CHURCH BETHEL ABULE - OJA, LAGOS." },
+      { "AFRICAN BETHEL CHURCH (BINNING MEMORIAL), LAGOS.": "AFRICAN BETHEL CHURCH (BINNING MEMORIAL), LAGOS." },
+      { "HOARES MEM. METHODIST CATHEDRAL, YABA, LAGOS.": "HOARES MEM. METHODIST CATHEDRAL, YABA, LAGOS." },
+      { "ST. JUDE ANGLICAN CHURCH, EBUTTE META, LAGOS.": "ST. JUDE ANGLICAN CHURCH, EBUTTE META, LAGOS." },
+      { "OUR SAVIOUR ANG. CHURCH, ABULE IJESHA, LAGOS.": "OUR SAVIOUR ANG. CHURCH, ABULE IJESHA, LAGOS." },
+      { "ST. JOHN'S ANG. CHURCH, ORILE-IGANMU, LAGOS.": "ST. JOHN'S ANG. CHURCH, ORILE-IGANMU, LAGOS." },
+      { "HOLY TRINITY ANG. CHURCH, IKATE, LAGOS.": "HOLY TRINITY ANG. CHURCH, IKATE, LAGOS." },
+      { "TALABI COKER MEMORIAL METHODIST CHURCH, IJESHA, LAGOS.": "TALABI COKER MEMORIAL METHODIST CHURCH, IJESHA, LAGOS." },
+      { "C & S AYO NI O, LAGOS.": "C & S AYO NI O, LAGOS." },
+      { "ST. LUKE'S ANGLICAN CHURCH, IJESHATEDO, LAGOS.": "ST. LUKE'S ANGLICAN CHURCH, IJESHATEDO, LAGOS." },
+      { "METHODIST CHURCH OF NIGERIA, IJESHATEDO, LAGOS.": "METHODIST CHURCH OF NIGERIA, IJESHATEDO, LAGOS." },
+      { "BISHOP ADELAKUN HOWEL MEMORIAL CHURCH (BAHM), LAGOS.": "BISHOP ADELAKUN HOWEL MEMORIAL CHURCH (BAHM), LAGOS." },
+      { "EMMANUEL AFRICAN CHURCH, ITIRE, SURULERE, LAGOS.": "EMMANUEL AFRICAN CHURCH, ITIRE, SURULERE, LAGOS." },
+      { "ST. PETER'S ANG CHURCH, ISHERI, LAGOS.": "ST. PETER'S ANG CHURCH, ISHERI, LAGOS." },
+      { "HOLY TRINITY ANGLICAN CHURCH, AGUDA TITUN- IKEJA, LAGOS.": "HOLY TRINITY ANGLICAN CHURCH, AGUDA TITUN- IKEJA, LAGOS." },
+      { "BOLA MEMORIAL ANGLICAN CHURCH, IKEJA, LAGOS.": "BOLA MEMORIAL ANGLICAN CHURCH, IKEJA, LAGOS." },
+      { "ARCHBISHOP VINNING MEM. CATH. CHURCH (AVMCC), IKEJA, LAGOS.": "ARCHBISHOP VINNING MEM. CATH. CHURCH (AVMCC), IKEJA, LAGOS." },
+      { "HOLY TRINITY ANG. CHURCH, OGBA-ASADE, LAGOS.": "HOLY TRINITY ANG. CHURCH, OGBA-ASADE, LAGOS." },
+      { "ST. PETER'S ANG. CHURCH, SHASHA, LAGOS.": "ST. PETER'S ANG. CHURCH, SHASHA, LAGOS." },
+      { "METHODIST CHURCH NIGERIA, BARIGA, LAGOS.": "METHODIST CHURCH NIGERIA, BARIGA, LAGOS." },
+      { "FIRST BAPTIST CHURCH, BARIGA, LAGOS.": "FIRST BAPTIST CHURCH, BARIGA, LAGOS." },
+      { "ST. PAUL'S ANGLICAN CHURCH, SHOMOLU, LAGOS.": "ST. PAUL'S ANGLICAN CHURCH, SHOMOLU, LAGOS." },
+      { "CHRIST ANG. CHURCH, OKUTA RD. BARIGA, LAGOS.": "CHRIST ANG. CHURCH, OKUTA RD. BARIGA, LAGOS." },
+      { "CHRIST ANG. CHURCH, OKUTA RD. SHOMOLU, LAGOS.": "CHRIST ANG. CHURCH, OKUTA RD. SHOMOLU, LAGOS." },
+      { "ST. ANDREW ANGLICAN CHURCH, OKE-POPO, LAGOS.": "ST. ANDREW ANGLICAN CHURCH, OKE-POPO, LAGOS." },
+      { "EBENEZER BAPTIST CHURCH, CAMPBELL, LAGOS.": "EBENEZER BAPTIST CHURCH, CAMPBELL, LAGOS." },
+      { "HOLY TRINITY ANG. CHURCH, EBUTE - ERO, LAGOS.": "HOLY TRINITY ANG. CHURCH, EBUTE - ERO, LAGOS." },
+      { "ST. JOHN ANG. CHURCH, AROLOYA, LAGOS.": "ST. JOHN ANG. CHURCH, AROLOYA, LAGOS." },
+      { "ST. PAUL ANG. CHURCH, BREADFRUT, LAGOS.": "ST. PAUL ANG. CHURCH, BREADFRUT, LAGOS." },
+      { "ST. PHILLIPS ANG. CHURCH, OMIDIDUN, LAGOS.": "ST. PHILLIPS ANG. CHURCH, OMIDIDUN, LAGOS." },
+      { "UNION BAPTIST CHURCH, IGA-IDUGARAN, LAGOS.": "UNION BAPTIST CHURCH, IGA-IDUGARAN, LAGOS." },
+      { "AFRICAN BETHEL CHURCH, IKORODU, LAGOS.": "AFRICAN BETHEL CHURCH, IKORODU, LAGOS." },
+      { "PATRIACH BOLAJI MEMORIAL METHODIST CATHEDRAL, IKORODU, LAGOS.": "PATRIACH BOLAJI MEMORIAL METHODIST CATHEDRAL, IKORODU, LAGOS." },
+      { "CHRIST ANGLICAN CHURCH, ALAPERE-KETU, LAGOS.": "CHRIST ANGLICAN CHURCH, ALAPERE-KETU, LAGOS." },
+      { "HOLY TRINITY ANGLICAN CHURCH, AJEGUNLE - IKORODU, LAGOS.": "HOLY TRINITY ANGLICAN CHURCH, AJEGUNLE - IKORODU, LAGOS." },
+      { "PRESBYTERIAN CHRURCH OF NIGERIA, IKORODU, LAGOS.": "PRESBYTERIAN CHRURCH OF NIGERIA, IKORODU, LAGOS." },
+      { "HOLY TRINITY ANLICAN CHURCH, IJEDE, LAGOS.": "HOLY TRINITY ANLICAN CHURCH, IJEDE, LAGOS." },
+      { "HOLY TRINITY ANGLICAN CHURCH, IGBOGBO RD., LAGOS.": "HOLY TRINITY ANGLICAN CHURCH, IGBOGBO RD., LAGOS." },
+      { "ANGLICAN CHURCH, IKOSI - KETU, LAGOS.": "ANGLICAN CHURCH, IKOSI - KETU, LAGOS." },
+      { "EMMANUEL ANGLICAN CHAPEL, KETU, LAGOS.": "EMMANUEL ANGLICAN CHAPEL, KETU, LAGOS." },
+      { "ST. STEPHEN ANGLICAN CHURCH, IKORODU, LAGOS.": "ST. STEPHEN ANGLICAN CHURCH, IKORODU, LAGOS." },
+      { "ST. PAUL'S AFRICAN CHURCH, ILUPEJU, LAGOS": "ST. PAUL'S AFRICAN CHURCH, ILUPEJU, LAGOS" },
+      { "ST. PAUL'S ANG. CHURCH, IDI-ORO": "ST. PAUL'S ANG. CHURCH, IDI-ORO" },
+      { "ST. PETERS ANG. CHURCH, OSODI": "ST. PETERS ANG. CHURCH, OSODI" },
+      { "ALL SAINTS ANGLICAN CHURCH, OSODI": "ALL SAINTS ANGLICAN CHURCH, OSODI" },
+      { "ST. PAUL'S ANG. CHURCH, MAFOLUKU- OSHODI": "ST. PAUL'S ANG. CHURCH, MAFOLUKU- OSHODI" },
+      { "FIRST BAPTIST CHURCH, OSHODI": "FIRST BAPTIST CHURCH, OSHODI" },
+      { "ALL SAINT ANG. CHURCH EJIGBO": "ALL SAINT ANG. CHURCH EJIGBO" },
+      { "HOLY TRINITY ANGLICAN CHURCH, ILASA- MUSHIN": "HOLY TRINITY ANGLICAN CHURCH, ILASA- MUSHIN" },
+      { "ECWA, CHALLENGE": "ECWA, CHALLENGE" },
+      { "JEHOVAH MANSION CATHEDRAL MUSHIN": "JEHOVAH MANSION CATHEDRAL MUSHIN" },
+      { "METHODIST CHURCH NIGERIA IKORODU ROAD RAILWAY LINE": "METHODIST CHURCH NIGERIA IKORODU ROAD RAILWAY LINE" },
+      { "ARAROMI BAPTIST CHURCH, MUSHIN": "ARAROMI BAPTIST CHURCH, MUSHIN" },
+      { "ST. JOHN'S CHURCH OF NIGERIA, OFFADA": "ST. JOHN'S CHURCH OF NIGERIA, OFFADA" },
+      { "ST. JAMES CHURCH, MOSHALASHI, IDI-ORO": "ST. JAMES CHURCH, MOSHALASHI, IDI-ORO" },
+      { "EMMANUEL AFRICAN CHURCH,ODI-OLOWO": "EMMANUEL AFRICAN CHURCH,ODI-OLOWO" },
+      { "ST. MICHAEL AFRICAN CHURCH, AKOWONJO": "ST. MICHAEL AFRICAN CHURCH, AKOWONJO" },
+      { "SALEM AFRICAN CHURCH, ABEKOKO": "SALEM AFRICAN CHURCH, ABEKOKO" },
+      { "ZION AFRICAN CHURCH ALAGBA, IYANA-IPAJA": "ZION AFRICAN CHURCH ALAGBA, IYANA-IPAJA" },
+      { "ST. BARNABAS ANGLICAN CHURCH, OKOOBA, AGEGE": "ST. BARNABAS ANGLICAN CHURCH, OKOOBA, AGEGE" },
+      { "METHODIST CHURCH NIGERIA AKOWONJO": "METHODIST CHURCH NIGERIA AKOWONJO" },
+      { "ST. JOHN ANG. CHURCH, SATELITE TOWN": "ST. JOHN ANG. CHURCH, SATELITE TOWN" },
+      { "ST. PAUL'S ANG. CHURCH ISHAGATEDO, ISOLO": "ST. PAUL'S ANG. CHURCH ISHAGATEDO, ISOLO" },
+      { "ST. JOHN'S ANG. CHURCH ARAROMI APAPA": "ST. JOHN'S ANG. CHURCH ARAROMI APAPA" },
+      { "CHURCH OF THE PENTECOST FESTAC TOWN": "CHURCH OF THE PENTECOST FESTAC TOWN" },
+      { "METHODIST CHURCH,ODIOLOWO, MUSHIN": "METHODIST CHURCH,ODIOLOWO, MUSHIN" },
+      { "THE SAVIOUR ANGLICAN CHURCH, OKEAFA, ISOLO": "THE SAVIOUR ANGLICAN CHURCH, OKEAFA, ISOLO" }
+    ]
+  },
+  {
+    value: 'Youth Council',
+    label: 'Youth Council',
+    dropDown: [
+      { 'Hi-Y Club': 'Hi-Y Club' },
+      { 'Y-Elite Club': 'Y-Elite Club' }
+    ]
+  },
+  {
+    value: "Y's Men",
+    label: "Y's Men",
+    dropDown: [{ "Y's Men Club": "Y's Men Club" }]
+  },
+  {
+    value: 'Central Club',
+    label: 'Central Club',
+    dropDown: [{ 'Central Club': 'Central Club' }]
+  }
+];
 
-interface FormData {
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone_number: string;
-  citizen: string;
-  country: string;
-  state: string;
-  lga: string;
-  unit: string;
-  club: string;
-  age: string;
-  gender: string;
-  date_of_birth: string;
-  place_of_birth: string;
-  home_address: string;
-  office_address: string;
-  profession: string;
-  religion: string;
-  churchName: string;
-  occupation: string;
-  marital_status: string;
-  address: string;
-  validIdType: string;
-  validIdFile: File | null;
-  passport_photo: File | null;
-  signature: File | null;
-  nextOfKinName: string;
-  nextOfKinNumber: string;
-  referralSource: string;
-  referralName: string;
-  referredBy: string;
-}
+const validIdOptions = [
+  { value: 'national_id', label: 'National ID' },
+  { value: 'international_passport', label: 'International Passport' },
+  { value: 'voters_card', label: 'Voters Card' },
+  { value: 'drivers_license', label: "Driver's License" },
+  { value: 'others', label: 'Others' },
+];
 
 const RequestForm: React.FC = () => {
   const navigate = useNavigate();
+  const { fetchWithAuth, displayNotification } = useAuth();
+  
+  // Form state
   const [formData, setFormData] = useState<FormData>({
     first_name: '',
     last_name: '',
     email: '',
     phone_number: '',
+    gender: '',
+    date_of_birth: '',
+    age: '',
+    marital_status: '',
     citizen: 'Nigerian',
     country: 'NG',
     state: '',
     lga: '',
+    address: '',
     unit: '',
     club: '',
-    age: '',
-    gender: '',
-    date_of_birth: '',
-    place_of_birth: '',
-    home_address: '',
-    office_address: '',
-    profession: '',
-    religion: '',
     churchName: '',
+    profession: '',
     occupation: '',
-    marital_status: '',
-    address: '',
+    religion: '',
     validIdType: '',
     validIdFile: null,
     passport_photo: null,
     signature: null,
     nextOfKinName: '',
     nextOfKinNumber: '',
-    referralSource: '',
-    referralName: '',
     referredBy: 'no',
+    referralName: '',
   });
-
+  
+  // UI state
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -352,694 +498,370 @@ const RequestForm: React.FC = () => {
     validIdFile: false, 
     signature: false 
   });
-  const [availableClubs, setAvailableClubs] = useState<{value: string, label: string}[]>([]);
-  const [availableUnits] = useState<{value: string, label: string}[]>(units);
-  const [availableChurches, setAvailableChurches] = useState<{value: string, label: string}[]>([]);
+  const [availableClubs, setAvailableClubs] = useState<ClubOption[]>([]);
+  const [availableChurches, setAvailableChurches] = useState<ClubOption[]>([]);
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
   const [dateOfBirth, setDateOfBirth] = useState<Date | null>(null);
+  const [ageValidationMessage, setAgeValidationMessage] = useState<string>('');
 
-  const passport_photoRef = useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement>;
-  const validIdFileRef = useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement>;
-  const signatureRef = useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement>;
+  // Refs
+  const passportPhotoRef = useRef<HTMLInputElement>(null);
+  const validIdFileRef = useRef<HTMLInputElement>(null);
+  const signatureRef = useRef<HTMLInputElement>(null);
 
-  const { fetchWithAuth, displayNotification } = useAuth();
-
-  const validIdOptions = [
-    { value: 'national_id', label: 'National ID' },
-    { value: 'international_passport', label: 'International Passport' },
-    { value: 'voters_card', label: 'Voters Card' },
-    { value: 'others', label: 'Others' },
-  ];
-
-  // Function to calculate age from date of birth
-  const calculateAge = (dateOfBirth: string): number => {
-    if (!dateOfBirth) return 0;
-    
-    const birthDate = new Date(dateOfBirth);
-    const today = new Date();
-    
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
+  // Calculate age from date of birth
+  const calculateAge = useCallback((dateString: string): number => {
+    if (!dateString) return 0;
+    try {
+      const birthDate = new Date(dateString);
+      const today = new Date();
+      return differenceInYears(today, birthDate);
+    } catch (error) {
+      return 0;
     }
-    
-    return age;
-  };
+  }, []);
 
-  // Function to filter available clubs based on age - STRICT VERSION
-  const getAvailableClubs = (age: number, selectedUnit: any) => {
-    if (age <= 0 || !age || !selectedUnit || !selectedUnit.dropDown) {
-      console.log('No clubs available - missing required data');
-      return [];
-    }
+  // Get available clubs based on age and unit - STRICT RULES
+  const getAvailableClubs = useCallback((age: number, unitValue: string): ClubOption[] => {
+    const unit = units.find(u => u.value === unitValue);
+    if (!unit?.dropDown) return [];
     
-    const allClubs = selectedUnit.dropDown.map((club: any) => {
+    const allClubs: ClubOption[] = unit.dropDown.map((club: any) => {
       const key = Object.keys(club)[0];
       return { value: club[key], label: club[key] };
     });
     
-    console.log('Available clubs in', selectedUnit.label, ':', allClubs);
-    console.log('User age:', age);
+    const unitName = unit.label.toLowerCase();
     
-    const unitName = selectedUnit.label.toLowerCase();
-    const unitValue = selectedUnit.value.toLowerCase();
-    
-    // Check for Youth Council
-    const isYouthCouncil = unitName.includes('youth') || unitValue.includes('youth');
-    
-    // Check for Y's Men
-    const isYsMen = unitName.includes("y's men") || unitValue.includes("y's men") || 
-                  unitName.includes('ys men') || unitValue.includes('ys men');
-    
-    // Check for Central Club
-    const isCentralClub = unitName.includes('central') || unitValue.includes('central');
-    
-    // Check for Council of Church
-    const isCouncilOfChurch = unitName.includes('council') && unitName.includes('church');
-    
-    // STRICT AGE RULES
-    if (isYouthCouncil) {
+    // YOUTH COUNCIL - STRICT AGE RULES
+    if (unitName.includes('youth')) {
+      // Age 1-23: Only Hi-Y clubs
       if (age >= 1 && age <= 23) {
-        // Age 1-23: Only Hi-Y clubs
-        const hiYClubs = allClubs.filter(
-          (club: { value: string; label: string }) => {
-            const normalize = (str: string) =>
-              str.toLowerCase().replace(/\s+/g, '');
-
-            const clubName = normalize(club.value);
-            const clubLabel = normalize(club.label);
-
-            const isHiYClub =
-              clubName.includes('hi-y') || clubLabel.includes('hi-y') ||
-              clubName.includes('hi y') || clubLabel.includes('hi y');
-
-            console.log('Club:', club.value, 'Is Hi-Y Club?', isHiYClub);
-            return isHiYClub;
-          }
+        return allClubs.filter(club => 
+          club.label.toLowerCase().includes('hi-y') || 
+          club.label.toLowerCase().includes('hi y')
         );
-        
-        console.log('Hi-Y Clubs found:', hiYClubs);
-        
-        if (hiYClubs.length === 0) {
-          return [{ value: 'no_hiy_available', label: 'No Hi-Y clubs available for this age' }];
-        }
-        
-        return hiYClubs;
-      } else if (age >= 24 && age <= 30) {
-        // Age 24-30: Only Y-Elite clubs
-        const yEliteClubs = allClubs.filter((club: { value: string; label: string }) => {
-          const clubName = club.value.toLowerCase();
-          const clubLabel = club.label.toLowerCase();
-          
-          const isYEliteClub = 
-            clubName.includes('Y-Elite') || clubLabel.includes('Y-Elite') ||
-            clubName.includes('yelite') || clubLabel.includes('yelite');
-          
-          console.log('Club:', club.value, 'Is Y-Elite Club?', isYEliteClub);
-          return isYEliteClub;
-        });
-        
-        console.log('Y-Elite Clubs found:', yEliteClubs);
-        
-        if (yEliteClubs.length === 0) {
-          return [{ value: 'Y-Elite', label: 'Y-Elite' }];
-        }
-        
-        return yEliteClubs;
-      } else {
-        // Age 31+: Cannot join Youth Council at all
-        console.log('Age 31+ cannot join Youth Council');
+      }
+      // Age 24-30: Only Y-Elite clubs
+      else if (age >= 24 && age <= 30) {
+        return allClubs.filter(club => 
+          club.label.toLowerCase().includes('y-elite') || 
+          club.label.toLowerCase().includes('yelite')
+        );
+      }
+      // Age 31+: Cannot join Youth Council at all
+      else {
         return [];
       }
-    } else if (isYsMen || isCentralClub) {
-      // Y's Men and Central Club are only for adults (31+)
-      if (age >= 31) {
-        return allClubs;
-      } else {
-        console.log(`Age ${age} cannot join ${selectedUnit.label}, minimum age is 31`);
-        return [];
-      }
-    } else if (isCouncilOfChurch) {
-      // Council of Church - only for ages 31+
-      if (age >= 31) {
-        return allClubs;
-      } else {
-        console.log(`Age ${age} cannot join Council of Church, minimum age is 31`);
-        return [];
-      }
-    } else {
-      // For other adult units, show all clubs (assuming they're for 31+)
-      console.log('Adult unit - showing all clubs');
-      return allClubs;
     }
-  };
-
-  // Function to filter available churches based on age
-  const getAvailableChurches = (age: number, selectedUnit: any) => {
-    if (!selectedUnit || !selectedUnit.churchDropDown) return [];
     
-    const allChurches = selectedUnit.churchDropDown.map((church: any) => {
+    // ADULT UNITS (31+ ONLY) - STRICT RULE
+    // Y's Men, Central Club, Council of Church require age 31+
+    if (unitName.includes("y's men") || unitName.includes('central') || 
+        (unitName.includes('council') && unitName.includes('church'))) {
+      return age >= 31 ? allClubs : [];
+    }
+    
+    return allClubs;
+  }, []);
+
+  // Get available churches (for Council of Church only)
+  const getAvailableChurches = useCallback((unitValue: string): ClubOption[] => {
+    const unit = units.find(u => u.value === unitValue);
+    if (!unit?.churchDropDown) return [];
+    
+    return unit.churchDropDown.map((church: any) => {
       const key = Object.keys(church)[0];
       return { value: church[key], label: church[key] };
     });
-    
-    const isYouthCouncil = selectedUnit.value.toLowerCase().includes('youth') || 
-                          selectedUnit.label.toLowerCase().includes('youth');
-    
-    if (isYouthCouncil) {
-      if (age <= 23) {
-        return allChurches.filter((church: {value: string, label: string}) => {
-          const churchName = church.value.toLowerCase();
-          return !churchName.includes('adult') && !churchName.includes('senior');
-        });
-      } else if (age >= 24 && age <= 30) {
-        return allChurches.filter((church: {value: string, label: string}) => {
-          const churchName = church.value.toLowerCase();
-          return churchName.includes('Y-Elite');
-        });
-      } else {
-        return [];
-      }
-    } else {
-      return allChurches;
-    }
-  };
+  }, []);
 
-  // Memoize available clubs and churches for better performance
-  // const memoizedAvailableClubs = useMemo(() => {
-  //   if (formData.date_of_birth && formData.unit) {
-  //     const calculatedAge = calculateAge(formData.date_of_birth);
-  //     const selectedUnit = units.find(unit => unit.value === formData.unit) as any;
-  //     if (selectedUnit) {
-  //       return getAvailableClubs(calculatedAge, selectedUnit);
-  //     }
-  //   }
-  //   return [];
-  // }, [formData.date_of_birth, formData.unit]);
-
-  // const memoizedAvailableChurches = useMemo(() => {
-  //   if (formData.date_of_birth && formData.unit) {
-  //     const calculatedAge = calculateAge(formData.date_of_birth);
-  //     const selectedUnit = units.find(unit => unit.value === formData.unit) as any;
-  //     if (selectedUnit) {
-  //       return getAvailableChurches(calculatedAge, selectedUnit);
-  //     }
-  //   }
-  //   return [];
-  // }, [formData.date_of_birth, formData.unit]);
-
-  // Effect to update age and available clubs when date of birth or unit changes
+  // Update age when date of birth changes
   useEffect(() => {
     if (formData.date_of_birth) {
-      const calculatedAge = calculateAge(formData.date_of_birth);
-      
-      setFormData(prev => ({
-        ...prev,
-        age: calculatedAge.toString()
-      }));
+      const age = calculateAge(formData.date_of_birth);
+      setFormData(prev => ({ ...prev, age: age.toString() }));
+    } else {
+      setFormData(prev => ({ ...prev, age: '' }));
+    }
+  }, [formData.date_of_birth, calculateAge]);
 
-      if (formData.unit) {
-        const selectedUnit = units.find(unit => unit.value === formData.unit) as any;
-        if (selectedUnit) {
-          const filteredClubs = getAvailableClubs(calculatedAge, selectedUnit);
-          setAvailableClubs(filteredClubs);
-          
-          const isCouncilOfChurch = formData.club && (
-            formData.club.toLowerCase().includes('council of church') || 
-            formData.club.toLowerCase().includes('council') ||
-            formData.club.toLowerCase().includes('church')
-          );
-          
-          if (isCouncilOfChurch && selectedUnit.churchDropDown) {
-            const filteredChurches = getAvailableChurches(calculatedAge, selectedUnit);
-            setAvailableChurches(filteredChurches);
-            
-            const currentChurchValid = filteredChurches.some((church: { value: string; }) => church.value === formData.churchName);
-            if (formData.churchName && !currentChurchValid) {
-              setFormData(prev => ({
-                ...prev,
-                churchName: ''
-              }));
-            }
-          }
-          
-          const currentClubValid = filteredClubs.some((club: { value: string; }) => club.value === formData.club);
-          if (formData.club && !currentClubValid) {
-            setFormData(prev => ({
-              ...prev,
-              club: '',
-              churchName: ''
-            }));
-            setAvailableChurches([]);
-          }
-        }
+  // Update clubs when age or unit changes
+  useEffect(() => {
+    if (formData.age && formData.unit) {
+      const ageNum = parseInt(formData.age);
+      const clubs = getAvailableClubs(ageNum, formData.unit);
+      setAvailableClubs(clubs);
+      
+      // Reset club if no longer valid
+      if (formData.club && !clubs.some(c => c.value === formData.club)) {
+        setFormData(prev => ({ ...prev, club: '', churchName: '' }));
       }
     } else {
-      setFormData(prev => ({
-        ...prev,
-        age: ''
-      }));
       setAvailableClubs([]);
-      setAvailableChurches([]);
     }
-  }, [formData.date_of_birth, formData.unit, formData.club]);
+  }, [formData.age, formData.unit, formData.club, getAvailableClubs]);
 
-  // Effect to sync dateOfBirth state with formData
+  // Update churches when Council of Church is selected
   useEffect(() => {
-    if (formData.date_of_birth) {
-      setDateOfBirth(new Date(formData.date_of_birth));
+    if (formData.unit && formData.unit.toLowerCase().includes('council of church')) {
+      const churches = getAvailableChurches(formData.unit);
+      setAvailableChurches(churches);
     } else {
-      setDateOfBirth(null);
-    }
-  }, [formData.date_of_birth]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    
-    setTouchedFields(prev => ({
-      ...prev,
-      [name]: true
-    }));
-
-    const updates: Partial<FormData> = {
-      [name]: value,
-    };
-
-    // Handle cascading resets
-    if (name === 'country') {
-      updates.state = '';
-      updates.lga = '';
-    } else if (name === 'state') {
-      updates.lga = '';
-    } else if (name === 'unit') {
-      updates.club = '';
-      updates.churchName = '';
-    } else if (name === 'club') {
-      updates.churchName = '';
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      ...updates,
-    }));
-
-    // Update available clubs when unit changes
-    if (name === 'unit') {
-      const selectedUnit = units.find(unit => unit.value === value) as any;
-      
-      if (selectedUnit && selectedUnit.dropDown && formData.age) {
-        const calculatedAge = parseInt(formData.age);
-        const filteredClubs = getAvailableClubs(calculatedAge, selectedUnit);
-        setAvailableClubs(filteredClubs);
-        
-        if (selectedUnit.churchDropDown) {
-          const churchOptions = getAvailableChurches(calculatedAge, selectedUnit);
-          setAvailableChurches(churchOptions);
-        } else {
-          setAvailableChurches([]);
-        }
-      } else if (selectedUnit && selectedUnit.dropDown) {
-        const allClubs = selectedUnit.dropDown.map((club: any) => {
-          const key = Object.keys(club)[0];
-          return { value: club[key], label: club[key] };
-        });
-        setAvailableClubs(allClubs);
-        
-        if (selectedUnit.churchDropDown) {
-          const allChurches = selectedUnit.churchDropDown.map((church: any) => {
-            const key = Object.keys(church)[0];
-            return { value: church[key], label: church[key] };
-          });
-          setAvailableChurches(allChurches);
-        } else {
-          setAvailableChurches([]);
-        }
-      } else {
-        setAvailableClubs([]);
-        setAvailableChurches([]);
-      }
-    }
-
-    // Update available churches when club is "Council Of Church"
-    if (name === 'club') {
-      const selectedUnit = units.find(unit => unit.value === formData.unit) as any;
-      const isCouncilOfChurch = value.toLowerCase().includes('council of church');
-      
-      if (isCouncilOfChurch && selectedUnit && selectedUnit.churchDropDown && formData.age) {
-        const calculatedAge = parseInt(formData.age);
-        const filteredChurches = getAvailableChurches(calculatedAge, selectedUnit);
-        setAvailableChurches(filteredChurches);
-        
-        // Also update available clubs to show appropriate message
-        if (filteredChurches.length > 0) {
-          setAvailableClubs([{ value: 'council_of_church', label: 'Council of Church - Select your church below' }]);
-        }
-      } else if (isCouncilOfChurch && selectedUnit && selectedUnit.churchDropDown) {
-        const allChurches = selectedUnit.churchDropDown.map((church: any) => {
-          const key = Object.keys(church)[0];
-          return { value: church[key], label: church[key] };
-        });
-        setAvailableChurches(allChurches);
-        setAvailableClubs([{ value: 'council_of_church', label: 'Council of Church - Select your church below' }]);
-      } else {
-        setAvailableChurches([]);
+      setAvailableChurches([]);
+      if (formData.churchName) {
         setFormData(prev => ({ ...prev, churchName: '' }));
-        
-        // Reset available clubs to normal when not selecting Council of Church
-        if (selectedUnit && selectedUnit.dropDown && formData.age) {
-          const calculatedAge = parseInt(formData.age);
-          const filteredClubs = getAvailableClubs(calculatedAge, selectedUnit);
-          setAvailableClubs(filteredClubs);
-        }
       }
     }
+  }, [formData.unit, getAvailableChurches]);
 
-    // Clear error when user starts typing
-    if (fieldErrors[name]) {
-      setFieldErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+  // Update age validation message
+  useEffect(() => {
+    if (formData.age && formData.unit) {
+      const ageNum = parseInt(formData.age);
+      const unit = units.find(u => u.value === formData.unit);
+      
+      if (!unit) {
+        setAgeValidationMessage('');
+        return;
+      }
+      
+      const unitName = unit.label;
+      
+      // Youth Council validation
+      if (unitName.includes('Youth Council')) {
+        if (ageNum >= 31) {
+          setAgeValidationMessage('❌ Age 31+ cannot join Youth Council. Please select Y\'s Men, Central Club, or Council of Church.');
+        } else if (ageNum >= 1 && ageNum <= 23) {
+          setAgeValidationMessage('✅ Age 1-23 can join Youth Council (Hi-Y clubs only)');
+        } else if (ageNum >= 24 && ageNum <= 30) {
+          setAgeValidationMessage('✅ Age 24-30 can join Youth Council (Y-Elite clubs only)');
+        } else {
+          setAgeValidationMessage('❌ Invalid age for Youth Council');
+        }
+      }
+      // Adult units validation (31+ only)
+      else if (unitName.includes("Y's Men") || unitName.includes('Central Club') || unitName.includes('Council of Church')) {
+        if (ageNum >= 31) {
+          setAgeValidationMessage(`✅ Age ${ageNum} can join ${unitName}`);
+        } else {
+          setAgeValidationMessage(`❌ Age ${ageNum} cannot join ${unitName}. Minimum age is 31.`);
+        }
+      }
+      else {
+        setAgeValidationMessage(`✅ Age ${ageNum} can join ${unitName}`);
+      }
+    } else {
+      setAgeValidationMessage('');
     }
-  };
+  }, [formData.age, formData.unit]);
 
-  // Handle DatePicker date change
+  // Handle date change
   const handleDateChange = (date: Date | null) => {
-    setTouchedFields(prev => ({
-      ...prev,
-      date_of_birth: true
-    }));
-
+    setDateOfBirth(date);
+    setTouchedFields(prev => ({ ...prev, date_of_birth: true }));
+    
     if (date) {
       const isoDate = format(date, 'yyyy-MM-dd');
-      const calculatedAge = calculateAge(isoDate);
+      const age = calculateAge(isoDate);
       
       setFormData(prev => ({
         ...prev,
         date_of_birth: isoDate,
-        age: calculatedAge.toString()
+        age: age.toString()
       }));
-
-      if (formData.unit) {
-        const selectedUnit = units.find(unit => unit.value === formData.unit) as any;
-        if (selectedUnit) {
-          const filteredClubs = getAvailableClubs(calculatedAge, selectedUnit);
-          setAvailableClubs(filteredClubs);
-          
-          const isCouncilOfChurch = formData.club && (
-            formData.club.toLowerCase().includes('council of church') 
-          );
-          
-          if (isCouncilOfChurch && selectedUnit.churchDropDown) {
-            const filteredChurches = getAvailableChurches(calculatedAge, selectedUnit);
-            setAvailableChurches(filteredChurches);
-            
-            const currentChurchValid = filteredChurches.some((church: { value: string; }) => church.value === formData.churchName);
-            if (formData.churchName && !currentChurchValid) {
-              setFormData(prev => ({
-                ...prev,
-                churchName: ''
-              }));
-            }
-          }
-          
-          const currentClubValid = filteredClubs.some((club: { value: string; }) => club.value === formData.club);
-          if (formData.club && !currentClubValid) {
-            setFormData(prev => ({
-              ...prev,
-              club: '',
-              churchName: ''
-            }));
-            setAvailableChurches([]);
-          }
-        }
-      }
     } else {
       setFormData(prev => ({
         ...prev,
         date_of_birth: '',
         age: ''
       }));
+    }
+  };
+
+  // Handle input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    
+    setTouchedFields(prev => ({ ...prev, [name]: true }));
+    
+    // Clear error for this field
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+    
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Handle Select change (for react-select components)
+  const handleSelectChange = (name: string, value: string | null) => {
+    setTouchedFields(prev => ({ ...prev, [name]: true }));
+    
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+    
+    setFormData(prev => ({ ...prev, [name]: value || '' }));
+    
+    // Cascade resets
+    if (name === 'unit') {
+      setFormData(prev => ({ ...prev, club: '', churchName: '' }));
       setAvailableClubs([]);
       setAvailableChurches([]);
+    } else if (name === 'club') {
+      setFormData(prev => ({ ...prev, churchName: '' }));
     }
   };
 
-  const handleFileChange = (file: File, field: 'passport_photo' | 'validIdFile' | 'signature') => {
-    if (file) {
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-      
-      if (!allowedTypes.includes(file.type)) {
-        setFieldErrors(prev => ({
-          ...prev,
-          [field]: `Please upload a valid image (JPEG, JPG, PNG)`
-        }));
-        return;
-      }
-
-      const maxSize = 10 * 1024 * 1024;
-      if (file.size > maxSize) {
-        setFieldErrors(prev => ({
-          ...prev,
-          [field]: 'File size must be less than 10MB'
-        }));
-        return;
-      }
-
-      setFormData(prev => ({
-        ...prev,
-        [field]: file
-      }));
-
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const result = e.target?.result as string;
-          if (field === 'passport_photo') {
-            setPhotoPreview(result);
-          } else if (field === 'validIdFile') {
-            setIdPreview(result);
-          } else if (field === 'signature') {
-            setSignaturePreview(result);
-          }
-        };
-        reader.readAsDataURL(file);
-      }
-
-      setFieldErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
+  // Handle file upload
+  const handleFileChange = (field: 'validIdFile' | 'passport_photo' | 'signature', file: File) => {
+    // Validate file type and size
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+      setFieldErrors(prev => ({ ...prev, [field]: 'File must be JPEG, JPG, PNG, or PDF' }));
+      return;
+    }
+    
+    if (file.size > 10 * 1024 * 1024) {
+      setFieldErrors(prev => ({ ...prev, [field]: 'File size must be less than 10MB' }));
+      return;
+    }
+    
+    setFormData(prev => ({ ...prev, [field]: file }));
+    
+    // Create preview for images only
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        if (field === 'passport_photo') setPhotoPreview(result);
+        else if (field === 'validIdFile') setIdPreview(result);
+        else if (field === 'signature') setSignaturePreview(result);
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    // Clear error
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
     }
   };
 
-  const handleDrag = (e: React.DragEvent, field: 'passport_photo' | 'validIdFile' | 'signature') => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(prev => ({ ...prev, [field]: true }));
-    } else if (e.type === "dragleave") {
-      setDragActive(prev => ({ ...prev, [field]: false }));
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent, field: 'passport_photo' | 'validIdFile' | 'signature') => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(prev => ({ ...prev, [field]: false }));
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      handleFileChange(file, field);
-    }
-  };
-
-  // Helper function to get input border color based on validation
-  const getInputBorderColor = (fieldName: string, value: any) => {
-    if (touchedFields[fieldName] || Object.keys(fieldErrors).length > 0) {
-      if (fieldErrors[fieldName]) {
-        return 'border-red-500';
-      } else if (value && value.toString().trim() !== '') {
-        return 'border-green-500';
-      }
-    }
-    return 'border-gray-300';
-  };
-
-  const validateForm = () => {
+  // Validate form
+  const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
+    const ageNum = parseInt(formData.age);
     
-    // Required field validations with better error messages
-    const requiredFields = {
-      first_name: 'Please enter your first name',
-      last_name: 'Please enter your last name',
-      phone_number: 'Please enter your phone number',
-      country: 'Please select your country',
-      state: 'Please select your state',
-      unit: 'Please select a unit',
-      address: 'Please enter your address',
-      validIdType: 'Please select a valid ID type',
-      validIdFile: 'Please upload your ID document',
-      passport_photo: 'Please upload your passport photo',
-      date_of_birth: 'Please select your date of birth',
-    };
-
-    Object.entries(requiredFields).forEach(([field, message]) => {
-      if (!formData[field as keyof FormData]) {
-        errors[field] = message;
-      }
-    });
-
-    // Phone number format validation
-    if (formData.phone_number && !/^[\+]?[0-9\s\-\(\)]{10,}$/.test(formData.phone_number.trim())) {
-      errors.phone_number = 'Please enter a valid phone number (e.g., 07012345678 or +2347012345678)';
-    }
-
-    // Email format validation
+    // Basic required fields
+    if (!formData.first_name.trim()) errors.first_name = 'First name is required';
+    if (!formData.last_name.trim()) errors.last_name = 'Last name is required';
+    if (!formData.phone_number.trim()) errors.phone_number = 'Phone number is required';
+    if (!formData.date_of_birth) errors.date_of_birth = 'Date of birth is required';
+    if (!formData.unit) errors.unit = 'Unit is required';
+    if (!formData.address.trim()) errors.address = 'Address is required';
+    if (!formData.validIdType) errors.validIdType = 'ID type is required';
+    if (!formData.validIdFile) errors.validIdFile = 'ID document is required';
+    if (!formData.passport_photo) errors.passport_photo = 'Passport photo is required';
+    
+    // Email validation
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Please enter a valid email address (e.g., name@example.com)';
+      errors.email = 'Invalid email format';
     }
-
-    // Name validation (no numbers or special characters)
-    if (formData.first_name && !/^[A-Za-zÀ-ÿ\s\-']+$/.test(formData.first_name)) {
-      errors.first_name = 'Please enter a valid first name (letters only)';
-    }
-
-    if (formData.last_name && !/^[A-Za-zÀ-ÿ\s\-']+$/.test(formData.last_name)) {
-      errors.last_name = 'Please enter a valid last name (letters only)';
-    }
-
-    // Club validation
-    if (availableClubs.length > 0 && !formData.club) {
-      errors.club = 'Please select a club';
-    }
-
-    // Church name validation when Council Of Church is selected
-    const isCouncilOfChurch = formData.club && (
-      formData.club.toLowerCase().includes('council of church') 
-    );
     
-    if (isCouncilOfChurch && !formData.churchName) {
-      errors.churchName = 'Please select your church';
+    // Phone validation
+    if (formData.phone_number && !/^[\+]?[0-9\s\-\(\)]{10,}$/.test(formData.phone_number)) {
+      errors.phone_number = 'Invalid phone number';
     }
-
-    // STRICT Age-based validations
-    if (formData.age && formData.unit) {
-      const ageNum = parseInt(formData.age);
-      const selectedUnit = units.find(unit => unit.value === formData.unit);
-      const isYouthCouncil = selectedUnit && (
-        selectedUnit.value.toLowerCase().includes('youth') || 
-        selectedUnit.label.toLowerCase().includes('youth')
-      );
+    
+    // Age-based unit validation - STRICT RULES
+    if (formData.unit && formData.age) {
+      const unitName = formData.unit.toLowerCase();
       
-      // const isCouncilOfChurch = selectedUnit && (
-      //   selectedUnit.value.toLowerCase().includes('council') && 
-      //   selectedUnit.value.toLowerCase().includes('church')
-      // );
-      
-      if (isYouthCouncil) {
+      // Youth Council rules
+      if (unitName.includes('youth')) {
         if (ageNum >= 31) {
-          errors.unit = 'Age 31 and above cannot join Youth Council. Please select Y\'s Men, Central Club, or Council Of Church.';
-        } else if (ageNum >= 1 && ageNum <= 23 && formData.club) {
-          // Check if selected club is Hi-Y for ages 1-23
-          const clubIsHiY = formData.club.toLowerCase().includes('hi-y') || 
-                            formData.club.toLowerCase().includes('hi y');
-          if (!clubIsHiY) {
-            errors.club = 'Ages 1-23 can only select Hi-Y clubs in Youth Council';
-          }
-        } else if (ageNum >= 24 && ageNum <= 30 && formData.club) {
-          // Check if selected club is Y-Elite for ages 24-30
-          const clubIsYElite = formData.club.toLowerCase().includes('Y-Elite') || 
-                               formData.club.toLowerCase().includes('yelite');
-          if (!clubIsYElite) {
-            errors.club = 'Ages 24-30 can only select Y-Elite clubs in Youth Council';
-          }
+          errors.unit = '❌ Age 31+ cannot join Youth Council. Please select Y\'s Men, Central Club, or Council of Church.';
+        } else if (ageNum >= 1 && ageNum <= 23 && formData.club && 
+                   !formData.club.toLowerCase().includes('hi-y') && 
+                   !formData.club.toLowerCase().includes('hi y')) {
+          errors.club = '❌ Ages 1-23 can only select Hi-Y clubs in Youth Council';
+        } else if (ageNum >= 24 && ageNum <= 30 && formData.club && 
+                   !formData.club.toLowerCase().includes('y-elite') && 
+                   !formData.club.toLowerCase().includes('yelite')) {
+          errors.club = '❌ Ages 24-30 can only select Y-Elite clubs in Youth Council';
         }
       }
-      
-      // Check if trying to join Y's Men, Central Club, or Council Of Church under age 31
-      const isAdultUnit = selectedUnit && (
-        selectedUnit.value.toLowerCase().includes("y's men") ||
-        selectedUnit.value.toLowerCase().includes('central') ||
-        (selectedUnit.value.toLowerCase().includes('council') && 
-         selectedUnit.value.toLowerCase().includes('church'))
-      );
-      
-      if (isAdultUnit && ageNum < 31) {
-        errors.unit = `Age ${ageNum} cannot join ${selectedUnit.label}. Minimum age is 31.`;
+      // Adult units rules (31+ only)
+      else if ((unitName.includes("y's men") || unitName.includes('central') || 
+                (unitName.includes('council') && unitName.includes('church'))) && 
+                ageNum < 31) {
+        const unitDisplay = formData.unit;
+        errors.unit = `❌ Age ${ageNum} cannot join ${unitDisplay}. Minimum age is 31.`;
       }
     }
-
-    // Mark all fields as touched when validating
-    const allFields = Object.keys(requiredFields);
-    const newTouchedFields: Record<string, boolean> = {};
-    allFields.forEach(field => {
-      newTouchedFields[field] = true;
-    });
-    setTouchedFields(prev => ({ ...prev, ...newTouchedFields }));
     
-    setFieldErrors(errors);
-    
-    if (Object.keys(errors).length > 0) {
-      scrollToFirstError(Object.keys(errors));
+    // Club validation
+    if (availableClubs.length > 0 && !formData.club) {
+      errors.club = 'Club selection is required';
     }
     
+    // Church validation for Council of Church
+    if (formData.unit.toLowerCase().includes('council of church') && !formData.churchName) {
+      errors.churchName = 'Church selection is required for Council of Church';
+    }
+    
+    setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const scrollToFirstError = (errorFields: string[]) => {
-    const fieldOrder = [
-      'first_name', 'last_name', 'phone_number', 'country', 'state', 
-      'unit', 'club', 'churchName', 'date_of_birth', 'validIdType', 'validIdFile', 'passport_photo'
-    ];
-    
-    const firstErrorField = fieldOrder.find(field => errorFields.includes(field));
-    
-    if (firstErrorField) {
-      const fieldElement = document.querySelector(`[name="${firstErrorField}"]`) as HTMLElement;
-      
-      if (fieldElement) {
-        fieldElement.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
-        });
-        
-        setTimeout(() => fieldElement.focus?.(), 300);
-      }
-    }
-  };
-
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
+      // Scroll to first error
+      const firstError = Object.keys(fieldErrors)[0];
+      const element = document.querySelector(`[name="${firstError}"]`);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
-
+    
     setLoading(true);
-
+    
     try {
-      const requestData = new FormData();
+      const formDataToSend = new FormData();
       
       // Append all form data
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== null && value !== undefined && value !== '') {
           if (value instanceof File) {
-            requestData.append(key, value);
+            formDataToSend.append(key, value);
           } else {
-            requestData.append(key, value.toString());
+            formDataToSend.append(key, value.toString());
           }
         }
       });
-
+      
       await fetchWithAuth({
         method: 'POST',
         path: '/requests/',
-        body: requestData,
+        body: formDataToSend,
         isFormData: true,
       });
-
+      
+      // Show success
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
@@ -1049,33 +871,29 @@ const RequestForm: React.FC = () => {
           last_name: '',
           email: '',
           phone_number: '',
+          gender: '',
+          date_of_birth: '',
+          age: '',
+          marital_status: '',
           citizen: 'Nigerian',
           country: 'NG',
           state: '',
           lga: '',
+          address: '',
           unit: '',
           club: '',
-          age: '',
-          gender: '',
-          date_of_birth: '',
-          place_of_birth: '',
-          home_address: '',
-          office_address: '',
-          profession: '',
-          religion: '',
           churchName: '',
+          profession: '',
           occupation: '',
-          marital_status: '',
-          address: '',
+          religion: '',
           validIdType: '',
           validIdFile: null,
           passport_photo: null,
           signature: null,
           nextOfKinName: '',
           nextOfKinNumber: '',
-          referralSource: '',
-          referralName: '',
           referredBy: 'no',
+          referralName: '',
         });
         setDateOfBirth(null);
         setPhotoPreview(null);
@@ -1084,130 +902,121 @@ const RequestForm: React.FC = () => {
         setTouchedFields({});
         setAvailableClubs([]);
         setAvailableChurches([]);
+        setAgeValidationMessage('');
         
-        // Reset file inputs
-        [passport_photoRef, validIdFileRef, signatureRef].forEach(ref => {
-          if (ref.current) ref.current.value = '';
-        });
+        // Clear file inputs
+        if (passportPhotoRef.current) passportPhotoRef.current.value = '';
+        if (validIdFileRef.current) validIdFileRef.current.value = '';
+        if (signatureRef.current) signatureRef.current.value = '';
       }, 3000);
-
-    } catch (error: any) {
-      console.error('Application submission error:', error);
       
-      if (error.response?.data) {
-        const serverErrors = error.response.data;
-        const fieldErrorMessages: Record<string, string> = {};
-        
-        const fieldMapping: Record<string, string> = {
-          'first_name': 'first_name',
-          'last_name': 'last_name',
-          'phone_number': 'phone_number',
-          'valid_id_type': 'validIdType',
-          'valid_id_file': 'validIdFile',
-          'passport_photo': 'passport_photo',
-          'date_of_birth': 'date_of_birth',
-        };
-        
-        Object.keys(serverErrors).forEach(field => {
-          const frontendField = fieldMapping[field] || field;
-          fieldErrorMessages[frontendField] = Array.isArray(serverErrors[field]) 
-            ? serverErrors[field][0] 
-            : String(serverErrors[field]);
-        });
-        
-        setFieldErrors(fieldErrorMessages);
-        
-        const errorFieldNames = Object.keys(fieldErrorMessages);
-        const errorMessage = errorFieldNames.length === 1 
-          ? `Please correct the error in: ${errorFieldNames[0]}`
-          : `Please correct the errors in: ${errorFieldNames.join(', ')}`;
-        
-        displayNotification(errorMessage, 'error');
-      } else {
-        displayNotification('Application submission failed. Please try again.', 'error');
-      }
+    } catch (error: any) {
+      console.error('Submission error:', error);
+      displayNotification(
+        error.response?.data?.message || 'Submission failed. Please try again.',
+        'error'
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // File upload component to reduce duplication
+  // File upload component
   const FileUploadField = ({
     field,
     label,
-    accept = "image/jpeg,image/jpg,image/png",
     required = false,
     preview,
+    accept = "image/jpeg,image/jpg,image/png,application/pdf",
     dragActiveKey,
-    fileRef
+    fileRef,
   }: {
-    field: 'passport_photo' | 'validIdFile' | 'signature';
+    field: 'validIdFile' | 'passport_photo' | 'signature';
     label: string;
-    accept?: string;
     required?: boolean;
     preview: string | null;
+    accept?: string;
     dragActiveKey: keyof typeof dragActive;
     fileRef: React.RefObject<HTMLInputElement>;
   }) => (
-    <div className="mb-4">
-      <label htmlFor={field} className="block text-gray-700 text-sm font-bold mb-2">
+    <div className="mb-6">
+      <label className="block text-gray-700 text-sm font-bold mb-2">
         {label} {required && '*'}
       </label>
-      <div 
-        className={`border-2 border-dashed rounded-lg p-6 text-center ${
-          dragActive[dragActiveKey] ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
-        } ${fieldErrors[field] ? 'border-red-500' : ''}`}
-        onDragEnter={(e) => handleDrag(e, field)}
-        onDragLeave={(e) => handleDrag(e, field)}
-        onDragOver={(e) => handleDrag(e, field)}
-        onDrop={(e) => handleDrop(e, field)}
+      <div
+        className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+          dragActive[dragActiveKey] 
+            ? 'border-blue-500 bg-blue-50' 
+            : fieldErrors[field] 
+              ? 'border-red-500 bg-red-50' 
+              : 'border-gray-300 hover:border-gray-400'
+        }`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragActive(prev => ({ ...prev, [dragActiveKey]: true }));
+        }}
+        onDragLeave={() => setDragActive(prev => ({ ...prev, [dragActiveKey]: false }))}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragActive(prev => ({ ...prev, [dragActiveKey]: false }));
+          const file = e.dataTransfer.files[0];
+          if (file) handleFileChange(field, file);
+        }}
       >
         <input
           type="file"
-          id={field}
-          name={field}
-          accept={accept}
-          onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0], field)}
-          className="hidden"
           ref={fileRef}
+          accept={accept}
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFileChange(field, file);
+          }}
         />
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center justify-center">
           <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 0115.9 6M9 19h6m-3-3v6m3-6v6m-6-6v6" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 0115.9 6L16 6a5 5 0 011.9 9.903M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
-          <p className="text-gray-600 mb-2">
-            {formData[field] ? formData[field]?.name : `Drag and drop your ${label.toLowerCase()} here or`}
-          </p>
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded mb-2 transition-colors"
           >
             Choose File
           </button>
+          <p className="text-sm text-gray-600">
+            {formData[field] 
+              ? `Selected: ${(formData[field] as File).name}` 
+              : 'Drag & drop or click to browse'}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Accepted: JPEG, JPG, PNG, PDF (Max 10MB)
+          </p>
         </div>
-        <p className="text-xs text-gray-500 mt-2">
-          Upload a clear image (JPEG, JPG, PNG, max 10MB)
-        </p>
-        {fieldErrors[field] && <p className="text-red-500 text-sm mt-2">{fieldErrors[field]}</p>}
       </div>
-
+      {fieldErrors[field] && (
+        <p className="text-red-500 text-sm mt-1">{fieldErrors[field]}</p>
+      )}
       {preview && (
-        <div className="mt-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2">Preview:</label>
-          <div className="flex justify-center">
-            <img 
-              src={preview} 
-              alt={`${label} preview`} 
-              className={`${
-                field === 'passport_photo' ? 'w-32 h-32' : 'w-48 h-32'
-              } object-cover border-2 border-gray-300 rounded`} 
-            />
-          </div>
+        <div className="mt-3">
+          <p className="text-sm text-gray-600 mb-1">Preview:</p>
+          <img src={preview} alt={`${label} preview`} className="max-h-40 mx-auto rounded border" />
         </div>
       )}
     </div>
   );
+
+  // Get input border color based on validation
+  const getInputBorderColor = (fieldName: string, value: any) => {
+    if (touchedFields[fieldName]) {
+      if (fieldErrors[fieldName]) {
+        return 'border-red-500 focus:border-red-500 focus:ring-red-500';
+      } else if (value && value.toString().trim() !== '') {
+        return 'border-green-500 focus:border-green-500 focus:ring-green-500';
+      }
+    }
+    return 'border-gray-300 focus:border-blue-500 focus:ring-blue-500';
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 py-10 px-2 flex flex-col items-center justify-center relative overflow-x-hidden">
@@ -1246,7 +1055,7 @@ const RequestForm: React.FC = () => {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.4 }}
-            className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center border-t-8 border-green-400 animate-fade-in"
+            className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center border-t-8 border-green-400"
           >
             <svg className="w-16 h-16 text-green-500 mb-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -1257,8 +1066,8 @@ const RequestForm: React.FC = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto bg-white/80 backdrop-blur-md shadow-2xl rounded-2xl px-8 pt-8 pb-10 mb-8 border border-gray-100 animate-fade-in-up">
-        <h2 className="text-2xl font-bold mb-6 text-center text-gradient">Submit Application</h2>
+      <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto bg-white/80 backdrop-blur-md shadow-2xl rounded-2xl px-8 pt-8 pb-10 mb-8 border border-gray-100">
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Submit Application</h2>
 
         {Object.keys(fieldErrors).length > 0 && (
           <motion.div 
@@ -1282,12 +1091,12 @@ const RequestForm: React.FC = () => {
           </motion.div>
         )}
 
-        {/* Section Divider */}
+        {/* Section Divider: Personal Information */}
         <div className="mb-8">
-          <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b-2 border-gradient pb-2">Personal Information</h3>
+          <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b-2 border-gray-200 pb-2">Personal Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormInput
-              label="First Name"
+              label="First Name *"
               name="first_name"
               type="text"
               placeholder="Enter your first name"
@@ -1299,7 +1108,7 @@ const RequestForm: React.FC = () => {
             />
 
             <FormInput
-              label="Last Name"
+              label="Last Name *"
               name="last_name"
               type="text"
               placeholder="Enter your last name"
@@ -1322,7 +1131,7 @@ const RequestForm: React.FC = () => {
             />
 
             <FormInput
-              label="Phone Number"
+              label="Phone Number *"
               name="phone_number"
               type="tel"
               placeholder="Enter your phone number"
@@ -1430,10 +1239,10 @@ const RequestForm: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             {formData.citizen === 'Foreigner' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Country <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
                 <CreatableSelect
                   options={countries}
                   value={formData.country ? countries.find(option => option.value === formData.country) || { value: formData.country, label: formData.country } : null}
@@ -1481,7 +1290,6 @@ const RequestForm: React.FC = () => {
                 value={formData.state}
                 onChange={handleInputChange}
                 error={fieldErrors.state}
-                required
                 className={getInputBorderColor('state', formData.state)}
               />
             )}
@@ -1546,179 +1354,12 @@ const RequestForm: React.FC = () => {
               error={fieldErrors.occupation}
               className={getInputBorderColor('occupation', formData.occupation)}
             />
-
-            <FormSelect
-              label="Unit"
-              name="unit"
-              options={availableUnits}
-              value={formData.unit}
-              onChange={handleInputChange}
-              error={fieldErrors.unit}
-              required
-              className={getInputBorderColor('unit', formData.unit)}
-            />
-
-            {availableClubs.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {formData?.unit?.toLowerCase().includes('council of church') ? <>Church</> : <>Club</>}
-                </label>
-
-                <Select
-                  options={availableClubs}
-                  value={availableClubs.find(option => option.value === formData.club) || null}
-                  onChange={(selectedOption) => {
-                    setTouchedFields(prev => ({ ...prev, club: true }));
-                    const newClub = selectedOption ? selectedOption.value : '';
-                    setFormData({ ...formData, club: newClub, churchName: '' });
-                    
-                    const isCouncilOfChurch = newClub.toLowerCase().includes('council of church');
-                    
-                    if (isCouncilOfChurch && formData.unit) {
-                      const selectedUnit = units.find(unit => unit.value === formData.unit);
-                      if (selectedUnit && 'churchDropDown' in selectedUnit && selectedUnit.churchDropDown && formData.age) {
-                        const calculatedAge = parseInt(formData.age);
-                        const filteredChurches = getAvailableChurches(calculatedAge, selectedUnit);
-                        setAvailableChurches(filteredChurches);
-                      } else if (selectedUnit && 'churchDropDown' in selectedUnit && selectedUnit.churchDropDown && Array.isArray(selectedUnit.churchDropDown)) {
-                        const allChurches = selectedUnit.churchDropDown.map((church: any) => {
-                          const key = Object.keys(church)[0];
-                          return { value: church[key], label: church[key] };
-                        });
-                        setAvailableChurches(allChurches);
-                      }
-                    } else {
-                      setAvailableChurches([]);
-                    }
-                  }}
-                  placeholder="Select"
-                  isSearchable
-                  noOptionsMessage={() => "No club found"}
-                  className={getInputBorderColor('club', formData.club)}
-                />
-                {fieldErrors.club && <p className="mt-1 text-sm text-red-600">{fieldErrors.club}</p>}
-              </div>
-            )}
-
-            {/* Church Name Dropdown - Only show when Council Of Church is selected */}
-            {availableChurches.length > 0 && (
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Church
-                </label>
-                <Select
-                  options={availableChurches}
-                  value={availableChurches.find(option => option.value === formData.churchName) || null}
-                  onChange={(selectedOption) => {
-                    setTouchedFields(prev => ({ ...prev, churchName: true }));
-                    setFormData({ ...formData, churchName: selectedOption ? selectedOption.value : '' });
-                  }}
-                  placeholder="Select your Church"
-                  isSearchable
-                  noOptionsMessage={() => "No church found"}
-                  className={getInputBorderColor('churchName', formData.churchName)}
-                />
-                {fieldErrors.churchName && <p className="mt-1 text-sm text-red-600">{fieldErrors.churchName}</p>}
-              </div>
-            )}
-
-            {!formData.date_of_birth && (
-              <p className="text-sm text-yellow-600 mb-2 col-span-2">
-                Please enter your date of birth first to see available clubs and churches
-              </p>
-            )}
-
-            {/* Updated error message for no clubs available */}
-            {formData.age && formData.unit && availableClubs.length === 0 && (
-              <div className="text-sm text-red-600 mb-2 col-span-2 p-3 bg-red-50 rounded border border-red-200">
-                {(() => {
-                  const unitName = formData.unit;
-                  const unitLabel = availableUnits.find(u => u.value === unitName)?.label || unitName;
-                  const age = parseInt(formData.age);
-                  
-                  if (unitLabel.toLowerCase().includes('youth')) {
-                    if (age >= 31) {
-                      return (
-                        <>
-                          <p className="font-semibold">Age {age} cannot join Youth Council</p>
-                          <p>Youth Council is only for ages 1-30:</p>
-                          <ul className="list-disc list-inside mt-1">
-                            <li>Ages 1-23: Hi-Y clubs only</li>
-                            <li>Ages 24-30: Y-Elite clubs only</li>
-                          </ul>
-                          <p className="mt-2">Please select Y's Men, Central Club, or Council Of Church instead.</p>
-                        </>
-                      );
-                    } else {
-                      return (
-                        <>
-                          <p className="font-semibold">No suitable clubs available for your age</p>
-                          <p>For Youth Council:</p>
-                          <ul className="list-disc list-inside mt-1">
-                            <li>Ages 1-23: Please select a Hi-Y club</li>
-                            <li>Ages 24-30: Please select a Y-Elite club</li>
-                          </ul>
-                          <p className="mt-2">Contact administration if you cannot find suitable clubs.</p>
-                        </>
-                      );
-                    }
-                  } else if (unitLabel.toLowerCase().includes("y's men") || unitLabel.toLowerCase().includes('central')) {
-                    return (
-                      <>
-                        <p className="font-semibold">{unitLabel} not available for age {age}</p>
-                        <p>Minimum age for {unitLabel} is 31.</p>
-                        <p className="mt-2">Please select a different unit or contact administration.</p>
-                      </>
-                    );
-                  } else {
-                    return (
-                      <>
-                        <p className="font-semibold">No clubs available for your age group in {unitLabel}</p>
-                        <p>Please select a different unit or contact administration.</p>
-                      </>
-                    );
-                  }
-                })()}
-              </div>
-            )}
-
-            {/* Helpful info section */}
-            {formData.age && formData.unit && (
-              <div className="text-sm text-blue-600 mb-2 col-span-2 p-3 bg-blue-50 rounded border border-blue-200">
-                <p className="font-semibold">Age Guidance for {availableUnits.find(u => u.value === formData.unit)?.label || formData.unit}:</p>
-                {(() => {
-                  const age = parseInt(formData.age);
-                  const unitLabel = availableUnits.find(u => u.value === formData.unit)?.label || formData.unit;
-                  const isYouthCouncil = unitLabel.toLowerCase().includes('youth');
-                  const isCouncilOfChurch = unitLabel.toLowerCase().includes('council') && unitLabel.toLowerCase().includes('church');
-                  const isYsMen = unitLabel.toLowerCase().includes("y's men");
-                  const isCentralClub = unitLabel.toLowerCase().includes('central');
-                  
-                  if (isYouthCouncil) {
-                    if (age >= 1 && age <= 23) {
-                      return <p>✓ At age {age}, you can join: <strong>Hi-Y clubs only</strong></p>;
-                    } else if (age >= 24 && age <= 30) {
-                      return <p>✓ At age {age}, you can join: <strong>Y-Elite clubs only</strong></p>;
-                    } else {
-                      return <p>✗ At age {age}, you <strong>cannot</strong> join Youth Council. Please select Y's Men, Central Club, or Council Of Church.</p>;
-                    }
-                  } else if (isYsMen || isCentralClub || isCouncilOfChurch) {
-                    if (age >= 31) {
-                      return <p>✓ At age {age}, you can join {unitLabel}</p>;
-                    } else {
-                      return <p>✗ At age {age}, you <strong>cannot</strong> join {unitLabel}. Minimum age is 31.</p>;
-                    }
-                  } else {
-                    return <p>✓ At age {age}, you can join {unitLabel}</p>;
-                  }
-                })()}
-              </div>
-            )}
           </div>
 
-          <div className="mb-4">
+          {/* Address */}
+          <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Address <span className="text-red-500">*</span>
+              Address *
             </label>
             <textarea
               name="address"
@@ -1727,69 +1368,204 @@ const RequestForm: React.FC = () => {
               onBlur={() => setTouchedFields(prev => ({ ...prev, address: true }))}
               placeholder="Enter your full residential address"
               rows={3}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${getInputBorderColor('address', formData.address)}`}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-all ${getInputBorderColor('address', formData.address)}`}
               required
             />
             {fieldErrors.address && (
               <p className="mt-1 text-sm text-red-600">{fieldErrors.address}</p>
             )}
           </div>
+        </div>
 
-          <FormInput
-            label="Next of Kin Name"
-            name="nextOfKinName"
-            type="text"
-            placeholder="Next Of Kin's Name"
-            value={formData.nextOfKinName}
-            onChange={handleInputChange}
-            error={fieldErrors.nextOfKinName}
-            className={getInputBorderColor('nextOfKinName', formData.nextOfKinName)}
-          />
-
-          <FormInput
-            label="Next of Kin Phone No"
-            name="nextOfKinNumber"
-            type="text"
-            placeholder="Next of kin's Phone No"
-            value={formData.nextOfKinNumber}
-            onChange={handleInputChange}
-            error={fieldErrors.nextOfKinNumber}
-            className={getInputBorderColor('nextOfKinNumber', formData.nextOfKinNumber)}
-          />
-
-          <FormSelect
-            label="Were you referred by someone?"
-            name="referredBy"
-            options={[
-              { value: 'yes', label: 'Yes' },
-              { value: 'no', label: 'No' },
-            ]}
-            value={formData.referredBy}
-            onChange={handleInputChange}
-            error={fieldErrors.referredBy}
-            className={getInputBorderColor('referredBy', formData.referredBy)}
-          />
-
-          {formData.referredBy === 'yes' && (
-            <FormInput
-              label="Referral Name"
-              name="referralName"
-              type="text"
-              placeholder="Enter your referral name"
-              value={formData.referralName}
-              onChange={handleInputChange}
-              error={fieldErrors.referralName}
-              className={getInputBorderColor('referralName', formData.referralName)}
+        {/* Section Divider: YMCA Unit Selection */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b-2 border-gray-200 pb-2">YMCA Unit Selection</h3>
+          
+          {/* Unit Selection */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Unit *
+            </label>
+            <Select
+              options={units}
+              value={units.find(u => u.value === formData.unit)}
+              onChange={(option) => handleSelectChange('unit', option?.value)}
+              placeholder="Select a unit"
+              className={getInputBorderColor('unit', formData.unit)}
             />
+            {fieldErrors.unit && (
+              <p className="text-red-500 text-sm mt-1">{fieldErrors.unit}</p>
+            )}
+          </div>
+
+          {/* Age Validation Message */}
+          {ageValidationMessage && (
+            <div className={`mb-4 p-3 rounded-md ${ageValidationMessage.includes('❌') ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+              <p className={`text-sm ${ageValidationMessage.includes('❌') ? 'text-red-700' : 'text-green-700'}`}>
+                {ageValidationMessage}
+              </p>
+            </div>
+          )}
+
+          {/* Club Selection - only show when clubs are available */}
+          {availableClubs.length > 0 && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Club *
+              </label>
+              <Select
+                options={availableClubs}
+                value={availableClubs.find(c => c.value === formData.club)}
+                onChange={(option) => handleSelectChange('club', option?.value)}
+                placeholder="Select a club"
+                className={getInputBorderColor('club', formData.club)}
+              />
+              {fieldErrors.club && (
+                <p className="text-red-500 text-sm mt-1">{fieldErrors.club}</p>
+              )}
+              
+              {/* Club Info Message */}
+              {formData.age && formData.unit && formData.unit.includes('Youth Council') && (
+                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+                  {(() => {
+                    const ageNum = parseInt(formData.age);
+                    if (ageNum >= 1 && ageNum <= 23) {
+                      return 'For ages 1-23: Please select a Hi-Y club';
+                    } else if (ageNum >= 24 && ageNum <= 30) {
+                      return 'For ages 24-30: Please select a Y-Elite club';
+                    }
+                    return '';
+                  })()}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Church Selection - only for Council of Church */}
+          {formData.unit.toLowerCase().includes('council of church') && availableChurches.length > 0 && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Church *
+              </label>
+              <Select
+                options={availableChurches}
+                value={availableChurches.find(c => c.value === formData.churchName)}
+                onChange={(option) => handleSelectChange('churchName', option?.value)}
+                placeholder="Select your church"
+                className={getInputBorderColor('churchName', formData.churchName)}
+              />
+              {fieldErrors.churchName && (
+                <p className="text-red-500 text-sm mt-1">{fieldErrors.churchName}</p>
+              )}
+            </div>
+          )}
+
+          {/* No Clubs Available Message */}
+          {formData.age && formData.unit && availableClubs.length === 0 && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+              <p className="text-sm text-yellow-700">
+                {(() => {
+                  const ageNum = parseInt(formData.age);
+                  const unit = units.find(u => u.value === formData.unit);
+                  
+                  if (unit?.label.includes('Youth Council')) {
+                    if (ageNum >= 31) {
+                      return 'Youth Council is only for ages 1-30. Please select a different unit.';
+                    } else {
+                      return 'No clubs available for your age group. Please contact administration.';
+                    }
+                  } else if (unit && (unit.label.includes("Y's Men") || unit.label.includes('Central Club') || unit.label.includes('Council of Church'))) {
+                    if (ageNum < 31) {
+                      return 'This unit requires age 31 or older. Please select Youth Council or contact administration.';
+                    }
+                  }
+                  return 'No clubs available. Please contact administration.';
+                })()}
+              </p>
+            </div>
+          )}
+
+          {/* Age Guidance Info */}
+          {formData.age && (
+            <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-md">
+              <h4 className="font-semibold text-gray-800 mb-2">Age Guidance:</h4>
+              <ul className="text-sm text-gray-700 space-y-1">
+                <li>• <strong>Youth Council (1-30 years):</strong></li>
+                <li className="ml-4">- Ages 1-23: Hi-Y clubs only</li>
+                <li className="ml-4">- Ages 24-30: Y-Elite clubs only</li>
+                <li>• <strong>Y's Men:</strong> Age 31+ only</li>
+                <li>• <strong>Central Club:</strong> Age 31+ only</li>
+                <li>• <strong>Council of Church:</strong> Age 31+ only</li>
+              </ul>
+            </div>
           )}
         </div>
 
-        {/* Identification Section */}
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b pb-2">Identification</h3>
+        {/* Section Divider: Next of Kin & Referral */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b-2 border-gray-200 pb-2">Next of Kin & Referral</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormInput
+              label="Next of Kin Name"
+              name="nextOfKinName"
+              type="text"
+              placeholder="Next of Kin's Name"
+              value={formData.nextOfKinName}
+              onChange={handleInputChange}
+              error={fieldErrors.nextOfKinName}
+              className={getInputBorderColor('nextOfKinName', formData.nextOfKinName)}
+            />
+
+            <FormInput
+              label="Next of Kin Phone No"
+              name="nextOfKinNumber"
+              type="text"
+              placeholder="Next of Kin's Phone Number"
+              value={formData.nextOfKinNumber}
+              onChange={handleInputChange}
+              error={fieldErrors.nextOfKinNumber}
+              className={getInputBorderColor('nextOfKinNumber', formData.nextOfKinNumber)}
+            />
+
+            <div className="md:col-span-2">
+              <FormSelect
+                label="Were you referred by someone?"
+                name="referredBy"
+                options={[
+                  { value: 'yes', label: 'Yes' },
+                  { value: 'no', label: 'No' },
+                ]}
+                value={formData.referredBy}
+                onChange={handleInputChange}
+                error={fieldErrors.referredBy}
+                className={getInputBorderColor('referredBy', formData.referredBy)}
+              />
+
+              {formData.referredBy === 'yes' && (
+                <div className="mt-4">
+                  <FormInput
+                    label="Referral Name"
+                    name="referralName"
+                    type="text"
+                    placeholder="Enter your referral name"
+                    value={formData.referralName}
+                    onChange={handleInputChange}
+                    error={fieldErrors.referralName}
+                    className={getInputBorderColor('referralName', formData.referralName)}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Section Divider: Identification */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b-2 border-gray-200 pb-2">Identification</h3>
           
           <FormSelect
-            label="Valid ID Type"
+            label="Valid ID Type *"
             name="validIdType"
             options={validIdOptions}
             value={formData.validIdType}
@@ -1801,7 +1577,7 @@ const RequestForm: React.FC = () => {
 
           <FileUploadField
             field="validIdFile"
-            label="ID Document"
+            label="ID Document *"
             required={true}
             preview={idPreview}
             dragActiveKey="validIdFile"
@@ -1809,23 +1585,23 @@ const RequestForm: React.FC = () => {
           />
         </div>
 
-        {/* Photo Upload Section */}
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b pb-2">Photo Upload</h3>
+        {/* Section Divider: Photo Upload */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b-2 border-gray-200 pb-2">Photo Upload</h3>
           
           <FileUploadField
             field="passport_photo"
-            label="Passport Photo"
+            label="Passport Photo *"
             required={true}
             preview={photoPreview}
             dragActiveKey="passport_photo"
-            fileRef={passport_photoRef}
+            fileRef={passportPhotoRef}
           />
         </div>
 
-        {/* Signature Upload Section */}
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b pb-2">Signature Upload</h3>
+        {/* Section Divider: Signature Upload */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b-2 border-gray-200 pb-2">Signature Upload</h3>
           
           <FileUploadField
             field="signature"
@@ -1842,34 +1618,54 @@ const RequestForm: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`w-full bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transform transition-all duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02]'}`}
           >
-            {loading ? 'Submitting Application...' : 'Submit Application'}
+            {loading ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin h-5 w-5 mr-3 text-white" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Submitting Application...
+              </span>
+            ) : (
+              'Submit Application'
+            )}
           </button>
         </div>
 
         {/* Information Note */}
-        <div className="bg-blue-50 border border-blue-200 rounded p-4">
-          <h4 className="font-semibold text-blue-800 mb-2">Important Notes:</h4>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="font-semibold text-blue-800 mb-2 flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+            Important Notes:
+          </h4>
           <ul className="text-sm text-blue-700 space-y-1">
             <li>• Ensure all information provided is accurate and up-to-date</li>
             <li>• Your passport photo should be recent and clearly show your face</li>
             <li>• Valid ID document will be verified as part of the process</li>
             <li>• You will receive a confirmation once your application is processed</li>
-            <li>• Age restrictions: Youth Council (1-30), Y's Men &amp; Central Club &amp; Council of Church (31+)</li>
+            <li>• <strong>STRICT AGE RULES:</strong></li>
+            <li className="ml-4">- Youth Council: Ages 1-30 only (1-23: Hi-Y, 24-30: Y-Elite)</li>
+            <li className="ml-4">- Y's Men, Central Club, Council of Church: Age 31+ only</li>
             <li>• Date format: British format (DD/MM/YYYY)</li>
           </ul>
         </div>
-        <a 
-          className="inline-block mt-4 align-baseline font-bold text-sm text-red-600 hover:text-red-800"
-          href="/login"
-          onClick={(e) => {
-            e.preventDefault();
-            navigate('/login');
-          }}
-        >
-          Already have an account? Login
-        </a>
+        
+        <div className="mt-6 text-center">
+          <a 
+            className="inline-block align-baseline font-bold text-sm text-red-600 hover:text-red-800 transition-colors"
+            href="/login"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate('/login');
+            }}
+          >
+            Already have an account? Login
+          </a>
+        </div>
       </form>
     </div>
   );
