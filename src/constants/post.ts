@@ -17,8 +17,6 @@ export const companyUpdates = [
             id: '1',
             title: '2024 National Conference/Annual General Meeting',
             content: 'The 2024 National Conference and Annual General Meeting was hosted by YMCA Maala Hills at Lafia, Nasarawa State from 22nd-29th September, 2024. The Theme of this Year\'s Conference is "Equipping Young People for Transformational Leadership in Nigeria". Key Highlights of the event was Youth Conference, Adult Conference, Annual Elections, and Keynote Address. Local Y\'s in different States were represented.',
-            category: 'Events',
-            postedBy: 'YMCA National Office',
             postedAt: new Date('2024-09-29T12:00:00'),
             images: [post1, post2, post3], // Multiple images array
           },
@@ -26,8 +24,7 @@ export const companyUpdates = [
             id: '2',
             title: '2024 World Mental Health Day',
             content: 'YMCA of Lagos collaborated with the Council of Church, a unit of the YMCA of Lagos to mark 2024 World Mental Health Day during their Annual Harvest and Thanksgiving Service. Zuriel Olowe, a Mental Health expert spoke on the need to prioritize Self Care for overall well being. She stressed the importance of building healthy relationships, maintaining healthy eating habits. There was also questions and answers sessions. Participants were given a sticker with the message "We need to make Mental Health important as Physical Health".',
-            category: 'Programs',
-            postedBy: 'YMCA of Lagos',
+        
             postedAt: new Date('2024-10-10T14:30:00'),
             images: [post2, post4], // Multiple images array
           },
@@ -35,17 +32,13 @@ export const companyUpdates = [
             id: '3',
             title: '2024 Annual General Meeting - YMCA Lagos',
             content: 'The 2024 Annual General Meeting of the YMCA of Lagos held on Saturday 29th June 2024. The Guest speaker: Professor Olurotimi Coker facilitated the keynote Address on the theme: "The Joy and Benefits of Social Health, Wellbeing, and Networking." The session was quite educative. Members had the opportunity to review and deliberate on the organization\'s activities for the year 2023 while looking forward for more impactful years ahead.',
-            category: 'Events',
-            postedBy: 'YMCA of Lagos',
-            postedAt: new Date('2024-06-29T10:00:00'),
+           postedAt: new Date('2024-06-29T10:00:00'),
             imageUrl: annualGeneralMeeting2, 
           },
           {
             id: '4',
             title: '2024 Children\'s Day Celebrations',
             content: 'Celebrating Children\'s Day in style at YMCA Lagos! 🎉✨ We had an amazing time hosting a special party for the bright young stars from public primary schools across Surulere, Lagos. From games and activities to delicious treats, every moment was filled with joy and laughter. Here\'s to nurturing the future generation and creating unforgettable memories together!',
-            category: 'Community Outreach',
-            postedBy: 'YMCA of Lagos',
             postedAt: new Date('2024-05-27T09:00:00'),
             images: [childrenDay, childrenDay2, thumbnail], 
           },
@@ -53,18 +46,14 @@ export const companyUpdates = [
             id: '5',
             title: '2024 Active Citizens Training',
             content: 'YMCA of Lagos organized comprehensive Active Citizens Training sessions focused on empowering young people with leadership skills and civic engagement. The training covered various aspects of community development, social responsibility, and active participation in democratic processes.',
-            category: 'Training',
-            postedBy: 'YMCA of Lagos',
-            postedAt: new Date('2024-04-15T11:00:00'),
+           postedAt: new Date('2024-04-15T11:00:00'),
             imageUrl: [citizenActivity,citizenActivity2], 
           },
           {
             id: '6',
             title: 'Fire Safety and CPR Training Program',
             content: 'YMCA of Lagos Central Club hosted an informative session on Fire Safety and CPR for Junior Secondary students within Ikoyi-Obalende LGA. Held on March 7th, 2024, the participants were equipped with life-saving skills. It was an opportunity to learn how to prepare for emergencies and handle fire extinguishers properly.',
-            category: 'Training',
-            postedBy: 'YMCA of Lagos Central Club',
-            postedAt: new Date('2024-03-07T13:30:00'),
+             postedAt: new Date('2024-03-07T13:30:00'),
             images: [fireSafety, post2],
             attachments: [
               {
@@ -78,8 +67,6 @@ export const companyUpdates = [
             id: '7',
             title: '2024 YMCA of Lagos Youth Council Annual General Meeting',
             content: 'The 2024 Annual General Meeting (AGM) of the YMCA of Lagos Youth Council held on Saturday 25th of February 2024 was a resounding success! From reflecting on past achievements to setting ambitious goals for the future, the AGM was a true testament to the passion and commitment of our youth community.',
-            category: 'Events',
-            postedBy: 'YMCA Youth Council',
             postedAt: new Date('2024-02-25T14:00:00'),
             imageUrl: annualGeneralMeeting1, // Single image support maintained
           }

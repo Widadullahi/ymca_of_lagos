@@ -349,7 +349,6 @@ const MemberRequestListing: React.FC = () => {
               <option value="Coundil of church">Council of Church</option>
               <option value="Youth Council">Youth Council</option>
               <option value="Y's Men">Y's Men</option>
-              <option value="Men's men">Men's Men</option>
               <option value="Central club">Central Club</option>
             </select>
           </div>
