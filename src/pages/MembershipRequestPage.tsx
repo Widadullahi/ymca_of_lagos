@@ -6,7 +6,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import ymca from '../assets/images/image.png';
 import { nigerianStates } from '../constants/utils';
 import Select from 'react-select';
-import CreatableSelect from 'react-select/creatable';
 import { motion } from 'framer-motion';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -26,6 +25,11 @@ interface UnitOption {
 }
 
 interface ClubOption {
+  value: string;
+  label: string;
+}
+
+interface CountryOption {
   value: string;
   label: string;
 }
@@ -72,7 +76,7 @@ interface FormData {
 }
 
 // Country options
-const countries = [
+const countries: CountryOption[] = [
   { value: 'AD', label: 'Andorra' },
   { value: 'AE', label: 'United Arab Emirates' },
   { value: 'AF', label: 'Afghanistan' },
@@ -329,7 +333,6 @@ const units: UnitOption[] = [
   {
     value: 'Council of Church',
     label: 'Council of Church',
-    // dropDown: [{ 'Council of Church': 'Council of Church' }],
     churchDropDown: [
       { "METHODIST CHURCH CATHEDRAL, PALM AVENUE, LAGOS": "METHODIST CHURCH CATHEDRAL, PALM AVENUE, LAGOS" },
       { "ST. JOHN ANG. CHURCH, IJU ISHAGA, LAGOS.": "ST. JOHN ANG. CHURCH, IJU ISHAGA, LAGOS." },
@@ -434,12 +437,10 @@ const units: UnitOption[] = [
   {
     value: "Y's Men",
     label: "Y's Men",
-    // dropDown: [{ "Y's Men Club": "Y's Men Club" }]
   },
   {
     value: 'Central Club',
     label: 'Central Club',
-    // dropDown: [{ 'Central Club': 'Central Club' }]
   }
 ];
 
@@ -473,18 +474,18 @@ const MobileFriendlySelect = (props: any) => {
       menuPosition={isMobile ? "fixed" : "absolute"}
       classNamePrefix="react-select"
       styles={{
-        menuPortal: base => ({ ...base, zIndex: 9999 }),
-        menu: base => ({ 
+        menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
+        menu: (base: any) => ({ 
           ...base, 
           zIndex: 9999,
           position: isMobile ? 'fixed' : 'absolute',
         }),
-        control: base => ({
+        control: (base: any) => ({
           ...base,
           minHeight: '44px',
           fontSize: '16px'
         }),
-        menuList: base => ({
+        menuList: (base: any) => ({
           ...base,
           maxHeight: isMobile ? '60vh' : '300px'
         })
@@ -565,32 +566,6 @@ const RequestForm: React.FC = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Prevent iOS zoom on input focus
-  useEffect(() => {
-    if (isMobile) {
-      const metaViewport = document.querySelector('meta[name="viewport"]');
-      const originalContent = metaViewport?.getAttribute('content') || '';
-      
-      const preventZoom = () => {
-        if (metaViewport) {
-          metaViewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-        }
-      };
-      
-      const restoreZoom = () => {
-        if (metaViewport) {
-          metaViewport.setAttribute('content', originalContent);
-        }
-      };
-      
-      preventZoom();
-      
-      return () => {
-        restoreZoom();
-      };
-    }
-  }, [isMobile]);
-
   // Calculate age from date of birth
   const calculateAge = useCallback((dateString: string): number => {
     if (!dateString) return 0;
@@ -641,6 +616,10 @@ const RequestForm: React.FC = () => {
     // Y's Men, Central Club, Council of Church require age 31+
     if (unitName.includes("y's men") || unitName.includes('central') || 
         (unitName.includes('council') && unitName.includes('church'))) {
+      // If age is 1-30, return empty array to hide dropdown
+      if (age >= 1 && age <= 30) {
+        return []; // This will hide the dropdown
+      }
       return age >= 31 ? allClubs : [];
     }
     
@@ -687,15 +666,24 @@ const RequestForm: React.FC = () => {
   // Update churches when Council of Church is selected
   useEffect(() => {
     if (formData.unit && formData.unit.toLowerCase().includes('council of church')) {
-      const churches = getAvailableChurches(formData.unit);
-      setAvailableChurches(churches);
+      const ageNum = parseInt(formData.age);
+      // Only show churches if age is 31+
+      if (ageNum >= 31) {
+        const churches = getAvailableChurches(formData.unit);
+        setAvailableChurches(churches);
+      } else {
+        setAvailableChurches([]);
+        if (formData.churchName) {
+          setFormData(prev => ({ ...prev, churchName: '' }));
+        }
+      }
     } else {
       setAvailableChurches([]);
       if (formData.churchName) {
         setFormData(prev => ({ ...prev, churchName: '' }));
       }
     }
-  }, [formData.unit, getAvailableChurches]);
+  }, [formData.unit, formData.age, getAvailableChurches]);
 
   // Update age validation message
   useEffect(() => {
@@ -1004,15 +992,7 @@ const RequestForm: React.FC = () => {
   };
 
   // File upload component
-  const FileUploadField = ({
-    field,
-    label,
-    required = false,
-    preview,
-    accept = "image/jpeg,image/jpg,image/png,application/pdf",
-    dragActiveKey,
-    fileRef,
-  }: {
+  interface FileUploadFieldProps {
     field: 'validIdFile' | 'passport_photo' | 'signature';
     label: string;
     required?: boolean;
@@ -1020,6 +1000,16 @@ const RequestForm: React.FC = () => {
     accept?: string;
     dragActiveKey: keyof typeof dragActive;
     fileRef: React.RefObject<HTMLInputElement>;
+  }
+
+  const FileUploadField: React.FC<FileUploadFieldProps> = ({
+    field,
+    label,
+    required = false,
+    preview,
+    accept = "image/jpeg,image/jpg,image/png,application/pdf",
+    dragActiveKey,
+    fileRef,
   }) => (
     <div className="mb-6">
       <label className="block text-gray-700 text-sm font-bold mb-2">
@@ -1582,8 +1572,10 @@ const RequestForm: React.FC = () => {
             </div>
           )}
 
-          {/* Church Selection - only for Council of Church */}
-          {formData.unit.toLowerCase().includes('council of church') && availableChurches.length > 0 && (
+          {/* Church Selection - only for Council of Church and age 31+ */}
+          {formData.unit.toLowerCase().includes('council of church') && 
+           availableChurches.length > 0 && 
+           parseInt(formData.age) >= 31 && (
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Select Church *

@@ -5,17 +5,50 @@ import { useAuth } from '../context/NewAuthContext';
 import SocialMediaBar from '../components/navigation/SocialMediaBar';
 import MainNavigation from '../components/navigation/MainNavigation';
 
-
 const AboutUsPage: React.FC = () => {
-
-  const { fetchWithAuth} = useAuth();
+  const { fetchWithAuth } = useAuth();
   const [, setIsDonationModalOpen] = useState<boolean>(false);
+  const [, setMembersCount] = useState<number>(0);
+  
+  // Define the facilities array
+  const facilities = [
+    {
+      title: 'Modern Gymnasium',
+      description: 'Fully equipped fitness center with state-of-the-art equipment for cardio, strength training, and group fitness classes.',
+      icon: '💪'
+    },
+    {
+      title: 'Swimming Pool',
+      description: 'Olympic-sized swimming pool with professional instructors for all age groups and skill levels.',
+      icon: '🏊‍♂️'
+    },
+    {
+      title: 'Basketball Courts',
+      description: 'Indoor and outdoor basketball courts with professional flooring and lighting for tournaments and casual play.',
+      icon: '🏀'
+    },
+    {
+      title: 'Conference Hall',
+      description: 'Spacious conference hall equipped with modern audiovisual systems for workshops, seminars, and events.',
+      icon: '🎤'
+    },
+    {
+      title: 'Youth Development Center',
+      description: 'Dedicated space for youth programs, computer labs, and skill acquisition workshops.',
+      icon: '🎓'
+    },
+    {
+      title: 'Hostel Accommodation',
+      description: 'Safe and comfortable hostel facilities for members and visitors with modern amenities.',
+      icon: '🏠'
+    }
+  ];
   
   const openDonationModal = () => {
     setIsDonationModalOpen(true);
     document.body.style.overflow = 'hidden';
   };
-    const [, setMembersCount] = useState<number>(0);
+  
   const fadeInUp = {
     hidden: { opacity: 0, y: 60 },
     visible: { 
@@ -54,27 +87,23 @@ const AboutUsPage: React.FC = () => {
     }
   };
 
-
-
-
   useEffect(() => {
     const fetchMembers = async () => {
       try {
         const response = await fetchWithAuth({
           method: 'GET',
           path: `/total-members-count`,
-          isAthenticated:false
+          isAthenticated: false
         });
         // handle response (e.g., set state)
-        setMembersCount(response?.data?.count || 0)
+        setMembersCount(response?.data?.count || 0);
       } catch (error) {
         console.error('Failed to fetch members:', error);
       }
     };
 
     fetchMembers();
-  }, []); // rerun when `page` changes
-
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -83,6 +112,7 @@ const AboutUsPage: React.FC = () => {
       
       {/* Main Navigation */}
       <MainNavigation openDonationModal={openDonationModal} />
+      
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-red-700 to-red-600 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-black opacity-20"></div>
@@ -137,23 +167,21 @@ const AboutUsPage: React.FC = () => {
                   Empowering young people for the African Renaissance.
                 </p>
               </div>
-
-              
             </motion.div>
 
-             <motion.div variants={slideInRight} className="relative">
-                <div className="flex items-center mb-4">
-                  <div className="bg-blue-600 text-white p-3 rounded-full mr-4">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                    </svg>
-                  </div>
-                  <h2 className="text-3xl font-bold text-gray-900">Our Mission</h2>
+            <motion.div variants={slideInRight} className="relative">
+              <div className="flex items-center mb-4">
+                <div className="bg-blue-600 text-white p-3 rounded-full mr-4">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  </svg>
                 </div>
-                <p className="text-lg text-gray-700 leading-relaxed">
-                  YMCA of Lagos is a community-based organization that seeks to empower young people for service to their immediate communities and the nation without any form of discrimination.
-                </p>
-              </motion.div>
+                <h2 className="text-3xl font-bold text-gray-900">Our Mission</h2>
+              </div>
+              <p className="text-lg text-gray-700 leading-relaxed">
+                YMCA of Lagos is a community-based organization that seeks to empower young people for service to their immediate communities and the nation without any form of discrimination.
+              </p>
+            </motion.div>
           </motion.div>
         </div>
       </section>
@@ -205,7 +233,6 @@ const AboutUsPage: React.FC = () => {
 
       {/* Programmes Section */}
 
-
       {/* Commitment Section */}
       <section className="py-20 bg-red-700 text-white">
         <div className="container mx-auto px-4">
@@ -239,7 +266,7 @@ const AboutUsPage: React.FC = () => {
               <h3 className="text-xl font-bold mb-4">Visit Us</h3>
               <p className="text-gray-400">
                 YMCA Lagos<br />
-                77Awolowo road, Ikoyi, Lagos, Nigeria
+                77 Awolowo Road, Ikoyi, Lagos, Nigeria
               </p>
             </div>
             <div>
@@ -253,7 +280,7 @@ const AboutUsPage: React.FC = () => {
             <div>
               <h3 className="text-xl font-bold mb-4">Contact Us</h3>
               <p className="text-gray-400">
-                Email:  info@ymcaoflagos.org<br />
+                Email: info@ymcaoflagos.org<br />
                 Phone: Hostel 08102977099 Admin: 09026802928 Programmes: 09026114628
               </p>
             </div>
@@ -263,8 +290,6 @@ const AboutUsPage: React.FC = () => {
           </div>
         </div>
       </footer>
-
-
     </div>
   );
 };

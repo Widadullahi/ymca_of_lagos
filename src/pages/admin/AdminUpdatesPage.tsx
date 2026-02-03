@@ -19,7 +19,23 @@ export interface Update {
   created_at: string | number | Date;
   postedAt: Date;
   attachments?: Attachment[];
-  type?: 'latest-news' | 'upcoming-event'; // Added type field
+  type?: 'latest-news' | 'upcoming-event';
+  // Add the missing images property
+  images?: string[];
+}
+
+// Define API response type
+interface ApiResponse {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  type?: 'latest-news' | 'upcoming-event';
+  created_at: string;
+  imageUrl?: string;
+  images?: string[];
+  attachments?: Attachment[];
+  // Add other properties as needed
 }
 
 const AdminUpdatesPage = () => {
@@ -53,10 +69,11 @@ const AdminUpdatesPage = () => {
 
       if (response?.data) {
         // Transform data to include type field
-        const transformedData = response.data.map((item: any) => ({
+        const transformedData: Update[] = response.data.map((item: any) => ({
           ...item,
           type: item.type || (item.category === 'Events' ? 'upcoming-event' : 'latest-news'),
-          postedAt: new Date(item.created_at)
+          postedAt: new Date(item.created_at),
+          images: item.images || [] // Ensure images array exists
         }));
         
         setUpdates(transformedData);
@@ -132,7 +149,7 @@ const AdminUpdatesPage = () => {
 
       console.log('Sending to API:', apiData);
 
-      let response;
+      let response: ApiResponse | undefined;
       if (isEditing && updateToEdit) {
         // Update existing update
         response = await postsApi.updatePost(updateToEdit.id, apiData);
@@ -142,9 +159,10 @@ const AdminUpdatesPage = () => {
           setUpdates(prev => 
             prev.map(update => 
               update.id === updateToEdit.id ? {
-                ...response,
-                type: response.type || 'latest-news',
-                postedAt: new Date(response.created_at)
+                ...response as ApiResponse,
+                type: response?.type || 'latest-news',
+                postedAt: new Date(response?.created_at || new Date()),
+                images: response?.images || []
               } : update
             )
           );
@@ -156,11 +174,13 @@ const AdminUpdatesPage = () => {
         
         if (response) {
           // Add to local state at the beginning
-          setUpdates(prev => [{
+          const newUpdate: Update = {
             ...response,
             type: response.type || 'latest-news',
-            postedAt: new Date(response.created_at)
-          }, ...prev]);
+            postedAt: new Date(response.created_at),
+            images: response.images || []
+          };
+          setUpdates(prev => [newUpdate, ...prev]);
           setTotalCount(prev => prev + 1);
           alert('Update created successfully!');
         }

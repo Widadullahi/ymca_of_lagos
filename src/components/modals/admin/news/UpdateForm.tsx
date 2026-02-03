@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Update } from '../../../../pages/admin/AdminUpdatesPage';
+import { Update, Attachment } from '../../../../pages/admin/AdminUpdatesPage';
 
 interface UpdateFormProps {
   isOpen: boolean;
@@ -7,14 +7,6 @@ interface UpdateFormProps {
   update: Update | null;
   onSave: (update: any) => void;
   onCancel: () => void;
-}
-
-interface Attachment {
-  name: string;
-  url: string;
-  type: string;
-  file?: File;
-  base64?: string;
 }
 
 const UpdateForm: React.FC<UpdateFormProps> = ({ 
@@ -48,15 +40,30 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
       setContent(update.content);
       setType(update.type || 'latest-news');
       
-      // Set image previews
+      // Set image previews - check for both imageUrl and images
+      const imageUrls: string[] = [];
+      
       if (update.imageUrl) {
-        setImagePreviews([update.imageUrl]);
-      }
-      if (update.images && update.images.length > 0) {
-        setImagePreviews(update.images);
+        imageUrls.push(update.imageUrl);
       }
       
-      setAttachments(update.attachments || []);
+      if (update.images && update.images.length > 0) {
+        // Add images that aren't already in the array
+        update.images.forEach(img => {
+          if (img && !imageUrls.includes(img)) {
+            imageUrls.push(img);
+          }
+        });
+      }
+      
+      setImagePreviews(imageUrls);
+      
+      // Set attachments
+      if (update.attachments && update.attachments.length > 0) {
+        setAttachments(update.attachments);
+      } else {
+        setAttachments([]);
+      }
     } else {
       // Reset all fields
       setTitle('');
@@ -149,8 +156,8 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
       postedAt: isEditing && update ? update.postedAt : new Date(),
       imageBase64s: imageBase64s.length > 0 ? imageBase64s : undefined,
       imageUrl: imagePreviews.length > 0 ? imagePreviews[0] : '',
-      images: imagePreviews.length > 0 ? imagePreviews : undefined,
-      attachments: attachments.length > 0 ? attachments : undefined
+      images: imagePreviews,
+      attachments: attachments.length > 0 ? attachments : []
     };
 
     console.log('Update Data:', updateData);

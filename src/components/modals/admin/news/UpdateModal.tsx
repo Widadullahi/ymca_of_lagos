@@ -16,11 +16,31 @@ interface UpdateFormData {
   removeImages?: boolean;
 }
 
+// Define the Update type with all properties
+interface Update {
+  id?: number;
+  title: string;
+  content: string;
+  type: 'latest-news' | 'upcoming-event';
+  postedAt: Date;
+  imageUrl?: string;
+  images?: string[]; // This was missing
+  location?: string;
+  address?: string;
+  registrationLink?: string;
+  maxParticipants?: number | '';
+  isFeatured?: boolean;
+  attachments?: Array<{
+    name: string;
+    url: string;
+  }>;
+}
+
 interface UpdateFormProps {
   isOpen: boolean;
   isEditing: boolean;
   isSubmitting?: boolean;
-  update?: any | null;
+  update?: Update | null;
   onSave: (formData: UpdateFormData) => Promise<void>;
   onCancel: () => void;
 }
@@ -83,10 +103,14 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
       });
       
       // Set image previews
-      const previews = [];
+      const previews: string[] = [];
       if (update.imageUrl) previews.push(update.imageUrl);
       if (update.images && update.images.length > 0) {
-        previews.push(...update.images.filter((img: string) => img && !previews.includes(img)));
+        update.images.forEach((img: string) => {
+          if (img && !previews.includes(img)) {
+            previews.push(img);
+          }
+        });
       }
       setImagePreviews(previews);
       
@@ -119,7 +143,8 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
     
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : 
+              (name === 'maxParticipants' && value !== '' ? parseInt(value) || '' : value)
     }));
   };
 
@@ -127,14 +152,18 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
-      setSelectedImages(prev => [...prev, ...files]);
+      const newImages = [...selectedImages, ...files];
+      setSelectedImages(newImages);
       setRemoveImages(false);
       
-      // Create previews
+      // Create previews for new files only
       files.forEach(file => {
         const reader = new FileReader();
         reader.onload = (e) => {
-          setImagePreviews(prev => [...prev, e.target?.result as string]);
+          const result = e.target?.result;
+          if (result && typeof result === 'string') {
+            setImagePreviews(prev => [...prev, result]);
+          }
         };
         reader.readAsDataURL(file);
       });
@@ -159,6 +188,9 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
       const newImages = [...selectedImages];
       newImages.splice(index, 1);
       setSelectedImages(newImages);
+    } else {
+      // If removing an existing image, mark for removal
+      setRemoveImages(true);
     }
   };
 
@@ -516,7 +548,7 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
                   Existing Attachments
                 </p>
                 <ul className="space-y-2">
-                  {update.attachments.map((attachment: any, index: number) => (
+                  {update.attachments.map((attachment: { name: string; url: string }, index: number) => (
                     <li key={index} className="flex justify-between items-center p-3 bg-white rounded border">
                       <a 
                         href={attachment.url} 
