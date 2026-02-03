@@ -22,6 +22,7 @@ interface Update {
   attachments?: Attachment[];
 }
 
+// Function to truncate content to a maximum number of words
 const truncateContent = (content: string, maxWords: number = 30): string => {
   const words = content.split(' ');
   if (words.length <= maxWords) return content;
@@ -36,7 +37,6 @@ export default function LatestNewsAndUpcomingEvents() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Lock body scroll when modal is open
   useEffect(() => {
     if (isModalOpen) {
       document.body.classList.add('overflow-hidden');
@@ -46,21 +46,19 @@ export default function LatestNewsAndUpcomingEvents() {
     return () => document.body.classList.remove('overflow-hidden');
   }, [isModalOpen]);
 
-  // Fetch updates
   useEffect(() => {
     const fetchUpdates = async () => {
       try {
         const response = await fetchWithAuth({ method: 'GET', path: `/posts` });
         const normalized = (response?.data || []).map((item: any) => {
           const updateType = item.type || (item.category === 'Events' ? 'upcoming-event' : 'latest-news');
-          const category = item.category || getCategoryFromType(updateType);
-
-          // Fix image duplication issue
+          const category = item.category || (updateType === 'upcoming-event' ? 'Events' : 'Announcements');
+          
           const allImages = Array.from(new Set([
             item.image,
             ...(item.images || [])
           ])).filter(Boolean) as string[];
-
+          
           return {
             id: item.id,
             title: item.title,
@@ -82,9 +80,7 @@ export default function LatestNewsAndUpcomingEvents() {
           };
         });
 
-        const sorted = normalized.sort((a: { postedAt: { getTime: () => number; }; }, b: { postedAt: { getTime: () => number; }; }) => 
-          b.postedAt.getTime() - a.postedAt.getTime()
-        );
+        const sorted = normalized.sort((a: { postedAt: { getTime: () => number; }; }, b: { postedAt: { getTime: () => number; }; }) => b.postedAt.getTime() - a.postedAt.getTime());
         setUpdates(sorted);
       } catch (error) {
         console.error('Error fetching updates:', error);
@@ -97,7 +93,6 @@ export default function LatestNewsAndUpcomingEvents() {
     fetchUpdates();
   }, [fetchWithAuth, displayNotification]);
 
-  // Helper functions
   const getAttachmentIcon = (type: string) => {
     switch (type) {
       case 'pdf': return <span className="text-red-500 text-2xl">📄</span>;
@@ -107,8 +102,7 @@ export default function LatestNewsAndUpcomingEvents() {
     }
   };
 
-  const getUpdateImages = (update: Update): string[] => 
-    update.images?.length ? update.images : [];
+  const getUpdateImages = (update: Update): string[] => update.images?.length ? update.images : [];
 
   const openModal = (update: Update) => {
     setSelectedUpdate(update);
@@ -121,79 +115,64 @@ export default function LatestNewsAndUpcomingEvents() {
     setCurrentImageIndex(0);
   };
 
-  const nextImage = (images: string[]) => 
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
-  
-  const prevImage = (images: string[]) => 
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  const nextImage = (images: string[]) => setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  const prevImage = (images: string[]) => setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
 
   const formatDate = (date: Date) => format(date, 'MMMM do, yyyy');
 
-  const newsUpdates = updates.filter(u =>
+  const newsUpdates = updates.filter(u => 
     u.type === 'latest-news' || u.category !== 'Events'
-  ).slice(0, 6); // Increased to 6 to show 2 rows if needed
+  ).slice(0, 5);
 
-  const eventUpdates = updates.filter(u =>
+  const eventUpdates = updates.filter(u => 
     u.type === 'upcoming-event' || u.category === 'Events'
-  ).slice(0, 6); // Increased to 6 to show 2 rows if needed
+  ).slice(0, 5);
 
-  // Animation variants
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: (i: number) => ({
       opacity: 1,
       y: 0,
-      transition: { delay: i * 0.1, duration: 0.5, ease: "easeOut" },
+      transition: { delay: i * 0.12, duration: 0.6, ease: "easeOut" },
     }),
   };
 
   return (
-    <section className="py-16 bg-gradient-to-b from-gray-50 to-white">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Latest News & Upcoming Events
-          </h2>
-          <p className="text-gray-600 text-lg md:text-xl max-w-3xl mx-auto">
-            Stay informed about our latest announcements and mark your calendar for exciting upcoming events
-          </p>
-        </div>
+    <section className="py-16 bg-gray-50">
+      <div className="container mx-auto px-4">
+        <h2 className="text-4xl font-bold text-gray-900 mb-2 text-center">
+          Latest News & Upcoming Events
+        </h2>
+        <p className="text-gray-600 text-lg text-center mb-16 max-w-3xl mx-auto">
+          Stay up to date with what's happening in our community from inspiring stories to exciting upcoming events.
+        </p>
 
-        {/* Latest News Section */}
-        <div className="mb-16">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-            <div>
-              <h3 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center">
-                <span className="w-3 h-8 bg-red-600 mr-3 rounded-full"></span>
-                Latest News
-              </h3>
-              <p className="text-gray-500 mt-2">Recent announcements and updates from our community</p>
-            </div>
+        {/* Featured News - 3 equal cards in a row */}
+        <div className="mb-20">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-2xl font-semibold text-gray-800 pl-4 border-l-4 border-red-500">
+              Latest News
+            </h3>
             {newsUpdates.length > 0 && (
               <a
-                href="/news?category=news"
-                className="inline-flex items-center text-red-600 hover:text-red-800 font-semibold group transition-colors"
+                href="/news"
+                className="text-red-600 hover:text-red-800 font-medium flex items-center gap-2 transition-colors"
               >
-                View All News
-                <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
+                See More News →
               </a>
             )}
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center items-center h-64">
+            <div className="flex justify-center items-center h-96">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
             </div>
           ) : newsUpdates.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-              <div className="text-gray-400 text-6xl mb-4">📰</div>
-              <p className="text-gray-500 text-lg">No news updates available at the moment.</p>
+            <div className="flex justify-center items-center h-96">
+              <p className="text-gray-500 text-lg">No recent news available.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {newsUpdates.slice(0, 3).map((update, index) => {
                 const images = getUpdateImages(update);
                 return (
@@ -203,55 +182,43 @@ export default function LatestNewsAndUpcomingEvents() {
                     initial="hidden"
                     animate="visible"
                     custom={index}
-                    className="group bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 border border-gray-100 flex flex-col h-full"
+                    className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col h-full"
                   >
-                    <div className="relative overflow-hidden">
+                    <div className="relative">
                       {images.length > 0 ? (
                         <img
                           src={images[0]}
                           alt={update.title}
-                          className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500"
+                          className="w-full h-64 object-cover"
                           onError={(e) => {
-                            e.currentTarget.src = 'https://images.unsplash.com/photo-1588681664899-f142ff2dc9b1?auto=format&fit=crop&w=800&q=80';
+                            e.currentTarget.src = 'https://via.placeholder.com/400x256?text=No+Image';
                           }}
                         />
                       ) : (
-                        <div className="w-full h-56 bg-gradient-to-r from-red-50 to-orange-50 flex items-center justify-center">
-                          <span className="text-gray-400 text-5xl">📰</span>
+                        <div className="w-full h-64 bg-gray-100 flex items-center justify-center">
+                          <span className="text-gray-400 text-lg">No image</span>
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <div className="absolute bottom-4 left-4">
-                        <span className="inline-block px-3 py-1 bg-red-600 text-white text-xs font-semibold rounded-full">
-                          News
-                        </span>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute bottom-4 left-4 right-4">
+                        {/* Removed category tag from here */}
+                        <p className="text-white text-sm opacity-90">{formatDate(update.postedAt)}</p>
                       </div>
                     </div>
 
                     <div className="p-6 flex flex-col flex-grow">
-                      <div className="text-sm text-gray-500 mb-2">
-                        {formatDate(update.postedAt)}
-                      </div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-red-600 transition-colors">
-                        {update.title}
-                      </h3>
-                      <p className="text-gray-600 mb-6 line-clamp-3 flex-grow">
-                        {truncateContent(update.content, 25)}
+                      <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2">{update.title}</h3>
+                      {/* FIX: Truncate content in card (max 30 words) */}
+                      <p className="text-gray-600 mb-6 line-clamp-4 flex-grow">
+                        {truncateContent(update.content, 30)}
                       </p>
                       <div className="mt-auto">
-                        <div className="flex items-center text-sm text-gray-500 mb-4">
-                          {/* <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
-                            <span className="text-red-600 font-semibold text-sm">
-                              {update.postedBy[0]?.toUpperCase() || '?'}
-                            </span>
-                          </div> */}
-                          {/* <span>By {update.postedBy}</span> */}
-                        </div>
+                        {/* Removed posted by section from here */}
                         <motion.button
                           onClick={() => openModal(update)}
-                          whileHover={{ scale: 1.02 }}
+                          whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.98 }}
-                          className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white py-3 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg"
+                          className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-medium transition-colors"
                         >
                           Read Full Story
                         </motion.button>
@@ -264,41 +231,33 @@ export default function LatestNewsAndUpcomingEvents() {
           )}
         </div>
 
-        {/* Upcoming Events Section */}
+        {/* Upcoming Events */}
         <div>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-            <div>
-              <h3 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center">
-                <span className="w-3 h-8 bg-green-600 mr-3 rounded-full"></span>
-                Upcoming Events
-              </h3>
-              <p className="text-gray-500 mt-2">Mark your calendar for these exciting events</p>
-            </div>
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-2xl font-semibold text-gray-800 pl-4 border-l-4 border-green-500">
+              Upcoming Events
+            </h3>
             {eventUpdates.length > 0 && (
               <a
                 href="/news"
                 className="text-green-600 hover:text-green-800 font-medium flex items-center gap-2 transition-colors"
               >
-                View All Events
-                <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
+                See All Events →
               </a>
             )}
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center items-center h-64">
+            <div className="flex justify-center items-center h-96">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
             </div>
           ) : eventUpdates.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-              <div className="text-gray-400 text-6xl mb-4">🎉</div>
-              <p className="text-gray-500 text-lg">No upcoming events scheduled. Check back soon!</p>
+            <div className="flex justify-center items-center h-96">
+              <p className="text-gray-500 text-lg">No upcoming events scheduled.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {eventUpdates.slice(0, 3).map((update, index) => {
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {eventUpdates.map((update, index) => {
                 const images = getUpdateImages(update);
                 return (
                   <motion.div
@@ -306,58 +265,37 @@ export default function LatestNewsAndUpcomingEvents() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="group bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 border border-gray-100 flex flex-col h-full cursor-pointer"
+                    className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 group cursor-pointer flex flex-col"
                     onClick={() => openModal(update)}
                   >
-                    <div className="relative overflow-hidden">
+                    <div className="relative">
                       {images.length > 0 ? (
                         <img
                           src={images[0]}
                           alt={update.title}
-                          className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500"
+                          className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-500"
                           onError={(e) => {
-                            e.currentTarget.src = 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80';
+                            e.currentTarget.src = 'https://via.placeholder.com/400x224?text=No+Image';
                           }}
                         />
                       ) : (
-                        <div className="w-full h-56 bg-gradient-to-r from-green-50 to-teal-50 flex items-center justify-center">
-                          <span className="text-gray-400 text-5xl">🎯</span>
+                        <div className="w-full h-56 bg-gray-100 flex items-center justify-center">
+                          <span className="text-gray-400">No image</span>
                         </div>
                       )}
-                      <div className="absolute top-4 right-4">
-                        <span className="inline-block px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-full">
-                          Event
-                        </span>
-                      </div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                      <div className="absolute bottom-4 left-4">
-                        <div className="text-white font-bold">
-                          <div className="text-2xl">{format(update.postedAt, 'dd')}</div>
-                          <div className="text-sm">{format(update.postedAt, 'MMM yyyy')}</div>
-                        </div>
-                      </div>
+                      {/* Removed the event badge from here */}
                     </div>
-
                     <div className="p-6 flex flex-col flex-grow">
-                      <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-green-600 transition-colors">
+                      <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-red-600 transition-colors">
                         {update.title}
                       </h3>
-                      <p className="text-gray-600 mb-6 line-clamp-3 flex-grow">
+                      {/* FIX: Truncate content in card (max 20 words for events) */}
+                      <p className="text-gray-600 mb-6 line-clamp-3 flex-grow text-sm">
                         {truncateContent(update.content, 20)}
                       </p>
-                      <div className="mt-auto flex items-center justify-between">
-                        <div className="flex items-center text-sm text-gray-500">
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          {format(update.postedAt, 'h:mm a')}
-                        </div>
-                        <span className="inline-flex items-center text-green-600 font-semibold group-hover:text-green-800 transition-colors">
-                          View Details
-                          <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </span>
+                      <div className="mt-auto flex items-center justify-between text-sm">
+                        <span className="text-gray-500">{formatDate(update.postedAt)}</span> {/* Replaced postedBy with date */}
+                        <span className="text-red-600 font-medium">View Details →</span>
                       </div>
                     </div>
                   </motion.div>
@@ -368,7 +306,7 @@ export default function LatestNewsAndUpcomingEvents() {
         </div>
       </div>
 
-      {/* Modal - View Full Update */}
+      {/* Modal - Complete version with full content */}
       <AnimatePresence mode="wait">
         {isModalOpen && selectedUpdate && (
           <motion.div
@@ -379,67 +317,46 @@ export default function LatestNewsAndUpcomingEvents() {
             onClick={closeModal}
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
+              initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-xl max-w-2xl w-full max-h-[70vh] overflow-y-auto shadow-2xl"
+              className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
               <div className="sticky top-0 bg-white z-10 border-b border-gray-200 p-6">
                 <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold mb-3 ${
-                      selectedUpdate.type === 'upcoming-event' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {selectedUpdate.type === 'upcoming-event' ? 'Event' : 'News'}
-                    </span>
-                    <h2 className="text-2xl font-bold text-gray-900">{selectedUpdate.title}</h2>
-                    <div className="flex items-center mt-3 text-sm text-gray-500">
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      {formatDate(selectedUpdate.postedAt)}
-                      {selectedUpdate.type === 'upcoming-event' && (
-                        <>
-                          <span className="mx-2">•</span>
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          {format(selectedUpdate.postedAt, 'h:mm a')}
-                        </>
-                      )}
-                    </div>
+                  <div>
+                    {/* Removed category tag from modal header */}
+                    <h2 className="text-2xl font-bold text-gray-900 mt-3">{selectedUpdate.title}</h2>
                   </div>
                   <button
                     onClick={closeModal}
-                    className="ml-4 text-gray-500 hover:text-gray-700 text-2xl leading-none p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    className="text-gray-500 hover:text-gray-700 text-2xl leading-none p-2 hover:bg-gray-100 rounded-full transition-colors"
                     aria-label="Close modal"
                   >
                     &times;
                   </button>
                 </div>
                 <div className="flex items-center mt-4 text-sm text-gray-500">
+                  {/* Removed posted by info from modal */}
+                  <span>{formatDate(selectedUpdate.postedAt)}</span>
                 </div>
               </div>
 
-              {/* Modal Content */}
+              {/* Modal Content - Scrollable */}
               <div className="flex-grow overflow-y-auto">
                 <div className="p-6">
-                  {/* Image Gallery */}
+                  {/* Image Gallery - Carousel */}
                   {selectedUpdate.images && selectedUpdate.images.length > 0 && (
                     <div className="mb-8">
-                      <div className="relative rounded-lg overflow-hidden">
+                      <div className="relative">
                         <img
                           src={selectedUpdate.images[currentImageIndex]}
                           alt={`${selectedUpdate.title} - Image ${currentImageIndex + 1}`}
-                          className="w-full h-80 object-cover"
+                          className="w-full h-96 object-cover rounded-lg"
                           onError={(e) => {
-                            e.currentTarget.src = selectedUpdate.type === 'upcoming-event' 
-                              ? 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80'
-                              : 'https://images.unsplash.com/photo-1588681664899-f142ff2dc9b1?auto=format&fit=crop&w=1200&q=80';
+                            e.currentTarget.src = 'https://via.placeholder.com/800x400?text=Image+Not+Available';
                           }}
                         />
                         
@@ -447,102 +364,88 @@ export default function LatestNewsAndUpcomingEvents() {
                           <>
                             <button
                               onClick={() => prevImage(selectedUpdate.images!)}
-                              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 p-3 rounded-full shadow-lg transition-all hover:scale-110"
+                              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 transition-all"
                               aria-label="Previous image"
                             >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                               </svg>
                             </button>
                             <button
                               onClick={() => nextImage(selectedUpdate.images!)}
-                              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 p-3 rounded-full shadow-lg transition-all hover:scale-110"
+                              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 transition-all"
                               aria-label="Next image"
                             >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                               </svg>
                             </button>
                             
+                            {/* Image Indicators */}
                             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
                               {selectedUpdate.images.map((_, idx) => (
                                 <button
                                   key={idx}
                                   onClick={() => setCurrentImageIndex(idx)}
-                                  className={`w-2 h-2 rounded-full ${idx === currentImageIndex ? 'bg-white' : 'bg-white/50'}`}
+                                  className={`w-3 h-3 rounded-full ${idx === currentImageIndex ? 'bg-white' : 'bg-white bg-opacity-50'}`}
                                   aria-label={`Go to image ${idx + 1}`}
                                 />
                               ))}
                             </div>
+                            
+                            {/* Image Counter */}
+                            <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white text-sm px-3 py-1 rounded-full">
+                              {currentImageIndex + 1} / {selectedUpdate.images.length}
+                            </div>
                           </>
                         )}
                       </div>
+                      
+                      {/* Thumbnails */}
+                      {selectedUpdate.images.length > 1 && (
+                        <div className="flex space-x-2 mt-4 overflow-x-auto pb-2">
+                          {selectedUpdate.images.map((img, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => setCurrentImageIndex(idx)}
+                              className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 ${idx === currentImageIndex ? 'border-red-500' : 'border-transparent'}`}
+                            >
+                              <img
+                                src={img}
+                                alt={`Thumbnail ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.src = 'https://via.placeholder.com/80x80?text=Thumb';
+                                }}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {/* Content */}
+                  {/* Content - Full content in modal */}
                   <div className="mb-8">
-                    <div className="relative">
-                      <img
-                        src={selectedUpdate.images[currentImageIndex]}
-                        alt={`${selectedUpdate.title} - Image ${currentImageIndex + 1}`}
-                        className="w-full h-96 object-cover rounded-lg"
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://via.placeholder.com/800x400?text=Image+Not+Available';
-                        }}
-                      />
-
-                      {selectedUpdate.images.length > 1 && (
-                        <>
-                          <button
-                            onClick={() => prevImage(selectedUpdate.images!)}
-                            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
-                            aria-label="Previous image"
-                          >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => nextImage(selectedUpdate.images!)}
-                            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
-                            aria-label="Next image"
-                          >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </button>
-
-                          {/* Image Indicators */}
-                          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                            {selectedUpdate.images.map((_, idx) => (
-                              <button
-                                key={idx}
-                                onClick={() => setCurrentImageIndex(idx)}
-                                className={`w-2 h-2 rounded-full ${idx === currentImageIndex ? 'bg-white' : 'bg-white bg-opacity-50'}`}
-                                aria-label={`Go to image ${idx + 1}`}
-                              />
-                            ))}
-                          </div>
-
-                          {/* Image Counter */}
-                          <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white text-sm px-3 py-1 rounded-full">
-                            {currentImageIndex + 1} / {selectedUpdate.images.length}
-                          </div>
-                        </>
-                      )}
+                    <div className="prose max-w-none">
+                      <p className="text-gray-700 whitespace-pre-line leading-relaxed">
+                        {selectedUpdate.content}
+                      </p>
                     </div>
+                  </div>
 
-                    {/* Thumbnails */}
-                    {selectedUpdate.images.length > 1 && (
-                      <div className="flex space-x-2 mt-4 overflow-x-auto pb-2">
-                        {selectedUpdate.images.map((img, idx) => (
-                          <button
+                  {/* Attachments */}
+                  {selectedUpdate.attachments && selectedUpdate.attachments.length > 0 && (
+                    <div className="border-t border-gray-200 pt-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Attachments</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {selectedUpdate.attachments.map((attachment, idx) => (
+                          <a
                             key={idx}
                             href={attachment.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all"
+                            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                           >
                             <div className="flex-shrink-0 mr-4">
                               {getAttachmentIcon(attachment.type)}
@@ -564,16 +467,13 @@ export default function LatestNewsAndUpcomingEvents() {
 
               {/* Modal Footer */}
               <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6">
-                <div className="flex justify-between items-center">
+                <div className="flex justify-end">
                   <button
                     onClick={closeModal}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                    className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors"
                   >
                     Close
                   </button>
-                  <div className="text-sm text-gray-500">
-                    Posted {formatDate(selectedUpdate.postedAt)}
-                  </div>
                 </div>
               </div>
             </motion.div>
