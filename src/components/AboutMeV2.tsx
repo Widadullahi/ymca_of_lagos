@@ -379,7 +379,41 @@ const AboutMeV2: React.FC = () => {
       </section>
 
       {/* Core Values Section */}
-      <CoreValue/ >
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <h2 className="text-4xl font-bold text-center mb-12">Core Values</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+            {[
+              {
+                title: "Christian Foundation",
+                description: "Guided by the Paris Basis and Christian principles in all our work",
+                icon: "⛪"
+              },
+              {
+                title: "Youth Empowerment",
+                description: "Developing young leaders for community and national service",
+                icon: "🌟"
+              },
+              {
+                title: "Inclusivity",
+                description: "Serving all without discrimination based on faith, age, or background",
+                icon: "🤝"
+              },
+              {
+                title: "Excellence",
+                description: "Committed to quality in program delivery and leadership",
+                icon: "⭐"
+              }
+            ].map((value, index) => (
+              <div key={index} className="bg-white p-6 rounded-xl shadow-lg text-center hover:shadow-xl transition-shadow">
+                <div className="text-4xl mb-4">{value.icon}</div>
+                <h3 className="text-xl font-bold text-gray-800 mb-3">{value.title}</h3>
+                <p className="text-gray-600">{value.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* YMCA Vision 2030 Section */}
       <section className="py-16 bg-white">
