@@ -19,6 +19,7 @@ export interface Update {
   created_at: string | number | Date;
   postedAt: Date;
   attachments?: Attachment[];
+  type?: 'latest-news' | 'upcoming-event'; // Added type field
 }
 
 const AdminUpdatesPage = () => {
@@ -26,7 +27,7 @@ const AdminUpdatesPage = () => {
   const [updates, setUpdates] = useState<Update[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategory, ] = useState<string>('All');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [totalCount, setTotalCount] = useState(0);
 
@@ -35,9 +36,6 @@ const AdminUpdatesPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [updateToEdit, setUpdateToEdit] = useState<Update | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Categories for filtering
-  const categories = ['All','Latest News', 'Upcoming Events'];
 
   // Initialize API with fetchWithAuth
   const postsApi = createPostsApi(fetchWithAuth);
@@ -53,8 +51,17 @@ const AdminUpdatesPage = () => {
         path: `/posts/?page_size=10&category=${selectedCategory}`,
       });
 
-      setUpdates(response?.data);
-      setTotalCount(0);
+      if (response?.data) {
+        // Transform data to include type field
+        const transformedData = response.data.map((item: any) => ({
+          ...item,
+          type: item.type || (item.category === 'Events' ? 'upcoming-event' : 'latest-news'),
+          postedAt: new Date(item.created_at)
+        }));
+        
+        setUpdates(transformedData);
+        setTotalCount(response.data.length);
+      }
     } catch (err) {
       console.error('Error fetching updates:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch updates');
@@ -84,6 +91,97 @@ const AdminUpdatesPage = () => {
     setIsFormOpen(true);
   };
 
+  // Save update (new or edited)
+  const handleSaveUpdate = async (formData: any) => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+
+      console.log('Form data received in parent:', formData);
+      
+      // Prepare data for API
+      let apiData: any = {
+        title: formData.title,
+        content: formData.content,
+        type: formData.type,
+        // Map type to category for backward compatibility
+        category: formData.type === 'upcoming-event' ? 'Events' : 'Announcements'
+      };
+
+      // Handle image if present
+      if (formData.image) {
+        // If image is base64 string
+        if (typeof formData.image === 'string') {
+          apiData.image = formData.image;
+        }
+      }
+
+      // Handle additional images
+      if (formData.images && Array.isArray(formData.images)) {
+        apiData.images = formData.images;
+      }
+
+      // Handle attachments
+      if (formData.attachments && Array.isArray(formData.attachments)) {
+        apiData.attachments = formData.attachments.map((att: any) => ({
+          file: att.data, // base64 string
+          name: att.name,
+          type: att.type
+        }));
+      }
+
+      console.log('Sending to API:', apiData);
+
+      let response;
+      if (isEditing && updateToEdit) {
+        // Update existing update
+        response = await postsApi.updatePost(updateToEdit.id, apiData);
+        
+        if (response) {
+          // Update local state
+          setUpdates(prev => 
+            prev.map(update => 
+              update.id === updateToEdit.id ? {
+                ...response,
+                type: response.type || 'latest-news',
+                postedAt: new Date(response.created_at)
+              } : update
+            )
+          );
+          alert('Update updated successfully!');
+        }
+      } else {
+        // Create new update
+        response = await postsApi.createPost(apiData);
+        
+        if (response) {
+          // Add to local state at the beginning
+          setUpdates(prev => [{
+            ...response,
+            type: response.type || 'latest-news',
+            postedAt: new Date(response.created_at)
+          }, ...prev]);
+          setTotalCount(prev => prev + 1);
+          alert('Update created successfully!');
+        }
+      }
+      
+      // Close form on success
+      setIsFormOpen(false);
+    } catch (err: any) {
+      console.error('Error saving update:', err);
+      // Show detailed error if available
+      const errorMessage = err?.response?.data?.message || 
+                          err?.message || 
+                          'Failed to save update. Please check the console for details.';
+      setError(errorMessage);
+      
+      // Keep form open so user can fix errors
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Delete update
   const handleDeleteUpdate = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this update?')) {
@@ -94,6 +192,7 @@ const AdminUpdatesPage = () => {
         // Remove from local state immediately for better UX
         setUpdates(prev => prev.filter(update => update.id !== id));
         setTotalCount(prev => prev - 1);
+        alert('Update deleted successfully!');
       } catch (err) {
         console.error('Error deleting update:', err);
         setError(err instanceof Error ? err.message : 'Failed to delete update');
@@ -103,50 +202,22 @@ const AdminUpdatesPage = () => {
     }
   };
 
-  // Save update (new or edited)
-  const handleSaveUpdate = async (formData: any) => {
-    try {
-      setIsSubmitting(true);
-      setError(null);
-
-      // Convert files to Base64
-      let modifiedFormData = { ...formData };
-
-
-      if (isEditing && updateToEdit) {
-        // Update existing update
-        const updatedPost = await postsApi.updatePost(updateToEdit.id, modifiedFormData);
-        
-        // Update local state
-        setUpdates(prev => 
-          prev.map(update => 
-            update.id === updateToEdit.id ? updatedPost : update
-          )
-        );
-      } else {
-        // Create new update
-        const newPost = await postsApi.createPost(modifiedFormData);
-        
-        // Add to local state at the beginning
-        setUpdates(prev => [newPost, ...prev]);
-        setTotalCount(prev => prev + 1);
-      }
-      
-      // setIsFormOpen(false);
-    } catch (err) {
-      console.error('Error saving update:', err);
-      setError(err instanceof Error ? err.message : 'Failed to save update');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   // Handle form cancel
   const handleFormCancel = () => {
     setIsFormOpen(false);
     setIsSubmitting(false);
+    setError(null);
   };
 
+  // Edit update
+  const handleEditUpdate = (update: Update) => {
+    setIsEditing(true);
+    setUpdateToEdit(update);
+    setIsFormOpen(true);
+  };
+
+  // Categories for filtering - simplified
+  const categories = ['All', 'latest-news', 'upcoming-event'];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -215,6 +286,23 @@ const AdminUpdatesPage = () => {
           </div>
         </div>
 
+        {/* Category filter */}
+        <div>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category === 'All' ? 'All Types' : 
+                 category === 'latest-news' ? 'Latest News' : 
+                 'Upcoming Events'}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Refresh button */}
         <div className="flex-shrink-0">
           <button
@@ -253,6 +341,7 @@ const AdminUpdatesPage = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -261,13 +350,22 @@ const AdminUpdatesPage = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {updates.map((update) => (
                 <tr key={update.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      update.type === 'upcoming-event' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {update.type === 'upcoming-event' ? 'Event' : 'News'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
                     <div className="flex items-center">
                       {update.imageUrl && (
                         <div className="flex-shrink-0 h-10 w-10 mr-3">
                           <img 
                             className="h-10 w-10 rounded-md object-cover" 
-                            src={update?.imageUrl} 
+                            src={update.imageUrl} 
                             alt=""
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
@@ -275,16 +373,23 @@ const AdminUpdatesPage = () => {
                           />
                         </div>
                       )}
-                      <div className="truncate max-w-xs" title={update?.title}>
-                        {update?.title}
+                      <div className="truncate max-w-xs" title={update.title}>
+                        {update.title}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDistance(update.created_at, new Date(), { addSuffix: true })}
+                    {formatDistance(new Date(update.created_at), new Date(), { addSuffix: true })}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-3">
+                      <button 
+                        onClick={() => handleEditUpdate(update)}
+                        disabled={isSubmitting}
+                        className="text-blue-600 hover:text-blue-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Edit
+                      </button>
                       <button 
                         onClick={() => handleDeleteUpdate(update.id)}
                         disabled={isSubmitting}
@@ -307,7 +412,6 @@ const AdminUpdatesPage = () => {
           isOpen={isFormOpen}
           isEditing={isEditing}
           update={updateToEdit}
-          categories={categories.filter(c => c !== 'All')}
           onSave={handleSaveUpdate}
           onCancel={handleFormCancel}
         />

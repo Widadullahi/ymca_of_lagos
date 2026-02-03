@@ -4,7 +4,7 @@ import CoreValue from '../components/CoreValue';
 import { useAuth } from '../context/NewAuthContext';
 import SocialMediaBar from '../components/navigation/SocialMediaBar';
 import MainNavigation from '../components/navigation/MainNavigation';
-import CoreValue from '../components/CoreValue.js';
+
 
 const AboutUsPage: React.FC = () => {
 

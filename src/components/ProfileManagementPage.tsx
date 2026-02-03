@@ -527,10 +527,7 @@ const ProfileManagementPage: React.FC = () => {
                         <h4 className="text-sm font-medium text-gray-500">Age</h4>
                         <p className="mt-1">{profile.user_request.age} years</p>
                       </div>
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-500">Place of Birth</h4>
-                        <p className="mt-1">{profile.user_request.place_of_birth || 'Not provided'}</p>
-                      </div>
+                      
                       <div>
                         <h4 className="text-sm font-medium text-gray-500">Marital Status</h4>
                         <p className="mt-1 capitalize">{profile.user_request.marital_status}</p>
