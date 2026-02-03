@@ -546,6 +546,7 @@ const RequestForm: React.FC = () => {
   const [dateOfBirth, setDateOfBirth] = useState<Date | null>(null);
   const [ageValidationMessage, setAgeValidationMessage] = useState<string>('');
   const [isMobile, setIsMobile] = useState(false);
+  const [filteredUnits, setFilteredUnits] = useState<UnitOption[]>(units);
 
   // Refs
   const passportPhotoRef = useRef<HTMLInputElement>(null);
@@ -601,6 +602,23 @@ const RequestForm: React.FC = () => {
     } catch (error) {
       return 0;
     }
+  }, []);
+
+  // Filter units based on age
+  const filterUnitsByAge = useCallback((age: number): UnitOption[] => {
+    if (!age) return units;
+    
+    // If age is 1-30, only show Youth Council
+    if (age >= 1 && age <= 30) {
+      return units.filter(unit => unit.label === 'Youth Council');
+    }
+    
+    // If age is 31+, show all units except Youth Council
+    if (age >= 31) {
+      return units.filter(unit => unit.label !== 'Youth Council');
+    }
+    
+    return units;
   }, []);
 
   // Get available clubs based on age and unit - STRICT RULES
@@ -663,10 +681,22 @@ const RequestForm: React.FC = () => {
     if (formData.date_of_birth) {
       const age = calculateAge(formData.date_of_birth);
       setFormData(prev => ({ ...prev, age: age.toString() }));
+      
+      // Filter units based on age
+      const filtered = filterUnitsByAge(age);
+      setFilteredUnits(filtered);
+      
+      // If current unit is not available for this age, reset it
+      if (formData.unit && !filtered.some(u => u.value === formData.unit)) {
+        setFormData(prev => ({ ...prev, unit: '', club: '', churchName: '' }));
+        setAvailableClubs([]);
+        setAvailableChurches([]);
+      }
     } else {
       setFormData(prev => ({ ...prev, age: '' }));
+      setFilteredUnits(units);
     }
-  }, [formData.date_of_birth, calculateAge]);
+  }, [formData.date_of_birth, calculateAge, filterUnitsByAge]);
 
   // Update clubs when age or unit changes
   useEffect(() => {
@@ -689,13 +719,18 @@ const RequestForm: React.FC = () => {
     if (formData.unit && formData.unit.toLowerCase().includes('council of church')) {
       const churches = getAvailableChurches(formData.unit);
       setAvailableChurches(churches);
+      
+      // Reset church if no longer valid
+      if (formData.churchName && !churches.some(c => c.value === formData.churchName)) {
+        setFormData(prev => ({ ...prev, churchName: '' }));
+      }
     } else {
       setAvailableChurches([]);
       if (formData.churchName) {
         setFormData(prev => ({ ...prev, churchName: '' }));
       }
     }
-  }, [formData.unit, getAvailableChurches]);
+  }, [formData.unit, formData.churchName, getAvailableChurches]);
 
   // Update age validation message
   useEffect(() => {
@@ -712,23 +747,11 @@ const RequestForm: React.FC = () => {
       
       // Youth Council validation
       if (unitName.includes('Youth Council')) {
-        if (ageNum >= 31) {
-          setAgeValidationMessage('❌ Age 31+ cannot join Youth Council. Please select Y\'s Men, Central Club, or Council of Church.');
-        } else if (ageNum >= 1 && ageNum <= 23) {
-          setAgeValidationMessage('✅ Age 1-23 can join Youth Council (Hi-Y clubs only)');
-        } else if (ageNum >= 24 && ageNum <= 30) {
-          setAgeValidationMessage('✅ Age 24-30 can join Youth Council (Y-Elite clubs only)');
-        } else {
-          setAgeValidationMessage('❌ Invalid age for Youth Council');
-        }
+       
       }
       // Adult units validation (31+ only)
       else if (unitName.includes("Y's Men") || unitName.includes('Central Club') || unitName.includes('Council of Church')) {
-        if (ageNum >= 31) {
-          setAgeValidationMessage(`✅ Age ${ageNum} can join ${unitName}`);
-        } else {
-          setAgeValidationMessage(`❌ Age ${ageNum} cannot join ${unitName}. Minimum age is 31.`);
-        }
+        
       }
       else {
         setAgeValidationMessage(`✅ Age ${ageNum} can join ${unitName}`);
@@ -736,7 +759,8 @@ const RequestForm: React.FC = () => {
     } else {
       setAgeValidationMessage('');
     }
-  }, [formData.age, formData.unit]);
+  }, 
+  [formData.age, formData.unit]);
 
   // Handle date change
   const handleDateChange = (date: Date | null) => {
@@ -885,7 +909,7 @@ const RequestForm: React.FC = () => {
           errors.club = '❌ Ages 24-30 can only select Y-Elite clubs in Youth Council';
         }
       }
-      // Adult units rules (31+ only)
+      // Adult units rules (31+ only) - This includes Council of Church
       else if ((unitName.includes("y's men") || unitName.includes('central') || 
                 (unitName.includes('council') && unitName.includes('church'))) && 
                 ageNum < 31) {
@@ -985,6 +1009,7 @@ const RequestForm: React.FC = () => {
         setAvailableClubs([]);
         setAvailableChurches([]);
         setAgeValidationMessage('');
+        setFilteredUnits(units);
         
         // Clear file inputs
         if (passportPhotoRef.current) passportPhotoRef.current.value = '';
@@ -1522,14 +1547,16 @@ const RequestForm: React.FC = () => {
         <div className="mb-8">
           <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b-2 border-gray-200 pb-2">YMCA Unit Selection</h3>
           
+         
+          
           {/* Unit Selection */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Unit *
             </label>
             <MobileFriendlySelect
-              options={units}
-              value={units.find(u => u.value === formData.unit)}
+              options={filteredUnits}
+              value={filteredUnits.find(u => u.value === formData.unit)}
               onChange={(option: any) => handleSelectChange('unit', option?.value)}
               placeholder="Select a unit"
               className={getInputBorderColor('unit', formData.unit)}
@@ -1537,6 +1564,7 @@ const RequestForm: React.FC = () => {
             {fieldErrors.unit && (
               <p className="text-red-500 text-sm mt-1">{fieldErrors.unit}</p>
             )}
+            
           </div>
 
           {/* Age Validation Message */}
@@ -1564,21 +1592,7 @@ const RequestForm: React.FC = () => {
               {fieldErrors.club && (
                 <p className="text-red-500 text-sm mt-1">{fieldErrors.club}</p>
               )}
-              
-              {/* Club Info Message */}
-              {formData.age && formData.unit && formData.unit.includes('Youth Council') && (
-                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
-                  {(() => {
-                    const ageNum = parseInt(formData.age);
-                    if (ageNum >= 1 && ageNum <= 23) {
-                      return 'For ages 1-23: Please select a Hi-Y club';
-                    } else if (ageNum >= 24 && ageNum <= 30) {
-                      return 'For ages 24-30: Please select a Y-Elite club';
-                    }
-                    return '';
-                  })()}
-                </div>
-              )}
+        
             </div>
           )}
 
@@ -1620,26 +1634,25 @@ const RequestForm: React.FC = () => {
                       return 'This unit requires age 31 or older. Please select Youth Council or contact administration.';
                     }
                   }
-                  ;
+                  
                 })()}
               </p>
             </div>
           )}
 
           {/* Age Guidance Info */}
-          {formData.age && (
-            <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-md">
-              <h4 className="font-semibold text-gray-800 mb-2">Age Guidance:</h4>
-              <ul className="text-sm text-gray-700 space-y-1">
-                <li>• <strong>Youth Council (1-30 years):</strong></li>
-                <li className="ml-4">- Ages 1-23: Hi-Y clubs only</li>
-                <li className="ml-4">- Ages 24-30: Y-Elite clubs only</li>
-                <li>• <strong>Y's Men:</strong> Age 31+ only</li>
-                <li>• <strong>Central Club:</strong> Age 31+ only</li>
-                <li>• <strong>Council of Church:</strong> Age 31+ only</li>
-              </ul>
-            </div>
-          )}
+          <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-md">
+            <h4 className="font-semibold text-gray-800 mb-2">Age Guidance:</h4>
+            <ul className="text-sm text-gray-700 space-y-1">
+              <li>• <strong>Youth Council (1-30 years only):</strong></li>
+              <li className="ml-4">- Ages 1-23: Hi-Y clubs only</li>
+              <li className="ml-4">- Ages 24-30: Y-Elite clubs only</li>
+              <li>• <strong>Y's Men:</strong> Age 31+ only</li>
+              <li>• <strong>Central Club:</strong> Age 31+ only</li>
+              <li>• <strong>Council of Church:</strong> Age 31+ only (church selection required)</li>
+            </ul>
+           
+          </div>
         </div>
 
         {/* Section Divider: Next of Kin & Referral */}
@@ -1791,7 +1804,7 @@ const RequestForm: React.FC = () => {
             <li>• <strong>STRICT AGE RULES:</strong></li>
             <li className="ml-4">- Youth Council: Ages 1-30 only (1-23: Hi-Y, 24-30: Y-Elite)</li>
             <li className="ml-4">- Y's Men, Central Club, Council of Church: Age 31+ only</li>
-            <li>• Date format: British format (DD/MM/YYYY)</li>
+            {/* <li>• Date format: British format (DD/MM/YYYY)</li> */}
           </ul>
         </div>
         
