@@ -53,13 +53,14 @@ export default function LatestNewsAndUpcomingEvents() {
         const response = await fetchWithAuth({ method: 'GET', path: `/posts` });
         const normalized = (response?.data || []).map((item: any) => {
           const updateType = item.type || (item.category === 'Events' ? 'upcoming-event' : 'latest-news');
-          const category = item.category || (updateType === 'upcoming-event' ? 'Events' : 'Announcements');
-          
+          const category = item.category || getCategoryFromType(updateType);
+
+          // Fix image duplication issue
           const allImages = Array.from(new Set([
             item.image,
             ...(item.images || [])
           ])).filter(Boolean) as string[];
-          
+
           return {
             id: item.id,
             title: item.title,
@@ -128,12 +129,11 @@ export default function LatestNewsAndUpcomingEvents() {
 
   const formatDate = (date: Date) => format(date, 'MMMM do, yyyy');
 
-  // Filter updates
-  const newsUpdates = updates.filter(u => 
+  const newsUpdates = updates.filter(u =>
     u.type === 'latest-news' || u.category !== 'Events'
   ).slice(0, 6); // Increased to 6 to show 2 rows if needed
 
-  const eventUpdates = updates.filter(u => 
+  const eventUpdates = updates.filter(u =>
     u.type === 'upcoming-event' || u.category === 'Events'
   ).slice(0, 6); // Increased to 6 to show 2 rows if needed
 
@@ -239,6 +239,14 @@ export default function LatestNewsAndUpcomingEvents() {
                         {truncateContent(update.content, 25)}
                       </p>
                       <div className="mt-auto">
+                        <div className="flex items-center text-sm text-gray-500 mb-4">
+                          {/* <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                            <span className="text-red-600 font-semibold text-sm">
+                              {update.postedBy[0]?.toUpperCase() || '?'}
+                            </span>
+                          </div> */}
+                          {/* <span>By {update.postedBy}</span> */}
+                        </div>
                         <motion.button
                           onClick={() => openModal(update)}
                           whileHover={{ scale: 1.02 }}
@@ -268,8 +276,8 @@ export default function LatestNewsAndUpcomingEvents() {
             </div>
             {eventUpdates.length > 0 && (
               <a
-                href="/news?category=events"
-                className="inline-flex items-center text-green-600 hover:text-green-800 font-semibold group transition-colors"
+                href="/news"
+                className="text-green-600 hover:text-green-800 font-medium flex items-center gap-2 transition-colors"
               >
                 View All Events
                 <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -373,8 +381,8 @@ export default function LatestNewsAndUpcomingEvents() {
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-xl max-w-2xl w-full max-h-[70vh] overflow-y-auto shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
@@ -412,6 +420,8 @@ export default function LatestNewsAndUpcomingEvents() {
                   >
                     &times;
                   </button>
+                </div>
+                <div className="flex items-center mt-4 text-sm text-gray-500">
                 </div>
               </div>
 
@@ -472,20 +482,62 @@ export default function LatestNewsAndUpcomingEvents() {
 
                   {/* Content */}
                   <div className="mb-8">
-                    <div className="prose max-w-none">
-                      <div className="text-gray-700 whitespace-pre-line leading-relaxed text-lg">
-                        {selectedUpdate.content}
-                      </div>
-                    </div>
-                  </div>
+                    <div className="relative">
+                      <img
+                        src={selectedUpdate.images[currentImageIndex]}
+                        alt={`${selectedUpdate.title} - Image ${currentImageIndex + 1}`}
+                        className="w-full h-96 object-cover rounded-lg"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://via.placeholder.com/800x400?text=Image+Not+Available';
+                        }}
+                      />
 
-                  {/* Attachments */}
-                  {selectedUpdate.attachments && selectedUpdate.attachments.length > 0 && (
-                    <div className="border-t border-gray-200 pt-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Attachments</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {selectedUpdate.attachments.map((attachment, idx) => (
-                          <a
+                      {selectedUpdate.images.length > 1 && (
+                        <>
+                          <button
+                            onClick={() => prevImage(selectedUpdate.images!)}
+                            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
+                            aria-label="Previous image"
+                          >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => nextImage(selectedUpdate.images!)}
+                            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
+                            aria-label="Next image"
+                          >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+
+                          {/* Image Indicators */}
+                          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                            {selectedUpdate.images.map((_, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => setCurrentImageIndex(idx)}
+                                className={`w-2 h-2 rounded-full ${idx === currentImageIndex ? 'bg-white' : 'bg-white bg-opacity-50'}`}
+                                aria-label={`Go to image ${idx + 1}`}
+                              />
+                            ))}
+                          </div>
+
+                          {/* Image Counter */}
+                          <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white text-sm px-3 py-1 rounded-full">
+                            {currentImageIndex + 1} / {selectedUpdate.images.length}
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Thumbnails */}
+                    {selectedUpdate.images.length > 1 && (
+                      <div className="flex space-x-2 mt-4 overflow-x-auto pb-2">
+                        {selectedUpdate.images.map((img, idx) => (
+                          <button
                             key={idx}
                             href={attachment.url}
                             target="_blank"

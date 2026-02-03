@@ -80,7 +80,7 @@ export default function CoreValue() {
                     variants={fadeInUp}
                     className="text-center mb-16"
                 >
-                    <h2 className="text-4xl font-bold text-gray-900 mb-4">Our Core Values</h2>
+                    <h2 className="text-4xl font-bold text-gray-900 mb-4">Core Values</h2>
                     <p className="text-xl text-gray-600 max-w-2xl mx-auto">
                     At the YMCA of Lagos, our core values serve as the heartbeat of everything we do. 
                     They reflect our commitment to empowering individuals, strengthening communities and 

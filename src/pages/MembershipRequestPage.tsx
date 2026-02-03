@@ -443,55 +443,39 @@ const units: UnitOption[] = [
   }
 ];
 
-const validIdOptions = [
-  { value: 'national_id', label: 'National ID' },
-  { value: 'international_passport', label: 'International Passport' },
-  { value: 'voters_card', label: 'Voters Card' },
-  { value: 'drivers_license', label: "Driver's License" },
-  { value: 'others', label: 'Others' },
-];
-
-// Mobile-friendly Select component wrapper
-const MobileFriendlySelect = (props: any) => {
-  const [isMobile, setIsMobile] = useState(false);
-  
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-  
-  return (
-    <Select
-      {...props}
-      menuPortalTarget={isMobile ? document.body : undefined}
-      menuPosition={isMobile ? "fixed" : "absolute"}
-      classNamePrefix="react-select"
-      styles={{
-        menuPortal: base => ({ ...base, zIndex: 9999 }),
-        menu: base => ({ 
-          ...base, 
-          zIndex: 9999,
-          position: isMobile ? 'fixed' : 'absolute',
-        }),
-        control: base => ({
-          ...base,
-          minHeight: '44px',
-          fontSize: '16px'
-        }),
-        menuList: base => ({
-          ...base,
-          maxHeight: isMobile ? '60vh' : '300px'
-        })
-      }}
-    />
-  );
-};
+interface FormData {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
+  citizen: string;
+  country: string;
+  state: string;
+  lga: string;
+  unit: string;
+  club: string;
+  age: string;
+  gender: string;
+  date_of_birth: string;
+  place_of_birth: string;
+  home_address: string;
+  office_address: string;
+  profession: string;
+  religion: string;
+  churchName: string;
+  occupation: string;
+  marital_status: string;
+  address: string;
+  valid_id_type: string;
+  valid_id_file: File | null;
+  passport_photo: File | null;
+  signature: File | null;
+  nextOfKinName: string;
+  nextOfKinNumber: string;
+  referralSource: string;
+  referralName: string;
+  referredBy: string;
+}
 
 const RequestForm: React.FC = () => {
   const navigate = useNavigate();
@@ -517,9 +501,10 @@ const RequestForm: React.FC = () => {
     churchName: '',
     profession: '',
     occupation: '',
-    religion: '',
-    validIdType: '',
-    validIdFile: null,
+    marital_status: '',
+    address: '',
+    valid_id_type: '',
+    valid_id_file: null,
     passport_photo: null,
     signature: null,
     nextOfKinName: '',
@@ -537,7 +522,7 @@ const RequestForm: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [dragActive, setDragActive] = useState({ 
     passport_photo: false, 
-    validIdFile: false, 
+    valid_id_file: false, 
     signature: false 
   });
   const [availableClubs, setAvailableClubs] = useState<ClubOption[]>([]);
@@ -547,11 +532,18 @@ const RequestForm: React.FC = () => {
   const [ageValidationMessage, setAgeValidationMessage] = useState<string>('');
   const [isMobile, setIsMobile] = useState(false);
 
-  // Refs
-  const passportPhotoRef = useRef<HTMLInputElement>(null);
-  const validIdFileRef = useRef<HTMLInputElement>(null);
-  const signatureRef = useRef<HTMLInputElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
+  const passport_photoRef = useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement>;
+  const valid_id_fileRef = useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement>;
+  const signatureRef = useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement>;
+
+  const { fetchWithAuth, displayNotification } = useAuth();
+
+  const validIdOptions = [
+    { value: 'national_id', label: 'National ID' },
+    { value: 'international_passport', label: 'International Passport' },
+    { value: 'voters_card', label: 'Voters Card' },
+    { value: 'others', label: 'Others' },
+  ];
 
   // Check for mobile device
   useEffect(() => {
@@ -761,74 +753,73 @@ const RequestForm: React.FC = () => {
     }
   };
 
-  // Handle input change
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    
-    setTouchedFields(prev => ({ ...prev, [name]: true }));
-    
-    // Clear error for this field
-    if (fieldErrors[name]) {
-      setFieldErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
+  const handleFileChange = (file: File, field: 'passport_photo' | 'valid_id_file' | 'signature') => {
+    if (file) {
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      
+      if (!allowedTypes.includes(file.type)) {
+        setFieldErrors(prev => ({
+          ...prev,
+          [field]: `Please upload a valid image (JPEG, JPG, PNG)`
+        }));
+        return;
+      }
+
+      const maxSize = 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        setFieldErrors(prev => ({
+          ...prev,
+          [field]: 'File size must be less than 10MB'
+        }));
+        return;
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        [field]: file
+      }));
+
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          if (field === 'passport_photo') {
+            setPhotoPreview(result);
+          } else if (field === 'valid_id_file') {
+            setIdPreview(result);
+          } else if (field === 'signature') {
+            setSignaturePreview(result);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+
+      setFieldErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
     }
     
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handle Select change (for react-select components)
-  const handleSelectChange = (name: string, value: string | null) => {
-    setTouchedFields(prev => ({ ...prev, [name]: true }));
-    
-    if (fieldErrors[name]) {
-      setFieldErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
-    }
-    
-    setFormData(prev => ({ ...prev, [name]: value || '' }));
-    
-    // Cascade resets
-    if (name === 'unit') {
-      setFormData(prev => ({ ...prev, club: '', churchName: '' }));
-      setAvailableClubs([]);
-      setAvailableChurches([]);
-    } else if (name === 'club') {
-      setFormData(prev => ({ ...prev, churchName: '' }));
+  const handleDrag = (e: React.DragEvent, field: 'passport_photo' | 'valid_id_file' | 'signature') => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(prev => ({ ...prev, [field]: true }));
+    } else if (e.type === "dragleave") {
+      setDragActive(prev => ({ ...prev, [field]: false }));
     }
   };
 
-  // Handle file upload
-  const handleFileChange = (field: 'validIdFile' | 'passport_photo' | 'signature', file: File) => {
-    // Validate file type and size
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-    if (!allowedTypes.includes(file.type)) {
-      setFieldErrors(prev => ({ ...prev, [field]: 'File must be JPEG, JPG, PNG, or PDF' }));
-      return;
-    }
-    
-    if (file.size > 10 * 1024 * 1024) {
-      setFieldErrors(prev => ({ ...prev, [field]: 'File size must be less than 10MB' }));
-      return;
-    }
-    
-    setFormData(prev => ({ ...prev, [field]: file }));
-    
-    // Create preview for images only
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        if (field === 'passport_photo') setPhotoPreview(result);
-        else if (field === 'validIdFile') setIdPreview(result);
-        else if (field === 'signature') setSignaturePreview(result);
-      };
-      reader.readAsDataURL(file);
+  const handleDrop = (e: React.DragEvent, field: 'passport_photo' | 'valid_id_file' | 'signature') => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(prev => ({ ...prev, [field]: false }));
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFileChange(file, field);
     }
     
     // Clear error
@@ -846,18 +837,33 @@ const RequestForm: React.FC = () => {
     const errors: Record<string, string> = {};
     const ageNum = parseInt(formData.age);
     
-    // Basic required fields
-    if (!formData.first_name.trim()) errors.first_name = 'First name is required';
-    if (!formData.last_name.trim()) errors.last_name = 'Last name is required';
-    if (!formData.phone_number.trim()) errors.phone_number = 'Phone number is required';
-    if (!formData.date_of_birth) errors.date_of_birth = 'Date of birth is required';
-    if (!formData.unit) errors.unit = 'Unit is required';
-    if (!formData.address.trim()) errors.address = 'Address is required';
-    if (!formData.validIdType) errors.validIdType = 'ID type is required';
-    if (!formData.validIdFile) errors.validIdFile = 'ID document is required';
-    if (!formData.passport_photo) errors.passport_photo = 'Passport photo is required';
-    
-    // Email validation
+    // Required field validations with better error messages
+    const requiredFields = {
+      first_name: 'Please enter your first name',
+      last_name: 'Please enter your last name',
+      phone_number: 'Please enter your phone number',
+      country: 'Please select your country',
+      state: 'Please select your state',
+      unit: 'Please select a unit',
+      address: 'Please enter your address',
+      valid_id_type: 'Please select a valid ID type',
+      valid_id_file: 'Please upload your ID document',
+      passport_photo: 'Please upload your passport photo',
+      date_of_birth: 'Please select your date of birth',
+    };
+
+    Object.entries(requiredFields).forEach(([field, message]) => {
+      if (!formData[field as keyof FormData]) {
+        errors[field] = message;
+      }
+    });
+
+    // Phone number format validation
+    if (formData.phone_number && !/^[\+]?[0-9\s\-\(\)]{10,}$/.test(formData.phone_number.trim())) {
+      errors.phone_number = 'Please enter a valid phone number (e.g., 07012345678 or +2347012345678)';
+    }
+
+    // Email format validation
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.email = 'Invalid email format';
     }
@@ -908,7 +914,28 @@ const RequestForm: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
-  // Handle form submission
+  const scrollToFirstError = (errorFields: string[]) => {
+    const fieldOrder = [
+      'first_name', 'last_name', 'phone_number', 'country', 'state', 
+      'unit', 'club', 'churchName', 'date_of_birth', 'valid_id_type', 'valid_id_file', 'passport_photo'
+    ];
+    
+    const firstErrorField = fieldOrder.find(field => errorFields.includes(field));
+    
+    if (firstErrorField) {
+      const fieldElement = document.querySelector(`[name="${firstErrorField}"]`) as HTMLElement;
+      
+      if (fieldElement) {
+        fieldElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+        
+        setTimeout(() => fieldElement.focus?.(), 300);
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -967,9 +994,10 @@ const RequestForm: React.FC = () => {
           churchName: '',
           profession: '',
           occupation: '',
-          religion: '',
-          validIdType: '',
-          validIdFile: null,
+          marital_status: '',
+          address: '',
+          valid_id_type: '',
+          valid_id_file: null,
           passport_photo: null,
           signature: null,
           nextOfKinName: '',
@@ -986,18 +1014,44 @@ const RequestForm: React.FC = () => {
         setAvailableChurches([]);
         setAgeValidationMessage('');
         
-        // Clear file inputs
-        if (passportPhotoRef.current) passportPhotoRef.current.value = '';
-        if (validIdFileRef.current) validIdFileRef.current.value = '';
-        if (signatureRef.current) signatureRef.current.value = '';
+        // Reset file inputs
+        [passport_photoRef, valid_id_fileRef, signatureRef].forEach(ref => {
+          if (ref.current) ref.current.value = '';
+        });
       }, 3000);
       
-    } catch (error: any) {
-      console.error('Submission error:', error);
-      displayNotification(
-        error.response?.data?.message || 'Submission failed. Please try again.',
-        'error'
-      );
+      if (error.response?.data) {
+        const serverErrors = error.response.data;
+        const fieldErrorMessages: Record<string, string> = {};
+        
+        const fieldMapping: Record<string, string> = {
+          'first_name': 'first_name',
+          'last_name': 'last_name',
+          'phone_number': 'phone_number',
+          'valid_id_type': 'valid_id_type',
+          'valid_id_file': 'valid_id_file',
+          'passport_photo': 'passport_photo',
+          'date_of_birth': 'date_of_birth',
+        };
+        
+        Object.keys(serverErrors).forEach(field => {
+          const frontendField = fieldMapping[field] || field;
+          fieldErrorMessages[frontendField] = Array.isArray(serverErrors[field]) 
+            ? serverErrors[field][0] 
+            : String(serverErrors[field]);
+        });
+        
+        setFieldErrors(fieldErrorMessages);
+        
+        const errorFieldNames = Object.keys(fieldErrorMessages);
+        const errorMessage = errorFieldNames.length === 1 
+          ? `Please correct the error in: ${errorFieldNames[0]}`
+          : `Please correct the errors in: ${errorFieldNames.join(', ')}`;
+        
+        displayNotification(errorMessage, 'error');
+      } else {
+        displayNotification('Application submission failed. Please try again.', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -1013,7 +1067,7 @@ const RequestForm: React.FC = () => {
     dragActiveKey,
     fileRef,
   }: {
-    field: 'validIdFile' | 'passport_photo' | 'signature';
+    field: 'passport_photo' | 'valid_id_file' | 'signature';
     label: string;
     required?: boolean;
     preview: string | null;
@@ -1706,23 +1760,23 @@ const RequestForm: React.FC = () => {
           <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b-2 border-gray-200 pb-2">Identification</h3>
           
           <FormSelect
-            label="Valid ID Type *"
-            name="validIdType"
+            label="Valid ID Type"
+            name="valid_id_type"
             options={validIdOptions}
-            value={formData.validIdType}
+            value={formData.valid_id_type}
             onChange={handleInputChange}
-            error={fieldErrors.validIdType}
+            error={fieldErrors.valid_id_type}
             required
-            className={getInputBorderColor('validIdType', formData.validIdType)}
+            className={getInputBorderColor('valid_id_type', formData.valid_id_type)}
           />
 
           <FileUploadField
-            field="validIdFile"
-            label="ID Document *"
+            field="valid_id_file"
+            label="ID Document"
             required={true}
             preview={idPreview}
-            dragActiveKey="validIdFile"
-            fileRef={validIdFileRef}
+            dragActiveKey="valid_id_file"
+            fileRef={valid_id_fileRef}
           />
         </div>
 
