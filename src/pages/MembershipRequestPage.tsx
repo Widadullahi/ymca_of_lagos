@@ -329,7 +329,7 @@ const units: UnitOption[] = [
   {
     value: 'Council of Church',
     label: 'Council of Church',
-    dropDown: [{ 'Council of Church': 'Council of Church' }],
+    // dropDown: [{ 'Council of Church': 'Council of Church' }],
     churchDropDown: [
       { "METHODIST CHURCH CATHEDRAL, PALM AVENUE, LAGOS": "METHODIST CHURCH CATHEDRAL, PALM AVENUE, LAGOS" },
       { "ST. JOHN ANG. CHURCH, IJU ISHAGA, LAGOS.": "ST. JOHN ANG. CHURCH, IJU ISHAGA, LAGOS." },
@@ -434,12 +434,12 @@ const units: UnitOption[] = [
   {
     value: "Y's Men",
     label: "Y's Men",
-    dropDown: [{ "Y's Men Club": "Y's Men Club" }]
+    // dropDown: [{ "Y's Men Club": "Y's Men Club" }]
   },
   {
     value: 'Central Club',
     label: 'Central Club',
-    dropDown: [{ 'Central Club': 'Central Club' }]
+    // dropDown: [{ 'Central Club': 'Central Club' }]
   }
 ];
 
@@ -1620,7 +1620,7 @@ const RequestForm: React.FC = () => {
                       return 'This unit requires age 31 or older. Please select Youth Council or contact administration.';
                     }
                   }
-                  return 'No clubs available. Please contact administration.';
+                  ;
                 })()}
               </p>
             </div>
