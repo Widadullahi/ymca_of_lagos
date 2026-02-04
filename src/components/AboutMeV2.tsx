@@ -9,7 +9,7 @@ import { useAuth } from '../context/NewAuthContext'
 import theirlogo from '../assets/images/image.png'; // Make sure to import your logo
 import Footer from './Footer';
 import DonationModal from './modals/DonationModal';
-import CoreValue from '../components/CoreValue';
+
 
 const AboutMeV2: React.FC = () => {
   const statsRef = useRef<HTMLDivElement>(null);

@@ -1,5 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { Update, Attachment } from '../../../../pages/admin/AdminUpdatesPage';
+
+// Define the Attachment interface locally since you don't have it imported
+interface Attachment {
+  id?: number;
+  name: string;
+  url: string;
+  type: string;
+  size?: number;
+  file?: File;
+  base64?: string;
+}
+
+// If you have an Update type defined elsewhere, you can import it
+// Otherwise, define it here or adjust as needed
+interface Update {
+  id: string;
+  title: string;
+  content: string;
+  type: 'latest-news' | 'upcoming-event';
+  imageUrl?: string;
+  images?: string[];
+  attachments?: Attachment[];
+  postedAt: Date;
+  // Add other fields as needed
+}
 
 interface UpdateFormProps {
   isOpen: boolean;

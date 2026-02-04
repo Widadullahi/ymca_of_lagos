@@ -6,7 +6,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import ymca from '../assets/images/image.png';
 import { nigerianStates } from '../constants/utils';
 import Select from 'react-select';
-import CreatableSelect from 'react-select/creatable';
 import { motion } from 'framer-motion';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -329,7 +328,6 @@ const units: UnitOption[] = [
   {
     value: 'Council of Church',
     label: 'Council of Church',
-    // dropDown: [{ 'Council of Church': 'Council of Church' }],
     churchDropDown: [
       { "METHODIST CHURCH CATHEDRAL, PALM AVENUE, LAGOS": "METHODIST CHURCH CATHEDRAL, PALM AVENUE, LAGOS" },
       { "ST. JOHN ANG. CHURCH, IJU ISHAGA, LAGOS.": "ST. JOHN ANG. CHURCH, IJU ISHAGA, LAGOS." },
@@ -434,12 +432,10 @@ const units: UnitOption[] = [
   {
     value: "Y's Men",
     label: "Y's Men",
-    // dropDown: [{ "Y's Men Club": "Y's Men Club" }]
   },
   {
     value: 'Central Club',
     label: 'Central Club',
-    // dropDown: [{ 'Central Club': 'Central Club' }]
   }
 ];
 
@@ -548,10 +544,10 @@ const RequestForm: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [filteredUnits, setFilteredUnits] = useState<UnitOption[]>(units);
 
-  // Refs
-  const passportPhotoRef = useRef<HTMLInputElement>(null);
-  const validIdFileRef = useRef<HTMLInputElement>(null);
-  const signatureRef = useRef<HTMLInputElement>(null);
+  // Refs - FIXED: Changed type to RefObject<HTMLInputElement>
+  const passportPhotoRef = useRef<HTMLInputElement>(null!);
+  const validIdFileRef = useRef<HTMLInputElement>(null!);
+  const signatureRef = useRef<HTMLInputElement>(null!);
   const formRef = useRef<HTMLFormElement>(null);
 
   // Check for mobile device
@@ -747,20 +743,19 @@ const RequestForm: React.FC = () => {
       
       // Youth Council validation
       if (unitName.includes('Youth Council')) {
-       
+        // Age validation message already handled in form validation
       }
       // Adult units validation (31+ only)
       else if (unitName.includes("Y's Men") || unitName.includes('Central Club') || unitName.includes('Council of Church')) {
-        
+        // Age validation message already handled in form validation
       }
       else {
-        setAgeValidationMessage(`✅ Age ${ageNum} can join ${unitName}`);
+        setAgeValidationMessage(`Age ${ageNum} can join ${unitName}`);
       }
     } else {
       setAgeValidationMessage('');
     }
-  }, 
-  [formData.age, formData.unit]);
+  }, [formData.age, formData.unit]);
 
   // Handle date change
   const handleDateChange = (date: Date | null) => {
@@ -898,15 +893,15 @@ const RequestForm: React.FC = () => {
       // Youth Council rules
       if (unitName.includes('youth')) {
         if (ageNum >= 31) {
-          errors.unit = '❌ Age 31+ cannot join Youth Council. Please select Y\'s Men, Central Club, or Council of Church.';
+          errors.unit = 'Age 31+ cannot join Youth Council. Please select Y\'s Men, Central Club, or Council of Church.';
         } else if (ageNum >= 1 && ageNum <= 23 && formData.club && 
                    !formData.club.toLowerCase().includes('hi-y') && 
                    !formData.club.toLowerCase().includes('hi y')) {
-          errors.club = '❌ Ages 1-23 can only select Hi-Y clubs in Youth Council';
+          errors.club = 'Ages 1-23 can only select Hi-Y clubs in Youth Council';
         } else if (ageNum >= 24 && ageNum <= 30 && formData.club && 
                    !formData.club.toLowerCase().includes('y-elite') && 
                    !formData.club.toLowerCase().includes('yelite')) {
-          errors.club = '❌ Ages 24-30 can only select Y-Elite clubs in Youth Council';
+          errors.club = 'Ages 24-30 can only select Y-Elite clubs in Youth Council';
         }
       }
       // Adult units rules (31+ only) - This includes Council of Church
@@ -914,7 +909,7 @@ const RequestForm: React.FC = () => {
                 (unitName.includes('council') && unitName.includes('church'))) && 
                 ageNum < 31) {
         const unitDisplay = formData.unit;
-        errors.unit = `❌ Age ${ageNum} cannot join ${unitDisplay}. Minimum age is 31.`;
+        errors.unit = `Age ${ageNum} cannot join ${unitDisplay}. Minimum age is 31.`;
       }
     }
     
@@ -1128,7 +1123,7 @@ const RequestForm: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 py-10 px-2 flex flex-col items-center justify-center relative overflow-x-hidden">
       {/* Add mobile-specific styles */}
-      <style jsx global>{`
+      <style>{`
         /* Prevent iOS zoom on input focus */
         @media screen and (max-width: 768px) {
           input, select, textarea {
@@ -1547,8 +1542,6 @@ const RequestForm: React.FC = () => {
         <div className="mb-8">
           <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b-2 border-gray-200 pb-2">YMCA Unit Selection</h3>
           
-         
-          
           {/* Unit Selection */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1564,7 +1557,6 @@ const RequestForm: React.FC = () => {
             {fieldErrors.unit && (
               <p className="text-red-500 text-sm mt-1">{fieldErrors.unit}</p>
             )}
-            
           </div>
 
           {/* Age Validation Message */}
@@ -1592,7 +1584,6 @@ const RequestForm: React.FC = () => {
               {fieldErrors.club && (
                 <p className="text-red-500 text-sm mt-1">{fieldErrors.club}</p>
               )}
-        
             </div>
           )}
 
@@ -1635,6 +1626,7 @@ const RequestForm: React.FC = () => {
                     }
                   }
                   
+                  return '';
                 })()}
               </p>
             </div>
@@ -1651,7 +1643,6 @@ const RequestForm: React.FC = () => {
               <li>• <strong>Central Club:</strong> Age 31+ only</li>
               <li>• <strong>Council of Church:</strong> Age 31+ only (church selection required)</li>
             </ul>
-           
           </div>
         </div>
 
@@ -1804,7 +1795,6 @@ const RequestForm: React.FC = () => {
             <li>• <strong>STRICT AGE RULES:</strong></li>
             <li className="ml-4">- Youth Council: Ages 1-30 only (1-23: Hi-Y, 24-30: Y-Elite)</li>
             <li className="ml-4">- Y's Men, Central Club, Council of Church: Age 31+ only</li>
-            {/* <li>• Date format: British format (DD/MM/YYYY)</li> */}
           </ul>
         </div>
         

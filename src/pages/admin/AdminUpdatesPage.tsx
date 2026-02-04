@@ -4,12 +4,17 @@ import UpdateForm from '../../components/modals/admin/news/UpdateForm';
 import { createPostsApi } from '../../api/postsApi';
 import { useAuth } from '../../context/NewAuthContext';
 
+// Define types that match UpdateForm's expectations
 interface Attachment {
   name: string;
   url: string;
   type: string;
+  // Add these fields to match UpdateForm
+  file?: File;
+  base64?: string;
 }
 
+// Make sure this matches UpdateForm's Update interface
 export interface Update {
   id: string;
   title: string;
@@ -19,7 +24,8 @@ export interface Update {
   created_at: string | number | Date;
   postedAt: Date;
   attachments?: Attachment[];
-  type?: 'latest-news' | 'upcoming-event';
+  // Remove optional from type - make it required
+  type: 'latest-news' | 'upcoming-event';
   // Add the missing images property
   images?: string[];
 }
@@ -71,7 +77,10 @@ const AdminUpdatesPage = () => {
         // Transform data to include type field
         const transformedData: Update[] = response.data.map((item: any) => ({
           ...item,
-          type: item.type || (item.category === 'Events' ? 'upcoming-event' : 'latest-news'),
+          // Ensure type is always defined and matches expected values
+          type: item.type && (item.type === 'latest-news' || item.type === 'upcoming-event') 
+            ? item.type 
+            : (item.category === 'Events' ? 'upcoming-event' : 'latest-news'),
           postedAt: new Date(item.created_at),
           images: item.images || [] // Ensure images array exists
         }));
@@ -160,7 +169,10 @@ const AdminUpdatesPage = () => {
             prev.map(update => 
               update.id === updateToEdit.id ? {
                 ...response as ApiResponse,
-                type: response?.type || 'latest-news',
+                // Ensure type is defined
+                type: (response?.type && (response.type === 'latest-news' || response.type === 'upcoming-event')) 
+                  ? response.type 
+                  : 'latest-news',
                 postedAt: new Date(response?.created_at || new Date()),
                 images: response?.images || []
               } : update
@@ -176,7 +188,10 @@ const AdminUpdatesPage = () => {
           // Add to local state at the beginning
           const newUpdate: Update = {
             ...response,
-            type: response.type || 'latest-news',
+            // Ensure type is defined
+            type: (response.type && (response.type === 'latest-news' || response.type === 'upcoming-event')) 
+              ? response.type 
+              : 'latest-news',
             postedAt: new Date(response.created_at),
             images: response.images || []
           };
