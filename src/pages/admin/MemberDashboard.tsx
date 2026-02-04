@@ -20,7 +20,7 @@ const MemberDashboard = () => {
   const [memberGenderStats, setMemberGenderStats] = useState([
     { name: 'Male', value: 0 },
     { name: 'Female', value: 0 },
-    { name: 'Other', value: 0 }
+    
   ]);
   const [memberStats, setMemberStats] = useState({
     totalMembers: 0,
@@ -92,7 +92,7 @@ const MemberDashboard = () => {
         membersByGender: [
           { name: 'Male', value: 118 },
           { name: 'Female', value: 120 },
-          { name: 'Other', value: 5 }
+         
         ],
         membershipTrend: [
           { month: 'Jan', members: 210 },
