@@ -164,9 +164,9 @@ const AdminUpdatesPage = () => {
       // Handle images (use base64s from form)
       if (formData.imageBase64s && Array.isArray(formData.imageBase64s) && formData.imageBase64s.length > 0) {
         apiData.images = formData.imageBase64s;
-        // Also send a single image for backends expecting one field
-        apiData.image = formData.imageBase64s[0];
+        // Send a single image for backends expecting one field
         apiData.image_base64 = formData.imageBase64s[0];
+        apiData.imageBase64 = formData.imageBase64s[0];
         if (formData.imageFiles && Array.isArray(formData.imageFiles) && formData.imageFiles.length > 0) {
           apiData.image_name = formData.imageFiles[0].name;
         }
@@ -577,6 +577,7 @@ const AdminUpdatesPage = () => {
           update={updateToEdit}
           onSave={handleSaveUpdate}
           onCancel={handleFormCancel}
+          isSubmitting={isSubmitting}
         />
       )}
     </div>

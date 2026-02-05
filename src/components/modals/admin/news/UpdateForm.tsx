@@ -31,6 +31,7 @@ interface UpdateFormProps {
   update: Update | null;
   onSave: (update: any) => void;
   onCancel: () => void;
+  isSubmitting?: boolean;
 }
 
 const UpdateForm: React.FC<UpdateFormProps> = ({ 
@@ -38,7 +39,8 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
   isEditing, 
   update, 
   onSave, 
-  onCancel 
+  onCancel,
+  isSubmitting = false
 }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -366,13 +368,23 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
             </button>
             <button 
               type="submit" 
+              disabled={isSubmitting}
               className={`px-6 py-2 text-white rounded font-medium transition-colors ${
                 type === 'upcoming-event' 
                   ? 'bg-green-600 hover:bg-green-700' 
                   : 'bg-blue-600 hover:bg-blue-700'
-              }`}
+              } disabled:opacity-60 disabled:cursor-not-allowed`}
             >
-              {isEditing ? 'Update' : 'Create'} {type === 'upcoming-event' ? 'Event' : 'News'}
+              {isSubmitting ? (
+                <>
+                  <span className="inline-block h-4 w-4 mr-2 align-[-2px] animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  {isEditing ? 'Updating' : 'Creating'} {type === 'upcoming-event' ? 'Event' : 'News'}...
+                </>
+              ) : (
+                <>
+                  {isEditing ? 'Update' : 'Create'} {type === 'upcoming-event' ? 'Event' : 'News'}
+                </>
+              )}
             </button>
           </div>
         </form>

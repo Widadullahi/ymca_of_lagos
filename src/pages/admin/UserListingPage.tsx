@@ -260,6 +260,9 @@ const UserListingPage: React.FC = () => {
     if (type === 'honorary' || type === 'life' || type === 'honorary membership' || type === 'life membership') {
       return 'No Expiry';
     }
+    if (!member?.card || member?.card?.first_time) {
+      return 'N/A';
+    }
     const baseDate = member?.card?.created_at
       ? new Date(member.card.created_at)
       : new Date(member?.created_at || Date.now());

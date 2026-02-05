@@ -118,13 +118,13 @@ export const createPostsApi = (fetchWithAuth: any) => ({
   // Create new post
   async createPost(postData: any): Promise<any> {
 
-    const data: PostResponse = await fetchWithAuth({
+    const data: any = await fetchWithAuth({
       method: 'POST',
       path: '/posts/',
       body: postData,
     });
 
-    return transformPostToUpdate(data);
+    return data?.data ?? data;
   },
 
   // Update existing post
@@ -159,13 +159,13 @@ export const createPostsApi = (fetchWithAuth: any) => ({
       );
     }
 
-    const data: PostResponse = await fetchWithAuth({
+    const data: any = await fetchWithAuth({
       method: 'PATCH',
       path: `/posts/${id}/`,
       body: requestBody,
     });
 
-    return transformPostToUpdate(data);
+    return data?.data ?? data;
   },
 
   // Delete post

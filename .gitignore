@@ -22,3 +22,31 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Env files / secrets
+.env
+.env.*
+!.env.example
+
+# Python / Django
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.sqlite3-journal
+.venv/
+venv/
+env/
+
+# Django uploads / static
+media/
+static/
+
+# Backend repo (if cloned inside this repo)
+ymca_api/.env
+ymca_api/.env.*
+ymca_api/.venv/
+ymca_api/venv/
+ymca_api/env/
+ymca_api/media/
+ymca_api/static/
+ymca_api/*.sqlite3
