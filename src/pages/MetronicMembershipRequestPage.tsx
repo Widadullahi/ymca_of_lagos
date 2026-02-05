@@ -66,7 +66,8 @@ const MetronicMembershipRequestPage = () => {
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData({...formData, [name]: value});
+    const nextValue = name === 'email' ? value.toLowerCase() : value;
+    setFormData({...formData, [name]: nextValue});
   };
 
   return (

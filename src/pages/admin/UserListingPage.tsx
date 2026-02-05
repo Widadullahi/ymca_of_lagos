@@ -133,55 +133,112 @@ const UserListingPage: React.FC = () => {
     fetchChurches();
   }, []);
 
+  const normalize = (value?: string | null) =>
+    (value ?? '').toString().trim().toLowerCase();
+
+  const normalizeState = (value?: string | null) => {
+    const cleaned = normalize(value)
+      .replace(/state$/i, '')
+      .replace(/[\.,]/g, '')
+      .trim();
+    return cleaned;
+  };
+
+  const matchesMembershipCategory = (memberCategory: any, filterValue: string) => {
+    const selected = normalize(filterValue);
+    if (!selected) return true;
+
+    const value = normalize(memberCategory);
+    if (!value) {
+      // Treat missing category as "Full Membership" to match UI default.
+      return selected === 'full membership';
+    }
+
+    const aliases: Record<string, string[]> = {
+      'full membership': ['full', 'full member', 'full membership', 'full_member'],
+      'honorary membership': ['honorary', 'honourary', 'honorary membership', 'honourary membership', 'honorary_member'],
+      'ordinary membership': ['ordinary', 'ordinary member', 'ordinary membership', 'ordinary_member'],
+      'life membership': ['life', 'life member', 'life membership', 'life_member'],
+    };
+
+    if (value === selected) return true;
+    if (aliases[selected]?.some(a => value === a)) return true;
+    return aliases[selected]?.some(a => value.includes(a)) ?? value.includes(selected);
+  };
+
+  const getMembershipLabel = (member: Member) => {
+    if (member.membership_category) return member.membership_category;
+    const type = (member as any).membership_type;
+    if (type) return mapMembershipTypeToCategory(type);
+    return 'Full Membership';
+  };
+
   // Apply filters
   useEffect(() => {
     let result = members;
 
     // Apply search filter
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+      const term = normalize(searchTerm);
       result = result.filter(member =>
-        member?.first_name.toLowerCase().includes(term) ||
-        member?.last_name.toLowerCase().includes(term) ||
-        member?.email.toLowerCase().includes(term) ||
-        member?.phone_number.toLowerCase().includes(term)
+        normalize(member?.first_name).includes(term) ||
+        normalize(member?.last_name).includes(term) ||
+        normalize(member?.email).includes(term) ||
+        normalize(member?.phone_number).includes(term)
       );
     }
 
     // Apply category filter
     if (categoryFilter) {
-      result = result.filter(member => member.category === categoryFilter);
+      result = result.filter(member => normalize(member.category) === normalize(categoryFilter));
     }
 
     // Apply status filter
     if (statusFilter) {
       result = result.filter(member => {
+        const isExpired = member?.card?.expired ?? !member.is_active;
         if (statusFilter === 'Active') {
-          return member.is_active;
-        } else if (statusFilter === 'Inactive') {
-          return !member.is_active;
+          return !isExpired && member.is_active;
+        } else if (statusFilter === 'Expired') {
+          return isExpired;
         }
       });
     }
 
     // Apply unit filter
     if (unitFilter) {
-      result = result.filter(member => member?.user_request?.unit === unitFilter);
+      result = result.filter(member =>
+        normalize(member?.unit || member?.user_request?.unit) === normalize(unitFilter)
+      );
     }
 
     // Apply gender filter
     if (genderFilter) {
-      result = result.filter(member => member?.user_request?.gender === genderFilter);
+      result = result.filter(member =>
+        normalize(member?.gender || member?.user_request?.gender) === normalize(genderFilter)
+      );
     }
 
     // Apply membership category filter
     if (membershipCategoryFilter) {
-      result = result.filter(member => member.membership_category === membershipCategoryFilter);
+      result = result.filter(member =>
+        matchesMembershipCategory(
+          member.membership_category || (member as any).membership_type,
+          membershipCategoryFilter
+        )
+      );
     }
 
     // Apply state filter
     if (stateFilter) {
-      result = result.filter(member => member?.user_request?.state === stateFilter);
+      const selectedState = normalizeState(stateFilter);
+      result = result.filter(member => {
+        const rawState =
+          member?.user_request?.state ||
+          member?.state ||
+          member?.state_of_origin;
+        return normalizeState(rawState) === selectedState;
+      });
     }
 
     setFilteredMembers(result);
@@ -196,6 +253,18 @@ const UserListingPage: React.FC = () => {
       month: 'long',
       day: 'numeric'
     }).format(date);
+  };
+
+  const getMembershipExpiryLabel = (member: Member) => {
+    const type = normalize((member as any)?.membership_type || member?.membership_category);
+    if (type === 'honorary' || type === 'life' || type === 'honorary membership' || type === 'life membership') {
+      return 'No Expiry';
+    }
+    const baseDate = member?.card?.created_at
+      ? new Date(member.card.created_at)
+      : new Date(member?.created_at || Date.now());
+    const expiry = new Date(baseDate.getFullYear() + 1, 4, 31);
+    return formatDate(expiry.toISOString());
   };
 
   // Clear all filters
@@ -293,10 +362,25 @@ const UserListingPage: React.FC = () => {
     { value: 'life', label: 'Life Member' },
   ];
 
+  const mapMembershipTypeToCategory = (value: string) => {
+    switch (value) {
+      case 'full':
+        return 'Full Membership';
+      case 'ordinary':
+        return 'Ordinary Membership';
+      case 'honorary':
+        return 'Honorary Membership';
+      case 'life':
+        return 'Life Membership';
+      default:
+        return value;
+    }
+  };
+
   // Status options
   const statusOptions = [
     { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
+    { value: 'expired', label: 'Expired' },
   ];
 
   // Handler for opening the bulk action modal
@@ -325,6 +409,7 @@ const UserListingPage: React.FC = () => {
           path: '/admin/members/bulk-update-membership-type/',
           body: {
             user_ids: selectedUserIds,
+            membership_category: mapMembershipTypeToCategory(bulkMembershipType),
             membership_type: bulkMembershipType,
           },
           headers: { 'Content-Type': 'application/json' },
@@ -479,7 +564,7 @@ const UserListingPage: React.FC = () => {
               <option value="Full Membership">Full Membership</option>
               <option value="Honorary Membership">Honorary Membership</option>
               <option value="Ordinary Membership">Ordinary Membership</option>
-              <option value="Live Membership">Live Membership</option>
+              <option value="Life Membership">Life Membership</option>
             </select>
           </div>
 
@@ -513,7 +598,7 @@ const UserListingPage: React.FC = () => {
             >
               <option value="">All Statuses</option>
               <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
+              <option value="Expired">Expired</option>
             </select>
           </div>
 
@@ -528,8 +613,8 @@ const UserListingPage: React.FC = () => {
               className="w-full p-2 border border-gray-300 rounded-md"
             >
               <option value="">All Genders</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
             </select>
           </div>
 
@@ -625,6 +710,9 @@ const UserListingPage: React.FC = () => {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
                     Membership Type
                   </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                    State
+                  </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                     Category/Unit
                   </th>
@@ -670,8 +758,13 @@ const UserListingPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {member.membership_category || 'Full Membership'}
+                        {getMembershipLabel(member)}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
+                      <div className="text-sm text-gray-900">
+                        {member?.user_request?.state || member?.state || member?.state_of_origin || 'N/A'}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
                       <div className="text-sm text-gray-900">{member?.user_request?.unit}</div>
@@ -687,12 +780,12 @@ const UserListingPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${member.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {member.is_active ? "Active" : "Inactive"}
+                        ${member?.card?.expired || !member.is_active ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                        {member?.card?.expired || !member.is_active ? "Expired" : "Active"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
-                      {formatDate(member?.created_at)}
+                      {getMembershipExpiryLabel(member)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
                       {formatDate(member?.created_at)}

@@ -65,6 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+
   useEffect(() => {
     // Check if there's an auth token in localStorage and set the user on page load
     const token = localStorage.getItem('tokens');
@@ -220,7 +221,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         response = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : null });
 
         if (!response.ok) {
-          handleErrorResponse(response);
+          handleErrorResponse(response, true);
         }
 
         return response.json();
@@ -232,17 +233,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (!response.ok) {
-      handleErrorResponse(response);
+      handleErrorResponse(response, isAthenticated);
     }
 
     if (responseType === 'blob') {
       return response.blob();
     }
 
-    return response.json();
+    if (response.status === 204) {
+      return null;
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      const text = await response.text();
+      return text || null;
+    }
+
+    const text = await response.text();
+    if (!text) return null;
+    return JSON.parse(text);
   }
 
-  const handleErrorResponse = (response: Response) => {
+  const handleErrorResponse = (response: Response, isAthenticated: boolean) => {
     if (response.status === 400) {
       response.json().then((errorData) => {
         // Check if there is a 'message' in the error response
@@ -262,7 +275,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }
     if (response.status === 401) {
-      deleteUserFromLocalStorage();
+      if (isAthenticated && authToken?.access_token) {
+        deleteUserFromLocalStorage();
+      }
     }
     if (response.status === 500) {
       response.json().then((errorData) => {

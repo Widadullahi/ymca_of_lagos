@@ -43,9 +43,17 @@ export interface UserRequest {
   occupation: string;
   marital_status: string;
   valid_id_number: string;
+  valid_id_type?: string;
+  validIdType?: string;
   passport_photo: string;
   valid_id_file: string;
+  validIdFile?: string;
+  signature?: string;
   next_of_kin: string;
+  next_of_kin_phone?: string;
+  next_of_kin_name?: string;
+  nextOfKinName?: string;
+  nextOfKinNumber?: string;
   referral_source: string;
   referral_name: string;
   referred_by: string;

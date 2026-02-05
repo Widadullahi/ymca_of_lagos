@@ -44,6 +44,7 @@ const DesktopSidebar = () => {
             <NavItem to="/admin/membership-request" icon={<MdOutlinePeopleAlt />} label="Membership Requests" />
             <NavItem to="/admin/staff" icon={<MdOutlinePeopleAlt />} label="Staff List" />
             <NavItem to="/admin/updates" icon={<MdOutlineNewspaper />} label="Updates" />
+            <NavItem to="/admin/signature" icon={<MdOutlineManageAccounts />} label="Authorised Signature" />
             </>
           )}
           <NavItem to="/account" icon={<MdOutlineManageAccounts />} label="Account" />

@@ -10,51 +10,63 @@ interface IDCardPreviewProps {
   forwardedRef?: React.Ref<HTMLDivElement>;
 }
 
-// Function to get card color scheme based on membership type
-const getCardColorScheme = (membershipType: string) => {
+const getCardTheme = (membershipType: string) => {
   switch (membershipType) {
-    case 'full':
-      return {
-        bg: 'bg-gradient-to-br from-blue-600 to-blue-800',
-        text: 'text-white',
-        accent: 'text-blue-200',
-        pattern: '#3b82f6', // blue-500
-        patternOpacity: '0.1'
-      };
-    case 'ordinary':
-      return {
-        bg: 'bg-gradient-to-br from-green-600 to-green-800',
-        text: 'text-white',
-        accent: 'text-green-200',
-        pattern: '#22c55e', // green-500
-        patternOpacity: '0.1'
-      };
     case 'honorary':
       return {
-        bg: 'bg-gradient-to-br from-purple-600 to-purple-800',
-        text: 'text-white',
-        accent: 'text-purple-200',
-        pattern: '#a855f7', // purple-500
-        patternOpacity: '0.1'
+        ribbonBg: 'from-amber-400 via-yellow-500 to-amber-600',
+        ribbonText: 'text-white',
+        accent: 'text-amber-600',
+        border: 'border-amber-300',
+        badge: 'bg-amber-500 text-white'
       };
     case 'life':
       return {
-        bg: 'bg-gradient-to-br from-purple-600 to-pink-700',
-        text: 'text-white',
-        accent: 'text-purple-200',
-        pattern: '#f43f5e', // rose-500
-        patternOpacity: '0.1'
+        ribbonBg: 'from-gray-800 via-black to-gray-900',
+        ribbonText: 'text-amber-200',
+        accent: 'text-gray-900',
+        border: 'border-amber-500',
+        badge: 'bg-black text-amber-200'
+      };
+    case 'ordinary':
+      return {
+        ribbonBg: 'from-red-600 via-red-700 to-black',
+        ribbonText: 'text-white',
+        accent: 'text-red-600',
+        border: 'border-red-500',
+        badge: 'bg-red-600 text-white'
       };
     default:
-      // Default white card
       return {
-        bg: 'bg-white',
-        text: 'text-gray-700',
+        ribbonBg: 'from-red-600 via-red-700 to-black',
+        ribbonText: 'text-white',
         accent: 'text-red-600',
-        pattern: '#f87171', // red-400
-        patternOpacity: '0.1'
+        border: 'border-red-500',
+        badge: 'bg-red-600 text-white'
       };
   }
+};
+
+const formatMembershipLabel = (membershipType: string) => {
+  const type = membershipType?.toLowerCase() || 'full';
+  if (type === 'life') return 'LIFE MEMBER';
+  if (type === 'honorary') return 'HONORARY MEMBER';
+  if (type === 'ordinary') return 'ORDINARY MEMBER';
+  return 'FULL MEMBER';
+};
+
+const formatExpiryDate = (user: any) => {
+  const type = (user?.membership_type || '').toString().toLowerCase();
+  if (type === 'honorary' || type === 'life') return '';
+  // Use payment/activation year if available; always expire on May 31 of the following year.
+  const baseDate =
+    (user?.card?.created_at && new Date(user.card.created_at)) ||
+    (user?.created_at && new Date(user.created_at)) ||
+    new Date();
+
+  const expiryYear = baseDate.getFullYear() + 1;
+  const expiry = new Date(expiryYear, 4, 31); // May 31 of next year
+  return expiry.toISOString().split('T')[0];
 };
 
 // Updated IDCardPreview component with QR code
@@ -62,13 +74,13 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }) =
 
   const { user: authUser } = useAuth();
   const user = member || authUser;
+  const theme = getCardTheme(user?.membership_type || 'full');
   const verificationUrl = `${window.location.origin}/verify/#verify=${user?.card?.id_number}`;
-
-  // Get color scheme based on membership type
-  const colorScheme = getCardColorScheme(user?.membership_type || 'full');
+  const memberSignature = user?.card?.signature || null;
+  const resolvedAuthorisedSignature = member ? authUser?.signature : user?.signature || null;
 
   return (
-    <div className="w-full  bg-gray-100 p-4" ref={forwardedRef}>
+    <div className="w-full bg-gray-100 p-4" ref={forwardedRef}>
       <div className="max-w-6xl mx-auto">
         {/* ID Card Container - Fixed aspect ratio */}
         <div className="flex flex-col items-center space-y-8">
@@ -76,102 +88,87 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }) =
           {/* Front of ID Card */}
           <div className="relative">
             <div
-              className={`${colorScheme.bg} rounded-lg overflow-hidden shadow-xl`}
+              className={`bg-white rounded-lg overflow-hidden shadow-xl border ${theme.border}`}
               style={{
-                width: 'min(90vw, 400px)',
+                width: 'min(100%, 400px)',
                 height: 'calc(min(90vw, 400px) * 0.63)', // Credit card ratio (1.586:1 inverted = 0.63)
-                minWidth: '320px',
                 minHeight: '200px'
               }}
             >
               <div className="relative h-full w-full">
                 {/* Background pattern */}
                 <div
-                  className="absolute inset-0 opacity-30"
+                  className="absolute inset-0 opacity-20"
                   style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23${colorScheme.pattern.substring(1)}' fill-opacity='${colorScheme.patternOpacity}' fill-rule='evenodd'%3E%3Cpath d='M10 0l10 10-10 10L0 10z'/%3E%3C/g%3E%3C/svg%3E")`,
-                    backgroundSize: "20px 20px"
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23d1d5db' fill-opacity='0.35'%3E%3Cpath d='M14 0l14 14-14 14L0 14z'/%3E%3C/g%3E%3C/svg%3E")`,
+                    backgroundSize: "28px 28px"
                   }}
                 />
 
                 {/* Card Content */}
-                <div className={`relative p-3 sm:p-4 h-full flex flex-col text-xs sm:text-sm ${colorScheme.text}`}>
-                  {/* Header */}
-                  <div className="flex justify-between items-start mb-2 sm:mb-3">
-                    <div className="flex items-center">
-                      <img
-                        src={ymca}
-                        alt="YMCA Lagos Logo"
-                        className="h-8 w-auto object-contain"
-                      />
-                    </div>
-
+                <div className="relative h-full">
+                  {/* Vertical ribbon */}
+                  <div className={`absolute top-0 right-0 h-full w-12 sm:w-14 bg-gradient-to-b ${theme.ribbonBg} flex items-center justify-center`}>
+                    <span className={`transform -rotate-90 font-black tracking-[0.2em] text-xs sm:text-sm ${theme.ribbonText}`}>
+                      MEMBER ID
+                    </span>
                   </div>
 
-                  {/* Main Content */}
-                  <div className="flex flex-grow min-h-0">
-                    {/* Photo */}
-                    <div className="mr-2 sm:mr-3 flex-shrink-0"
-                      style={{ width: 'clamp(40px, 15%, 60px)', aspectRatio: '2/3' }}>
-                      <img
-                        src={user?.image}
-                        alt="Member"
-                        className="w-full max-w-16 max-h-16 h-full object-cover"
-                      />
+                  <div className="relative p-4 sm:p-5 h-full text-gray-900 flex flex-col">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={ymca}
+                          alt="YMCA Lagos Logo"
+                          className="h-10 w-auto object-contain drop-shadow-sm"
+                        />
+                      </div>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${theme.badge}`}>
+                        {formatMembershipLabel(user?.membership_type)}
+                      </span>
                     </div>
 
-                    {/* Info Section */}
-                    <div className="flex-grow min-w-0">
-                      <div className="space-y-1">
-                        <h3 className="text-xs sm:text-xl">{user?.last_name?.toUpperCase() || ''}</h3>
-                        <h4 className="text-xs sm:text-lg mb-1">{user?.first_name?.toUpperCase() || ''}</h4>
+                    <div className="mt-3 flex gap-3">
+                      <div className={`border-2 ${theme.border} p-1 bg-white`} style={{ width: '70px', height: '90px' }}>
+                        <img src={user?.image} alt="Member" className="w-full h-full object-cover" />
                       </div>
-
-
-                      <div className="space-y-1">
-                        <div className="flex flex-col sm:flex-row sm:gap-2">
-                          <span className="font-normal text-xs whitespace-nowrap">Registration No.:</span>
-                          <span className={`${colorScheme.accent} font-medium text-xs break-all`}>{user?.card?.id_number || ''}</span>
+                      <div className="flex-1">
+                        <div className="text-base font-bold tracking-wide">
+                          {user?.last_name?.toUpperCase() || ''} {user?.first_name?.toUpperCase() || ''}
                         </div>
-
-                        <div className="flex flex-row gap-1 items-center">
-                          <span className="font-normal text-xs whitespace-nowrap">Category:</span>
-                          <span className={`${colorScheme.accent} font-medium text-xs uppercase`}>{user?.membership_type?.replace('_', ' ') || 'FULL MEMBER'}</span>
-                        </div>
-
-                        <div className="flex flex-row gap-1 items-center">
-                          <span className="font-normal text-xs whitespace-nowrap">Expired At:</span>
-                          <span className={`${colorScheme.accent} font-medium text-xs`}>{user?.card?.expired_at || ''}</span>
-                        </div>
-
-                        <div className="mt-1 flex gap-1 items-center">
-                          <div className="font-normal text-xs mb-1">Holder's Signature:</div>
-                          <div className="h-3 sm:h-6">
-                            {user?.card?.signature ? (
-                              <img
-                                src={user?.card?.signature}
-                                alt="Signature"
-                                className="h-full object-contain"
-                              />
-                            ) : (
-                              <div className="border-b border-current h-full w-16"></div>
-                            )}
+                        <div className="mt-2 space-y-1 text-xs">
+                          <div className="flex gap-2 items-baseline">
+                            <span className="text-gray-600">Registration No.:</span>
+                            <span className={`${theme.accent} font-semibold`}>{user?.card?.id_number || ''}</span>
+                          </div>
+                          <div className="flex gap-2 items-baseline">
+                            <span className="text-gray-600">Category:</span>
+                            <span className={`${theme.accent} font-semibold`}>{formatMembershipLabel(user?.membership_type)}</span>
+                          </div>
+                          {user?.membership_type !== 'honorary' && user?.membership_type !== 'life' && (
+                            <div className="flex gap-2 items-baseline">
+                              <span className="text-gray-600">Expiry Date:</span>
+                              <span className={`${theme.accent} font-semibold`}>{formatExpiryDate(user)}</span>
+                            </div>
+                          )}
+                          <div className="flex gap-2 items-baseline">
+                            <span className="text-gray-600">Signature</span>
+                            <div className="h-6 w-24 flex items-end">
+                              {memberSignature && (
+                                <img src={memberSignature} alt="Signature" className="max-h-6 object-contain" />
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* QR Code */}
-                    <div className="flex flex-col items-center ml-1 sm:ml-2 flex-shrink-0">
-                      <div className="bg-white p-1 rounded">
-                        <QRCodeSVG
-                          value={verificationUrl}
-                          size={35}
-                        />
+                    <div className="mt-auto flex items-end justify-end">
+                      <div className="flex items-center gap-2">
+                        <div className="bg-white p-1 rounded shadow-sm">
+                          <QRCodeSVG value={verificationUrl} size={40} />
+                        </div>
                       </div>
-                      <p className="text-xs mt-1 text-center leading-tight">
-                        Scan to<br />verify
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -182,26 +179,25 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }) =
           {/* Back of ID Card */}
           <div className="relative">
             <div
-              className={`${colorScheme.bg} rounded-lg overflow-hidden shadow-xl`}
+              className={`bg-white rounded-lg overflow-hidden shadow-xl border ${theme.border}`}
               style={{
-                width: 'min(90vw, 400px)',
+                width: 'min(100%, 400px)',
                 height: 'calc(min(90vw, 400px) * 0.63)',
-                minWidth: '320px',
                 minHeight: '200px'
               }}
             >
               <div className="relative h-full">
                 {/* Background pattern */}
                 <div
-                  className="absolute inset-0 opacity-30"
+                  className="absolute inset-0 opacity-20"
                   style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23${colorScheme.pattern.substring(1)}' fill-opacity='${colorScheme.patternOpacity}' fill-rule='evenodd'%3E%3Cpath d='M10 0l10 10-10 10L0 10z'/%3E%3C/g%3E%3C/svg%3E")`,
-                    backgroundSize: "20px 20px"
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23d1d5db' fill-opacity='0.35'%3E%3Cpath d='M14 0l14 14-14 14L0 14z'/%3E%3C/g%3E%3C/svg%3E")`,
+                    backgroundSize: "28px 28px"
                   }}
                 />
 
                 {/* Card Content */}
-                <div className={`relative p-4 sm:p-6 text-center h-full w-full flex flex-col justify-center ${colorScheme.text}`}>
+                <div className="relative p-4 sm:p-6 text-center h-full w-full flex flex-col justify-center text-gray-800">
                   <p className="text-xs sm:text-sm mb-1">This ID card remains the property of</p>
                   <h2 className="text-sm sm:text-lg font-bold mb-1">YMCA OF LAGOS</h2>
                   <p className="text-xs sm:text-sm mb-1">77, Awolowo S/W Road Ikoyi, Lagos.</p>
@@ -210,19 +206,15 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }) =
                     If found kindly return to<br />the address above.
                   </p>
 
-                  {/* Signature */}
-                  <div className="h-6 sm:h-8 mb-2">
-                    <img
-                      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 30'%3E%3Cpath d='M10,15 C20,5 30,25 40,15 C50,5 60,25 70,15 C80,5 90,25 95,15' stroke='white' fill='none' stroke-width='1'/%3E%3C/svg%3E"
-                      alt="Official Signature"
-                      className="h-full object-contain mx-auto"
-                    />
-                  </div>
-
-                  <div className="flex justify-center items-center">
-                    <div className=" w-20 sm:w-24 text-center">
-                      <p className="text-xs mt-1">Authorised Signature</p>
+                  <div className="mt-3 flex flex-col items-center justify-end">
+                    <div className="h-8 mb-0.5 flex items-end justify-center w-28">
+                      {resolvedAuthorisedSignature ? (
+                        <img src={resolvedAuthorisedSignature} alt="Authorised Signature" className="max-h-7 object-contain" />
+                      ) : (
+                        <div className="w-24 h-8"></div>
+                      )}
                     </div>
+                    <p className="text-xs">Authorised Signature</p>
                   </div>
                 </div>
               </div>

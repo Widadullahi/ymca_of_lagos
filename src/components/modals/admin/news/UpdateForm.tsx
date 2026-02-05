@@ -179,6 +179,7 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
       type,
       postedAt: isEditing && update ? update.postedAt : new Date(),
       imageBase64s: imageBase64s.length > 0 ? imageBase64s : undefined,
+      imageFiles: imageFiles.length > 0 ? imageFiles : undefined,
       imageUrl: imagePreviews.length > 0 ? imagePreviews[0] : '',
       images: imagePreviews,
       attachments: attachments.length > 0 ? attachments : []

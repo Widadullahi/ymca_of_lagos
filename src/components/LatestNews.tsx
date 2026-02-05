@@ -30,7 +30,7 @@ const truncateContent = (content: string, maxWords: number = 30): string => {
 };
 
 export default function LatestNewsAndUpcomingEvents() {
-  const { fetchWithAuth, displayNotification } = useAuth();
+  const { fetchWithAuth, displayNotification, BACKEND_URL } = useAuth();
   const [updates, setUpdates] = useState<Update[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedUpdate, setSelectedUpdate] = useState<Update | null>(null);
@@ -46,17 +46,48 @@ export default function LatestNewsAndUpcomingEvents() {
     return () => document.body.classList.remove('overflow-hidden');
   }, [isModalOpen]);
 
+  const mediaBaseUrl = BACKEND_URL.replace(/\/api\/v1\/?$/, '');
+  const getImageValue = (value: any): string => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object') {
+      return value.url || value.file || value.path || value.image || value.image_url || value.imageUrl || '';
+    }
+    return '';
+  };
+  const isImageFile = (url?: string | null): boolean => {
+    if (!url) return false;
+    const lower = url.toLowerCase();
+    return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'].some(ext => lower.includes(ext));
+  };
+  const toAbsoluteUrl = (value?: any): string => {
+    const url = getImageValue(value);
+    if (!url) return '';
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('//')) return `${window.location.protocol}${url}`;
+    if (url.startsWith('/')) return `${mediaBaseUrl}${url}`;
+    return `${mediaBaseUrl}/${url.replace(/^\/+/, '')}`;
+  };
+
   useEffect(() => {
     const fetchUpdates = async () => {
       try {
         const response = await fetchWithAuth({ method: 'GET', path: `/posts` });
-        const normalized = (response?.data || []).map((item: any) => {
+        const normalized = (response?.data || [])
+          .filter(Boolean)
+          .map((item: any) => {
           const updateType = item.type || (item.category === 'Events' ? 'upcoming-event' : 'latest-news');
           const category = item.category || (updateType === 'upcoming-event' ? 'Events' : 'Announcements');
-          
+          const primaryImage =
+            item.image || item.image_url || item.imageUrl || item?.image_base64;
+          const imageList = item.images || item.image_list || item.imageUrls || [];
+          const attachmentImages = (item.attachments || [])
+            .map((att: any) => toAbsoluteUrl(att?.file || att?.url))
+            .filter(isImageFile);
           const allImages = Array.from(new Set([
-            item.image,
-            ...(item.images || [])
+            toAbsoluteUrl(primaryImage),
+            ...(imageList || []).map((img: any) => toAbsoluteUrl(img)),
+            ...attachmentImages
           ])).filter(Boolean) as string[];
           
           return {
@@ -65,7 +96,7 @@ export default function LatestNewsAndUpcomingEvents() {
             content: item.content,
             type: updateType,
             category: category,
-            imageUrl: item.image,
+            imageUrl: allImages[0] || '',
             images: allImages,
             postedAt: new Date(item.created_at),
             postedBy: item.user?.first_name || item.user?.email || 'Anonymous',
@@ -73,7 +104,7 @@ export default function LatestNewsAndUpcomingEvents() {
               const fileType = att.file.split('.').pop()?.toLowerCase() || 'file';
               return {
                 name: att.file.split('/').pop() || 'attachment',
-                url: att.file,
+                url: toAbsoluteUrl(att.file),
                 type: fileType,
               };
             }),
@@ -483,3 +514,7 @@ export default function LatestNewsAndUpcomingEvents() {
     </section>
   );
 }
+
+
+
+

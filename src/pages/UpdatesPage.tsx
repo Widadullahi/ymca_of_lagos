@@ -19,7 +19,7 @@ interface Update {
 }
 
 const UpdatesPage: React.FC = () => {
-  const { fetchWithAuth, displayNotification } = useAuth();
+  const { fetchWithAuth, displayNotification, BACKEND_URL } = useAuth();
   const [updates, setUpdates] = useState<Update[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -28,29 +28,58 @@ const UpdatesPage: React.FC = () => {
 
   const categories = ['All', 'Announcements', 'Events', 'Prayer Requests', 'Ministries', 'Sermons'];
 
+  const mediaBaseUrl = BACKEND_URL.replace(/\/api\/v1\/?$/, '');
+  const getImageValue = (value: any): string => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object') {
+      return value.url || value.file || value.path || value.image || value.image_url || value.imageUrl || '';
+    }
+    return '';
+  };
+  const isImageFile = (url?: string | null): boolean => {
+    if (!url) return false;
+    const lower = url.toLowerCase();
+    return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'].some(ext => lower.includes(ext));
+  };
+  const toAbsoluteUrl = (value?: any): string => {
+    const url = getImageValue(value);
+    if (!url) return '';
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('//')) return `${window.location.protocol}${url}`;
+    if (url.startsWith('/')) return `${mediaBaseUrl}${url}`;
+    return `${mediaBaseUrl}/${url.replace(/^\/+/, '')}`;
+  };
+
   useEffect(() => {
     const fetchUpdates = async () => {
       try {
         const response = await fetchWithAuth({ method: 'GET', path: `/posts` });
 
-        const normalized = (response?.data || []).map((item: any) => {
-          const mainImage = item.image;
-          const otherImages = item.images || [];
+        const normalized = (response?.data || [])
+          .filter(Boolean)
+          .map((item: any) => {
+          const mainImage = toAbsoluteUrl(item.image || item.image_url || item.imageUrl || item?.image_base64);
+          const otherImages = (item.images || item.image_list || item.imageUrls || []).map((img: any) => toAbsoluteUrl(img));
+          const attachmentImages = (item.attachments || [])
+            .map((att: any) => toAbsoluteUrl(att?.file || att?.url))
+            .filter(isImageFile);
+          const allImages = [mainImage, ...otherImages, ...attachmentImages].filter(Boolean);
 
           return {
             id: item.id,
             title: item.title,
             content: item.content,
             category: item.category,
-            imageUrl: mainImage,
-            images: otherImages.length > 0 ? [mainImage, ...otherImages] : [mainImage],
+            imageUrl: allImages[0] || '',
+            images: allImages,
             postedAt: new Date(item.created_at),
             postedBy: item.user?.first_name || item.user?.email || 'Anonymous',
             attachments: (item.attachments || []).map((att: any) => {
               const fileType = att.file.split('.').pop()?.toLowerCase();
               return {
                 name: att.file.split('/').pop(),
-                url: att.file,
+                url: toAbsoluteUrl(att.file),
                 type: fileType,
               };
             }),
@@ -181,3 +210,4 @@ const UpdatesPage: React.FC = () => {
 };
 
 export default UpdatesPage;
+

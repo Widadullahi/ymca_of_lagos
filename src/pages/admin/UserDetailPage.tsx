@@ -68,7 +68,15 @@ const UserDetailPage: React.FC = () => {
   };
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  const { fetchWithAuth, displayNotification } = useAuth();
+  const { fetchWithAuth, displayNotification, BACKEND_URL } = useAuth();
+
+  const toAbsoluteUrl = (url?: string | null) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const prefix = BACKEND_URL?.replace(/\/+$/, '') || '';
+    const suffix = url.startsWith('/') ? url : `/${url}`;
+    return `${prefix}${suffix}`;
+  };
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [showStatusConfirmation, setShowStatusConfirmation] = useState(false);
@@ -347,8 +355,12 @@ const UserDetailPage: React.FC = () => {
                       className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:outline-none transition"
                     />
                   ) : (
-                    <p className="text-sm">{member.user_request?.phone_number}</p>
+                    <p className="text-sm">{member.last_name}</p>
                   )}
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Phone Number</p>
+                  <p className="text-sm">{member.user_request?.phone_number || member.phone_number || 'N/A'}</p>
                 </div>
                 
                 <div>
@@ -373,6 +385,40 @@ const UserDetailPage: React.FC = () => {
                   <p className="text-xs text-gray-500">Join Date</p>
                   <p className="text-sm">{new Date(member.created_at).toLocaleDateString()}</p>
                 </div>
+              </div>
+
+              <h3 className="text-lg font-semibold border-b pb-2 mt-6 mb-4 text-blue-700">Additional Personal Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <p className="text-xs text-gray-500">Date of Birth</p>
+                  <p className="text-sm">{member.user_request?.date_of_birth || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Age</p>
+                  <p className="text-sm">{member.user_request?.age || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Marital Status</p>
+                  <p className="text-sm">{member.user_request?.marital_status || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Profession</p>
+                  <p className="text-sm">{member.user_request?.profession || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Occupation</p>
+                  <p className="text-sm">{member.user_request?.occupation || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Religion</p>
+                  <p className="text-sm">{member.user_request?.religion || 'N/A'}</p>
+                </div>
+                {(member.user_request?.religion || '').toLowerCase() !== 'other' && (
+                  <div>
+                    <p className="text-xs text-gray-500">Church Name</p>
+                    <p className="text-sm">{member.user_request?.church_name || 'N/A'}</p>
+                  </div>
+                )}
               </div>
 
               <h3 className="text-lg font-semibold border-b pb-2 mt-6 mb-4 text-blue-700">Location Information</h3>
@@ -433,7 +479,7 @@ const UserDetailPage: React.FC = () => {
                       className="w-full p-1 text-sm border rounded"
                     />
                   ) : (
-                    <p className="text-sm">{member.address || 'N/A'}</p>
+                    <p className="text-sm">{member.user_request?.address || member.address || 'N/A'}</p>
                   )}
                 </div>
               </div>
@@ -444,30 +490,49 @@ const UserDetailPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-xs text-gray-500">Name</p>
-                  <p className="text-sm">{member.user_request?.next_of_kin || 'N/A'}</p>
+                  <p className="text-sm">{member.user_request?.next_of_kin || member.user_request?.nextOfKinName || member.user_request?.next_of_kin_name || member.next_of_kin_name || member.next_of_kin || 'N/A'}</p>
                 </div>
-{/*                 
-                <div>
-                  <p className="text-xs text-gray-500">Relationship</p>
-                  <p className="text-sm">{member.next_of_kin_relationship || 'N/A'}</p>
-                </div>
-                
                 <div>
                   <p className="text-xs text-gray-500">Phone Number</p>
-                  <p className="text-sm">{member.next_of_kin_phone || 'N/A'}</p>
-                </div> */}
-{/*                 
-                <div className="md:col-span-3">
-                  <p className="text-xs text-gray-500">Address</p>
-                  <p className="text-sm">{member.next_of_kin_address || 'N/A'}</p>
-                </div> */}
+                  <p className="text-sm">{member.user_request?.next_of_kin_phone || member.user_request?.nextOfKinNumber || member.next_of_kin_phone || 'N/A'}</p>
+                </div>
+              </div>
+
+              <h3 className="text-lg font-semibold border-b pb-2 mt-6 mb-4 text-blue-700">Identification</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs text-gray-500">Valid ID Type</p>
+                  <p className="text-sm">{member.user_request?.valid_id_type || member.user_request?.validIdType || member.valid_id_type || 'N/A'}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <p className="text-xs text-gray-500">Valid ID Document</p>
+                  {(member.user_request?.valid_id_file || member.valid_id_file) ? (
+                    <div className="space-y-2">
+                      <img
+                        src={toAbsoluteUrl(member.user_request?.valid_id_file || member.valid_id_file)}
+                        alt="Valid ID Document"
+                        className="h-24 w-auto max-w-full object-contain rounded border"
+                      />
+                      <a
+                        href={toAbsoluteUrl(member.user_request?.valid_id_file || member.valid_id_file)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        Open Full Size
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-sm">No ID file uploaded</p>
+                  )}
+                </div>
               </div>
 
               <h3 className="text-lg font-semibold border-b pb-2 mt-6 mb-4 text-blue-700">Signature</h3>
               <div className="mt-2">
-                {member.signature ? (
+                {member.card?.signature || member.user_request?.signature ? (
                   <img 
-                    src={member.signature} 
+                    src={member.card?.signature || member.user_request?.signature} 
                     alt="Member Signature" 
                     className="max-h-20 border border-gray-200 rounded"
                   />
@@ -744,10 +809,10 @@ const UserDetailPage: React.FC = () => {
                 <div>
                   <h4 className="text-base font-medium text-gray-900 mb-3">Identification</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* <div>
-                      <p className="text-xs text-gray-500">Valid ID Number</p>
-                      <p className="text-sm">{member.user_request.valid_id_number || 'N/A'}</p>
-                    </div> */}
+                    <div>
+                      <p className="text-xs text-gray-500">Valid ID Type</p>
+                      <p className="text-sm">{member.user_request.valid_id_type || member.valid_id_type || 'N/A'}</p>
+                    </div>
                     <div>
                       <p className="text-xs text-gray-500">Passport Photo</p>
                       {member.user_request.passport_photo ? (
@@ -761,16 +826,23 @@ const UserDetailPage: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">Valid ID File</p>
-                      {member.user_request.valid_id_file ? (
-                        <a 
-                          href={member.user_request.valid_id_file} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 text-sm"
-                        >
-                          View ID Document
-                        </a>
+                      <p className="text-xs text-gray-500">Valid ID Document</p>
+                      {(member.user_request?.valid_id_file || member.user_request?.validIdFile || member.valid_id_file) ? (
+                        <div className="space-y-2">
+                          <img
+                            src={toAbsoluteUrl(member.user_request?.valid_id_file || member.user_request?.validIdFile || member.valid_id_file)}
+                            alt="Valid ID Document"
+                            className="h-24 w-auto max-w-full object-contain rounded border"
+                          />
+                          <a
+                            href={toAbsoluteUrl(member.user_request?.valid_id_file || member.user_request?.validIdFile || member.valid_id_file)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 text-sm"
+                          >
+                            Open Full Size
+                          </a>
+                        </div>
                       ) : (
                         <p className="text-sm">No ID file uploaded</p>
                       )}
@@ -784,7 +856,7 @@ const UserDetailPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <p className="text-xs text-gray-500">Next of Kin</p>
-                      <p className="text-sm">{member.user_request.next_of_kin || 'N/A'}</p>
+                      <p className="text-sm">{member.user_request.next_of_kin || member.next_of_kin_name || member.next_of_kin || 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Referral Source</p>

@@ -46,7 +46,9 @@ const fileToBase64 = (file: File): Promise<string> => {
 };
 
 // Transform backend response to frontend Update type
-const transformPostToUpdate = (post: PostResponse): any => {
+const transformPostToUpdate = (post: PostResponse | null | undefined): any => {
+  if (!post) return null;
+
   const postedBy = post.user 
     ? `${post.user.first_name} ${post.user.last_name}`.trim() || post.user.username
     : 'Anonymous';

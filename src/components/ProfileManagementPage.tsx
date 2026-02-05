@@ -47,10 +47,12 @@ interface UserRequest {
   occupation: string;
   marital_status: string;
   valid_id_number: string | null;
+  valid_id_type?: string | null;
   passport_photo: string;
   valid_id_file: string | null;
   signature: string | null;
   next_of_kin: string | null;
+  next_of_kin_phone?: string | null;
   referral_source: string | null;
   referral_name: string | null;
   referred_by: string;
@@ -68,6 +70,7 @@ interface UserProfile {
   phone_number: string;
   gender: string;
   image: string;
+  signature?: string | null;
   unit: string;
   church: string | null;
   card: Card;
@@ -81,7 +84,7 @@ interface UserProfile {
 type ModalType = 'deleteAccount' | 'passwordUpdate' | 'dataDownload' | null;
 
 const ProfileManagementPage: React.FC = () => {
-  const { fetchWithAuth, displayNotification, user, setUser, setAuthToken, setGlobalLoading, setGlobalLoadingText } = useAuth(); 
+  const { fetchWithAuth, displayNotification, user, setUser, setAuthToken, setGlobalLoading, setGlobalLoadingText, BACKEND_URL } = useAuth(); 
   
   // Initial profile state with the correct structure
   const [profile, setProfile] = useState<UserProfile>({
@@ -92,6 +95,7 @@ const ProfileManagementPage: React.FC = () => {
     phone_number: '',
     gender: '',
     image: thumbnail,
+    signature: null,
     unit: '',
     church: null,
     card: {
@@ -123,6 +127,36 @@ const ProfileManagementPage: React.FC = () => {
   // Modal state
   const [modalOpen, setModalOpen] = useState<ModalType>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const isAdmin = profile?.role && profile.role !== 'Member';
+  const membershipType = (profile?.membership_type || profile?.card?.membership_type || 'full').toString().toLowerCase();
+  const isHonoraryOrLife = membershipType === 'honorary' || membershipType === 'life';
+  const toAbsoluteUrl = (url?: string | null) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const prefix = BACKEND_URL?.replace(/\/+$/, '') || '';
+    const suffix = url.startsWith('/') ? url : `/${url}`;
+    return `${prefix}${suffix}`;
+  };
+
+  const pickValue = (obj: any, keys: string[]) => {
+    for (const key of keys) {
+      const value = obj?.[key];
+      if (value !== null && value !== undefined && value !== '') return value;
+    }
+    return null;
+  };
+  const getExpiryDate = () => {
+    const now = new Date();
+    return new Date(now.getFullYear() + 1, 4, 31);
+  };
+
+  const calculateDaysRemaining = (expiry: Date) => {
+    const now = new Date();
+    const diff = expiry.getTime() - now.getTime();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  };
+
+  const computedDaysRemaining = !isHonoraryOrLife ? calculateDaysRemaining(getExpiryDate()) : 0;
   
   // Signature file state
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
@@ -430,17 +464,23 @@ const ProfileManagementPage: React.FC = () => {
                 </select>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Card Signature</label>
-                <input
-                  type="file"
-                  name="signature"
-                  accept="image/*"
-                  onChange={handleSignatureChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">Upload your signature for your membership card</p>
-              </div>
+              {!isAdmin && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Card Signature
+                  </label>
+                  <input
+                    type="file"
+                    name="signature"
+                    accept="image/*"
+                    onChange={handleSignatureChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Upload your signature for your membership card.
+                  </p>
+                </div>
+              )}
             </div>
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Profile Picture</label>
@@ -483,7 +523,7 @@ const ProfileManagementPage: React.FC = () => {
                 Member since {formatDate(profile?.created_at)}
               </div>
               
-              {profile?.card?.signature && (
+              {!isAdmin && profile?.card?.signature && (
                 <div className="mt-4">
                   <h3 className="text-sm font-medium text-gray-500">Signature</h3>
                   <img 
@@ -559,14 +599,14 @@ const ProfileManagementPage: React.FC = () => {
                         <h4 className="text-sm font-medium text-gray-500">Address</h4>
                         <p className="mt-1">{profile.user_request.address}</p>
                       </div>
-                      <div>
+                      {/* <div>
                         <h4 className="text-sm font-medium text-gray-500">Home Address</h4>
                         <p className="mt-1">{profile.user_request.home_address || 'Not provided'}</p>
                       </div>
                       <div>
                         <h4 className="text-sm font-medium text-gray-500">Office Address</h4>
                         <p className="mt-1">{profile.user_request.office_address || 'Not provided'}</p>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
 
@@ -596,9 +636,9 @@ const ProfileManagementPage: React.FC = () => {
                           {profile?.card?.expired && 
                             <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Expired</span>
                           }
-                          {!profile?.card?.expired && profile?.card?.days_remaining > 0 &&
-                            <span className="ml-2 text-xs text-gray-500">({profile.card.days_remaining} days remaining)</span>
-                          }
+                      {!isHonoraryOrLife && !profile?.card?.expired && computedDaysRemaining > 0 &&
+                        <span className="ml-2 text-xs text-gray-500">({computedDaysRemaining} days remaining)</span>
+                      }
                         </p>
                       </div>
                     </div>
@@ -627,10 +667,12 @@ const ProfileManagementPage: React.FC = () => {
                         <h4 className="text-sm font-medium text-gray-500">Religion</h4>
                         <p className="mt-1">{profile.user_request.religion}</p>
                       </div>
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-500">Church Name</h4>
-                        <p className="mt-1">{profile.user_request.church_name || 'Not provided'}</p>
-                      </div>
+                      {(profile.user_request.religion || '').toLowerCase() !== 'other' && (
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-500">Church Name</h4>
+                          <p className="mt-1">{profile.user_request.church_name || 'Not provided'}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -639,8 +681,28 @@ const ProfileManagementPage: React.FC = () => {
                     <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Identification</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">Valid ID Number</h4>
-                        <p className="mt-1">{profile.user_request.valid_id_number || 'Not provided'}</p>
+                        <h4 className="text-sm font-medium text-gray-500">Valid ID Type</h4>
+                      <p className="mt-1">
+                        {pickValue(profile.user_request, ['valid_id_type', 'validIdType', 'valid_id_number', 'validIdNumber']) ||
+                          pickValue(profile, ['valid_id_type', 'validIdType', 'valid_id_number', 'validIdNumber']) ||
+                          'Not provided'}
+                      </p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Valid ID Document</h4>
+                        {pickValue(profile.user_request, ['valid_id_file', 'validIdFile']) ||
+                        pickValue(profile, ['valid_id_file', 'validIdFile']) ? (
+                          <img
+                            src={toAbsoluteUrl(
+                              pickValue(profile.user_request, ['valid_id_file', 'validIdFile']) ||
+                                pickValue(profile, ['valid_id_file', 'validIdFile'])
+                            )}
+                            alt="Valid ID Document"
+                            className="mt-2 h-28 w-auto max-w-full object-contain rounded border"
+                          />
+                        ) : (
+                          <p className="mt-1">No ID document uploaded</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -651,7 +713,19 @@ const ProfileManagementPage: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <h4 className="text-sm font-medium text-gray-500">Next of Kin</h4>
-                        <p className="mt-1">{profile.user_request.next_of_kin || 'Not provided'}</p>
+                        <p className="mt-1">
+                          {pickValue(profile.user_request, ['next_of_kin', 'nextOfKinName', 'next_of_kin_name']) ||
+                            pickValue(profile, ['next_of_kin', 'nextOfKinName', 'next_of_kin_name', 'next_of_kin_name']) ||
+                            'Not provided'}
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Next of Kin Phone</h4>
+                        <p className="mt-1">
+                          {pickValue(profile.user_request, ['next_of_kin_phone', 'nextOfKinNumber']) ||
+                            pickValue(profile, ['next_of_kin_phone', 'nextOfKinNumber']) ||
+                            'Not provided'}
+                        </p>
                       </div>
                       <div>
                         <h4 className="text-sm font-medium text-gray-500">Referred By</h4>
@@ -749,8 +823,8 @@ const ProfileManagementPage: React.FC = () => {
                       {profile?.card?.expired && 
                         <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Expired</span>
                       }
-                      {!profile?.card?.expired && profile?.card?.days_remaining &&
-                        <span className="ml-2 text-xs text-gray-500">({profile.card.days_remaining} days remaining)</span>
+                      {!isHonoraryOrLife && !profile?.card?.expired && computedDaysRemaining > 0 &&
+                        <span className="ml-2 text-xs text-gray-500">({computedDaysRemaining} days remaining)</span>
                       }
                     </p>
                   </div>

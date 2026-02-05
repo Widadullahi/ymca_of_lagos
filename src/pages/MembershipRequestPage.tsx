@@ -795,7 +795,8 @@ const RequestForm: React.FC = () => {
       });
     }
     
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const nextValue = name === 'email' ? value.toLowerCase() : value;
+    setFormData(prev => ({ ...prev, [name]: nextValue }));
   };
 
   // Handle Select change (for react-select components)
@@ -942,6 +943,9 @@ const RequestForm: React.FC = () => {
     setLoading(true);
     
     try {
+      if (formData.email) {
+        setFormData(prev => ({ ...prev, email: prev.email.toLowerCase() }));
+      }
       const formDataToSend = new FormData();
       
       // Append all form data
@@ -950,7 +954,8 @@ const RequestForm: React.FC = () => {
           if (value instanceof File) {
             formDataToSend.append(key, value);
           } else {
-            formDataToSend.append(key, value.toString());
+            const finalValue = key === 'email' ? value.toString().toLowerCase() : value.toString();
+            formDataToSend.append(key, finalValue);
           }
         }
       });

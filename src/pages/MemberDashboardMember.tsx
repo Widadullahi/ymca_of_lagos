@@ -11,17 +11,13 @@ const MemberDashboardMember: React.FC = () => {
   const [expiryDate, setExpiryDate] = useState<string>('');
   const [daysRemaining, setDaysRemaining] = useState<number>(0);
   const [isExpired, setIsExpired] = useState<boolean>(false);
+  const [paymentYears, setPaymentYears] = useState<number>(1);
   const navigate = useNavigate();
 
-  // Function to calculate May 31st of the following year
+  // Function to calculate May 31st of NEXT year (always)
   const getMay31Expiry = (): Date => {
     const now = new Date();
-    const currentYear = now.getFullYear();
-    
-    // Check if current date is after May 31st
-    // If after May 31st, expiry is May 31st of NEXT year
-    // If before or on May 31st, expiry is May 31st of CURRENT year
-    const expiryYear = now.getMonth() > 4 ? currentYear + 1 : currentYear;
+    const expiryYear = now.getFullYear() + 1;
     return new Date(expiryYear, 4, 31); // May is month 4 (0-indexed)
   };
 
@@ -66,6 +62,25 @@ const MemberDashboardMember: React.FC = () => {
     }
   }, [user, navigate]);
 
+  const getMemberPrefix = () => {
+    const idNumber = user?.card?.id_number || '';
+    if (idNumber.toUpperCase().startsWith('LYY')) return 'LYY';
+    if (idNumber.toUpperCase().startsWith('LYA')) return 'LYA';
+    return '';
+  };
+
+  const membershipType = (user?.membership_type || 'full').toLowerCase();
+  const isHonoraryOrLife = membershipType === 'honorary' || membershipType === 'life';
+  const memberPrefix = getMemberPrefix();
+  const isCardActive = Boolean(user?.card?.is_active);
+
+  const getDueAmount = (renew: boolean): number => {
+    if (isHonoraryOrLife) return 0;
+    if (memberPrefix === 'LYY') return renew ? 2000 : 2500;
+    if (memberPrefix === 'LYA') return renew ? 2500 : 3000;
+    return renew ? 2500 : 3000;
+  };
+
   async function handleRenewSubscription(renew: boolean) {
     // First payment for demo (you might want to adjust this logic)
     try {
@@ -83,6 +98,9 @@ const MemberDashboardMember: React.FC = () => {
 
     const payload = {
       redirect_url: FRONTEND_URL + '/payment',
+      amount: getDueAmount(renew) * Math.max(1, paymentYears),
+      membership_type: membershipType || 'full',
+      years: Math.max(1, paymentYears),
     };
     
     try {
@@ -112,8 +130,11 @@ const MemberDashboardMember: React.FC = () => {
   }
 
   // Determine membership status
-  const isFirstTime = user?.card?.first_time || false;
-  const membershipActive = !isFirstTime && !isExpired;
+  const membershipActive = isCardActive && !isExpired;
+  const firstPaymentAmount = getDueAmount(false);
+  const renewalAmount = getDueAmount(true);
+  const totalFirstPayment = firstPaymentAmount * Math.max(1, paymentYears);
+  const totalRenewalPayment = renewalAmount * Math.max(1, paymentYears);
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -143,11 +164,13 @@ const MemberDashboardMember: React.FC = () => {
                   <p className="opacity-80">{user?.unit}</p>
                 </div>
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  isFirstTime ? "bg-yellow-100 text-red-800" : membershipActive
-                    ? "bg-green-100 text-green-800" 
-                    : "bg-red-100 text-red-800"
+                  membershipActive
+                    ? "bg-green-100 text-green-800"
+                    : isExpired
+                      ? "bg-red-100 text-red-800"
+                      : "bg-yellow-100 text-red-800"
                 }`}>
-                  {isFirstTime ? "INACTIVE" : membershipActive ? "ACTIVE" : "EXPIRED"}
+                  {membershipActive ? "ACTIVE" : "EXPIRED"}
                 </span>
               </div>
               
@@ -160,11 +183,9 @@ const MemberDashboardMember: React.FC = () => {
               
               <div className="mt-4 text-xs flex items-center">
                 <FaCalendarAlt size={12} className="mr-1" />
-                {isFirstTime 
-                  ? "Not a member yet" 
-                  : membershipActive 
-                    ? `Valid until: ${expiryDate}`
-                    : `Expired on: ${expiryDate}`}
+                {membershipActive
+                  ? `Valid until: ${expiryDate}`
+                  : `Expired on: ${expiryDate}`}
               </div>
             </div>
           </div>
@@ -190,10 +211,10 @@ const MemberDashboardMember: React.FC = () => {
         {/* Subscription Status */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className={`px-6 py-4 border-b ${
-            isFirstTime ? "bg-yellow-50" : membershipActive ? "bg-green-50" : "bg-red-50"
+            !isCardActive && !isExpired ? "bg-yellow-50" : membershipActive ? "bg-green-50" : "bg-red-50"
           }`}>
             <div className="flex items-center">
-              {isFirstTime ? (
+              {!isCardActive && !isExpired ? (
                 <BiErrorCircle className="mr-2 text-yellow-500" size={20} />
               ) : membershipActive ? (
                 <FaCheck className="mr-2 text-green-500" size={20} />
@@ -205,19 +226,45 @@ const MemberDashboardMember: React.FC = () => {
           </div>
           
           <div className="p-6">
-            {isFirstTime ? (
+            {isHonoraryOrLife ? (
+              <div>
+                <div className="flex items-center mb-4">
+                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                    <FaCheck size={32} className="text-green-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">No Dues Required</h3>
+                    <p className="text-sm text-gray-600">Honorary and Life members do not pay dues</p>
+                  </div>
+                </div>
+              </div>
+            ) : !membershipActive ? (
               <div>
                 <div className="flex items-center mb-4">
                   <div className="w-16 h-16 rounded-full bg-yellow-100 flex items-center justify-center mr-4">
                     <BiErrorCircle size={32} className="text-yellow-500" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg">Inactive Membership</h3>
-                    <p className="text-sm text-gray-600">Your digital ID is not activated yet</p>
+                    <h3 className="font-bold text-lg">Expired Membership</h3>
+                    <p className="text-sm text-gray-600">Your digital ID is currently inactive</p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Membership expires annually on May 31st
+                      Membership expires annually on May 31st of next year
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      First payment: NGN {totalFirstPayment.toLocaleString()}
                     </p>
                   </div>
+                </div>
+                <div className="mt-3">
+                  <label className="text-xs text-gray-600">Years to pay</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={paymentYears}
+                    onChange={(e) => setPaymentYears(Math.max(1, Number(e.target.value || 1)))}
+                    className="mt-1 w-24 px-2 py-1 text-sm border border-gray-300 rounded"
+                  />
+                  <p className="text-[11px] text-gray-500 mt-1">You can pay for more than 1 year.</p>
                 </div>
                 
                 <div className="mt-4">
@@ -240,9 +287,23 @@ const MemberDashboardMember: React.FC = () => {
                     <h3 className="font-bold text-lg">Active Membership</h3>
                     <p className="text-sm text-gray-600">Your digital ID is valid and active</p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Annual membership - Expires May 31st
+                      Annual membership - Expires May 31st of next year
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Renewal fee: NGN {totalRenewalPayment.toLocaleString()}
                     </p>
                   </div>
+                </div>
+                <div className="mt-3">
+                  <label className="text-xs text-gray-600">Years to pay</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={paymentYears}
+                    onChange={(e) => setPaymentYears(Math.max(1, Number(e.target.value || 1)))}
+                    className="mt-1 w-24 px-2 py-1 text-sm border border-gray-300 rounded"
+                  />
+                  <p className="text-[11px] text-gray-500 mt-1">You can pay for more than 1 year.</p>
                 </div>
                 
                 <div className="bg-blue-50 p-4 rounded-lg">
@@ -278,7 +339,7 @@ const MemberDashboardMember: React.FC = () => {
                       className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
                       <FaCreditCard size={16} className="mr-2" />
-                      Renew Now
+                      Renew Now (NGN {totalRenewalPayment.toLocaleString()})
                     </button>
                   </div>
                 )}
@@ -304,7 +365,7 @@ const MemberDashboardMember: React.FC = () => {
                     Renew your subscription to continue accessing all member benefits.
                   </p>
                   <p className="text-sm mt-2 font-medium">
-                    Note: All memberships expire annually on May 31st
+                    Note: All memberships expire annually on May 31st of next year
                   </p>
                 </div>
                 
@@ -313,8 +374,11 @@ const MemberDashboardMember: React.FC = () => {
                   className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   <FaCreditCard size={16} className="mr-2" />
-                  Renew Membership Now
+                  Renew Membership Now (NGN {totalRenewalPayment.toLocaleString()})
                 </button>
+                <p className="text-[11px] text-gray-500 mt-3">
+                  Payment charges and VAT are deducted from the payer, not the organization.
+                </p>
               </div>
             )}
           </div>
@@ -325,3 +389,5 @@ const MemberDashboardMember: React.FC = () => {
 };
 
 export default MemberDashboardMember;
+
+

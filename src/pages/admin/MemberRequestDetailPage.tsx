@@ -103,7 +103,7 @@ const MemberRequestDetailPage: React.FC = () => {
         toast.success('Member request approved successfully');
       }
       
-      navigate('/admin/member-requests');
+      navigate('/admin/membership-request');
     } catch (error: any) {
       console.error('Error approving member request:', error);
       
@@ -126,7 +126,7 @@ const MemberRequestDetailPage: React.FC = () => {
     try {
       await memberRequestsApi.rejectMemberRequest(memberRequest.id);
       toast.success('Member request rejected');
-      navigate('/admin/member-requests');
+      navigate('/admin/membership-request');
     } catch (error) {
       console.error('Error rejecting member request:', error);
       toast.error('Failed to reject member request');
@@ -150,7 +150,7 @@ const MemberRequestDetailPage: React.FC = () => {
         <h2 className="text-xl font-semibold text-gray-800 mb-2">Member Request Not Found</h2>
         <p className="text-gray-600 mb-4">The member request you're looking for doesn't exist or has been removed.</p>
         <button
-          onClick={() => navigate('/admin/member-requests')}
+          onClick={() => navigate('/admin/membership-request')}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
           Back to Member Requests
@@ -327,10 +327,6 @@ const MemberRequestDetailPage: React.FC = () => {
               <h3 className="text-base font-medium border-b pb-2 mb-4">Identification</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-gray-500">Valid ID Number</p>
-                  <p className="text-sm">{memberRequest.valid_id_number || 'Not Provided'}</p>
-                </div>
               </div>
               
               {/* Valid ID File */}

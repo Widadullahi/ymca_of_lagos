@@ -16,6 +16,7 @@ const NewIDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }
     const { user: authUser } = useAuth();
     const user = member || authUser;
     const verificationUrl = `${window.location.origin}/verify/#verify=${user?.card?.id_number}`;
+    const memberSignature = user?.card?.signature || null;
 
     return (
         <div className="w-full bg-gray-100 p-4" ref={forwardedRef}>
@@ -28,9 +29,8 @@ const NewIDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }
                         <div
                             className="rounded-lg overflow-hidden shadow-xl relative"
                             style={{
-                                width: 'min(90vw, 400px)',
+                                width: 'min(100%, 400px)',
                                 height: 'calc(min(90vw, 400px) * 0.63)', // Credit card ratio (1.586:1 inverted = 0.63)
-                                minWidth: '320px',
                                 minHeight: '200px',
                                 backgroundImage: `url(${frontCard})`,
                                 backgroundSize: 'cover',
@@ -79,12 +79,12 @@ const NewIDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }
                                         </div>
 
                                         {/* Signature */}
-                                        <div className="mt-1 flex items-center gap-1">
+                                        <div className="mt-1 flex items-center gap-0.5 bg-white/95 px-1.5 py-1 rounded-sm">
                                             <span className="font-normal text-[0.6rem] sm:text-[0.65rem] opacity-80 text-blue-900">Holder's Signature:</span>
-                                            <div className="h-4 sm:h-5 w-16">
-                                                {user?.card?.signature && (
+                                            <div className="h-4 sm:h-5 w-12">
+                                                {memberSignature && (
                                                     <img
-                                                        src={user?.card?.signature}
+                                                        src={memberSignature}
                                                         alt="Signature"
                                                         className="h-full object-contain"
                                                     />
@@ -114,9 +114,8 @@ const NewIDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }
                         <div
                             className="rounded-lg overflow-hidden shadow-xl"
                             style={{
-                                width: 'min(90vw, 400px)',
+                                width: 'min(100%, 400px)',
                                 height: 'calc(min(90vw, 400px) * 0.63)',
-                                minWidth: '320px',
                                 minHeight: '200px',
                                 backgroundImage: `url(${backCard})`,
                                 backgroundSize: 'cover',

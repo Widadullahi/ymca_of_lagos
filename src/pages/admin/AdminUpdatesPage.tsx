@@ -45,13 +45,14 @@ interface ApiResponse {
 }
 
 const AdminUpdatesPage = () => {
-  const { fetchWithAuth } = useAuth();
+  const { fetchWithAuth, BACKEND_URL } = useAuth();
   const [updates, setUpdates] = useState<Update[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [totalCount, setTotalCount] = useState(0);
+  const [selectedUpdateIds, setSelectedUpdateIds] = useState<string[]>([]);
 
   // Form state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -62,6 +63,29 @@ const AdminUpdatesPage = () => {
   // Initialize API with fetchWithAuth
   const postsApi = createPostsApi(fetchWithAuth);
 
+  const mediaBaseUrl = BACKEND_URL.replace(/\/api\/v1\/?$/, '');
+  const getImageValue = (value: any): string => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object') {
+      return value.url || value.file || value.path || value.image || value.image_url || value.imageUrl || '';
+    }
+    return '';
+  };
+  const isImageFile = (url?: string | null): boolean => {
+    if (!url) return false;
+    const lower = url.toLowerCase();
+    return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'].some(ext => lower.includes(ext));
+  };
+  const toAbsoluteUrl = (value?: any): string => {
+    const url = getImageValue(value);
+    if (!url) return '';
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('//')) return `${window.location.protocol}${url}`;
+    if (url.startsWith('/')) return `${mediaBaseUrl}${url}`;
+    return `${mediaBaseUrl}/${url.replace(/^\/+/, '')}`;
+  };
+
   // Fetch updates from API
   const fetchUpdates = async () => {
     try {
@@ -70,24 +94,31 @@ const AdminUpdatesPage = () => {
 
       const response = await fetchWithAuth({
         method: 'GET',
-        path: `/posts/?page_size=10&category=${selectedCategory}`,
+        path: `/posts/?page_size=100`,
       });
 
       if (response?.data) {
         // Transform data to include type field
-        const transformedData: Update[] = response.data.map((item: any) => ({
+        const transformedData: Update[] = response.data
+          .filter(Boolean)
+          .map((item: any) => ({
           ...item,
           // Ensure type is always defined and matches expected values
           type: item.type && (item.type === 'latest-news' || item.type === 'upcoming-event') 
             ? item.type 
             : (item.category === 'Events' ? 'upcoming-event' : 'latest-news'),
           postedAt: new Date(item.created_at),
-          images: item.images || [] // Ensure images array exists
+          imageUrl: toAbsoluteUrl(item.image || item.image_url || item.imageUrl || item?.image_base64),
+          images: [
+            ...((item.images || item.image_list || item.imageUrls || []).map((img: any) => toAbsoluteUrl(img))),
+            ...((item.attachments || []).map((att: any) => toAbsoluteUrl(att?.file || att?.url)).filter(isImageFile))
+          ].filter(Boolean)
         }));
         
-        setUpdates(transformedData);
-        setTotalCount(response.data.length);
-      }
+      setUpdates(transformedData);
+      setTotalCount(response.data.length);
+      setSelectedUpdateIds([]);
+    }
     } catch (err) {
       console.error('Error fetching updates:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch updates');
@@ -99,19 +130,12 @@ const AdminUpdatesPage = () => {
   // Fetch updates on component mount and when search/filter changes
   useEffect(() => {
     fetchUpdates();
-  }, [selectedCategory]);
-
-  // Debounced search effect
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchUpdates();
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
+  }, []);
 
   // Open form to add new update
   const handleAddUpdate = () => {
+    setIsSubmitting(false);
+    setError(null);
     setIsEditing(false);
     setUpdateToEdit(null);
     setIsFormOpen(true);
@@ -119,12 +143,15 @@ const AdminUpdatesPage = () => {
 
   // Save update (new or edited)
   const handleSaveUpdate = async (formData: any) => {
+    let success = false;
     try {
       setIsSubmitting(true);
       setError(null);
 
       console.log('Form data received in parent:', formData);
-      
+
+      const normalizeResponse = (response: any) => response?.data ?? response;
+
       // Prepare data for API
       let apiData: any = {
         title: formData.title,
@@ -134,26 +161,28 @@ const AdminUpdatesPage = () => {
         category: formData.type === 'upcoming-event' ? 'Events' : 'Announcements'
       };
 
-      // Handle image if present
-      if (formData.image) {
-        // If image is base64 string
-        if (typeof formData.image === 'string') {
-          apiData.image = formData.image;
+      // Handle images (use base64s from form)
+      if (formData.imageBase64s && Array.isArray(formData.imageBase64s) && formData.imageBase64s.length > 0) {
+        apiData.images = formData.imageBase64s;
+        // Also send a single image for backends expecting one field
+        apiData.image = formData.imageBase64s[0];
+        apiData.image_base64 = formData.imageBase64s[0];
+        if (formData.imageFiles && Array.isArray(formData.imageFiles) && formData.imageFiles.length > 0) {
+          apiData.image_name = formData.imageFiles[0].name;
         }
-      }
-
-      // Handle additional images
-      if (formData.images && Array.isArray(formData.images)) {
-        apiData.images = formData.images;
       }
 
       // Handle attachments
       if (formData.attachments && Array.isArray(formData.attachments)) {
-        apiData.attachments = formData.attachments.map((att: any) => ({
-          file: att.data, // base64 string
-          name: att.name,
-          type: att.type
-        }));
+        const mapped = formData.attachments
+          .filter((att: any) => att.base64 || att.file)
+          .map((att: any) => ({
+            file_base64: att.base64,
+            file_name: att.name,
+            type: att.type
+          }));
+        apiData.attachments = mapped;
+        apiData.new_attachments = mapped;
       }
 
       console.log('Sending to API:', apiData);
@@ -164,45 +193,67 @@ const AdminUpdatesPage = () => {
         response = await postsApi.updatePost(updateToEdit.id, apiData);
         
         if (response) {
+          const normalized = normalizeResponse(response);
+          const createdAt = normalized?.created_at || normalized?.postedAt || new Date().toISOString();
           // Update local state
           setUpdates(prev => 
             prev.map(update => 
               update.id === updateToEdit.id ? {
-                ...response as ApiResponse,
+                ...normalized as ApiResponse,
                 // Ensure type is defined
-                type: (response?.type && (response.type === 'latest-news' || response.type === 'upcoming-event')) 
-                  ? response.type 
+                type: (normalized?.type && (normalized.type === 'latest-news' || normalized.type === 'upcoming-event')) 
+                  ? normalized.type 
                   : 'latest-news',
-                postedAt: new Date(response?.created_at || new Date()),
-                images: response?.images || []
+                postedAt: new Date(createdAt),
+                created_at: createdAt,
+                imageUrl: toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64),
+                images: [
+                  ...((normalized?.images || normalized?.image_list || normalized?.imageUrls || []).map((img: any) => toAbsoluteUrl(img))),
+                  ...((normalized?.attachments || []).map((att: any) => toAbsoluteUrl(att?.file || att?.url)).filter(isImageFile))
+                ].filter(Boolean)
               } : update
             )
           );
           alert('Update updated successfully!');
+          success = true;
+        } else {
+          await fetchUpdates();
+          alert('Update updated successfully!');
+          success = true;
         }
       } else {
         // Create new update
         response = await postsApi.createPost(apiData);
         
         if (response) {
+          const normalized = normalizeResponse(response);
+          const createdAt = normalized?.created_at || normalized?.postedAt || new Date().toISOString();
           // Add to local state at the beginning
           const newUpdate: Update = {
-            ...response,
+            ...normalized,
             // Ensure type is defined
-            type: (response.type && (response.type === 'latest-news' || response.type === 'upcoming-event')) 
-              ? response.type 
+            type: (normalized?.type && (normalized.type === 'latest-news' || normalized.type === 'upcoming-event')) 
+              ? normalized.type 
               : 'latest-news',
-            postedAt: new Date(response.created_at),
-            images: response.images || []
+            postedAt: new Date(createdAt),
+            created_at: createdAt,
+            imageUrl: toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64),
+            images: [
+              ...((normalized?.images || normalized?.image_list || normalized?.imageUrls || []).map((img: any) => toAbsoluteUrl(img))),
+              ...((normalized?.attachments || []).map((att: any) => toAbsoluteUrl(att?.file || att?.url)).filter(isImageFile))
+            ].filter(Boolean)
           };
           setUpdates(prev => [newUpdate, ...prev]);
           setTotalCount(prev => prev + 1);
           alert('Update created successfully!');
+          success = true;
+        } else {
+          await fetchUpdates();
+          alert('Update created successfully!');
+          success = true;
         }
       }
       
-      // Close form on success
-      setIsFormOpen(false);
     } catch (err: any) {
       console.error('Error saving update:', err);
       // Show detailed error if available
@@ -214,6 +265,11 @@ const AdminUpdatesPage = () => {
       // Keep form open so user can fix errors
     } finally {
       setIsSubmitting(false);
+      if (success) {
+        setIsFormOpen(false);
+        setIsEditing(false);
+        setUpdateToEdit(null);
+      }
     }
   };
 
@@ -237,6 +293,39 @@ const AdminUpdatesPage = () => {
     }
   };
 
+  const toggleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedUpdateIds(filteredUpdates.map(u => u.id));
+    } else {
+      setSelectedUpdateIds([]);
+    }
+  };
+
+  const toggleSelectUpdate = (id: string) => {
+    setSelectedUpdateIds(prev =>
+      prev.includes(id) ? prev.filter(uid => uid !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedUpdateIds.length === 0) return;
+    if (!window.confirm(`Delete ${selectedUpdateIds.length} update(s)? This cannot be undone.`)) return;
+    try {
+      setIsSubmitting(true);
+      await Promise.all(selectedUpdateIds.map(id => postsApi.deletePost(id)));
+      setUpdates(prev => prev.filter(u => !selectedUpdateIds.includes(u.id)));
+      setTotalCount(prev => Math.max(0, prev - selectedUpdateIds.length));
+      setSelectedUpdateIds([]);
+      alert('Updates deleted successfully!');
+    } catch (err) {
+      console.error('Bulk delete failed:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete updates');
+      await fetchUpdates();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Handle form cancel
   const handleFormCancel = () => {
     setIsFormOpen(false);
@@ -254,6 +343,18 @@ const AdminUpdatesPage = () => {
   // Categories for filtering - simplified
   const categories = ['All', 'latest-news', 'upcoming-event'];
 
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const filteredUpdates = updates.filter((update) => {
+    if (selectedCategory !== 'All' && update.type !== selectedCategory) {
+      return false;
+    }
+    if (!normalizedSearchTerm) return true;
+    return (
+      update.title?.toLowerCase().includes(normalizedSearchTerm) ||
+      update.content?.toLowerCase().includes(normalizedSearchTerm)
+    );
+  });
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-6">
@@ -265,16 +366,27 @@ const AdminUpdatesPage = () => {
             </span>
           )}
         </h1>
-        <button
-          onClick={handleAddUpdate}
-          disabled={isSubmitting}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-          </svg>
-          Add New Update
-        </button>
+        <div className="flex items-center gap-3">
+          {selectedUpdateIds.length > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              disabled={isSubmitting}
+              className="inline-flex items-center px-4 py-2 border border-red-600 rounded-md text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Delete Selected ({selectedUpdateIds.length})
+            </button>
+          )}
+          <button
+            onClick={handleAddUpdate}
+            disabled={isSubmitting}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Add New Update
+          </button>
+        </div>
       </div>
 
       {/* Error message */}
@@ -358,7 +470,7 @@ const AdminUpdatesPage = () => {
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
-      ) : updates.length === 0 ? (
+      ) : filteredUpdates.length === 0 ? (
         <div className="text-center py-12">
           <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -376,6 +488,14 @@ const AdminUpdatesPage = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th scope="col" className="px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={filteredUpdates.length > 0 && selectedUpdateIds.length === filteredUpdates.length}
+                    onChange={(e) => toggleSelectAll(e.target.checked)}
+                    aria-label="Select all updates"
+                  />
+                </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
@@ -383,8 +503,16 @@ const AdminUpdatesPage = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {updates.map((update) => (
+              {filteredUpdates.map((update) => (
                 <tr key={update.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedUpdateIds.includes(update.id)}
+                      onChange={() => toggleSelectUpdate(update.id)}
+                      aria-label={`Select update ${update.title}`}
+                    />
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                       update.type === 'upcoming-event' 

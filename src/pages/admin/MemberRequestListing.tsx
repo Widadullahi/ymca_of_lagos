@@ -163,44 +163,72 @@ const MemberRequestListing: React.FC = () => {
     fetchMembers();
   },[])
 
+  const normalize = (value?: string | null) =>
+    (value ?? '').toString().trim().toLowerCase();
+
+  const matchesMembershipCategory = (memberCategory: any, filterValue: string) => {
+    const selected = normalize(filterValue);
+    if (!selected) return true;
+
+    const value = normalize(memberCategory);
+    if (!value) {
+      return selected === 'full membership';
+    }
+
+    const aliases: Record<string, string[]> = {
+      'full membership': ['full', 'full member', 'full membership', 'full_member'],
+      'honorary membership': ['honorary', 'honourary', 'honorary membership', 'honourary membership', 'honorary_member'],
+      'ordinary membership': ['ordinary', 'ordinary member', 'ordinary membership', 'ordinary_member'],
+      'life membership': ['life', 'life member', 'life membership', 'life_member'],
+    };
+
+    if (value === selected) return true;
+    if (aliases[selected]?.some(a => value === a)) return true;
+    return aliases[selected]?.some(a => value.includes(a)) ?? value.includes(selected);
+  };
+
   // Apply filters
   useEffect(() => {
     let result = members;
 
     // Apply search filter
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+      const term = normalize(searchTerm);
       result = result.filter(member => 
-        member?.first_name.toLowerCase().includes(term) || 
-        member?.last_name.toLowerCase().includes(term) || 
-        member?.email?.toLowerCase().includes(term) ||
-        member?.phone_number.toLowerCase().includes(term)
+        normalize(member?.first_name).includes(term) || 
+        normalize(member?.last_name).includes(term) || 
+        normalize(member?.email).includes(term) ||
+        normalize(member?.phone_number).includes(term)
       );
     }
 
     // Apply category filter
     if (categoryFilter) {
-      result = result.filter(member => member.category === categoryFilter);
+      result = result.filter(member => normalize(member.category) === normalize(categoryFilter));
     }
 
     // Apply status filter
     if (statusFilter) {
-      result = result.filter(member => member.status === statusFilter);
+      result = result.filter(member => normalize(member.status) === normalize(statusFilter));
     }
 
     // Apply unit filter
     if (unitFilter) {
-      result = result.filter(member => member.unit === unitFilter);
+      result = result.filter(member =>
+        normalize(member.unit || member.user_request?.unit) === normalize(unitFilter)
+      );
     }
 
     // Apply gender filter
     if (genderFilter) {
-      result = result.filter(member => member.gender === genderFilter);
+      result = result.filter(member => normalize(member.gender) === normalize(genderFilter));
     }
 
     // Apply membership category filter
     if (membershipCategoryFilter) {
-      result = result.filter(member => member.membership_category === membershipCategoryFilter);
+      result = result.filter(member =>
+        matchesMembershipCategory(member.membership_category, membershipCategoryFilter)
+      );
     }
 
     setFilteredMembers(result);
@@ -346,10 +374,10 @@ const MemberRequestListing: React.FC = () => {
               className="w-full p-2 border border-gray-300 rounded-md"
             >
               <option value="">All Units</option>
-              <option value="Coundil of church">Council of Church</option>
+              <option value="Council of Church">Council of Church</option>
               <option value="Youth Council">Youth Council</option>
               <option value="Y's Men">Y's Men</option>
-              <option value="Central club">Central Club</option>
+              <option value="Central Club">Central Club</option>
             </select>
           </div>
 
@@ -364,8 +392,8 @@ const MemberRequestListing: React.FC = () => {
               className="w-full p-2 border border-gray-300 rounded-md"
             >
               <option value="">All Genders</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
             </select>
           </div>
         </div>

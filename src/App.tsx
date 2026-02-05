@@ -29,6 +29,7 @@ import HistoryPage from './components/HistoryPage';
 import Vision2030Page from './components/Vision2030Page';
 import LatestNewsPage from './pages/LatestNewsPage';
 import NewsDetailPage from './pages/NewsDetailPage';
+import AdminSignaturePage from './pages/admin/AdminSignaturePage';
 
 
 
@@ -74,6 +75,7 @@ const App: React.FC = () => {
         <Route path="/admin/updates/edit/:id" element={<RoleBasedRoute element={<AdminUpdatesPage />}  requiredRole="Admin"/>} />
         
         <Route path="/admin/account" element={<RoleBasedRoute element={<ProfileManagementPage />}  requiredRole="Admin"/>} />
+        <Route path="/admin/signature" element={<RoleBasedRoute element={<AdminSignaturePage />} requiredRole="Admin" />} />
         <Route path="*" element={<Navigate to={user?.role == "Admin" ? "/admin/dashboard" : "/dashboard"} />} />
       </Routes>
     </Router>

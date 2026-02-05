@@ -1,15 +1,18 @@
 import React, { useRef } from 'react';
 import IDCardPreview from './IDCardPreview';
+import NewIDCardPreview from './NewIDCardPreview';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
 interface IDCardGeneratorProps {
   member?: any;
   isAdminView?: boolean;
+  variant?: 'modern' | 'image';
 }
 
-const IDCardGenerator: React.FC<IDCardGeneratorProps> = ({ member, isAdminView }) => {
+const IDCardGenerator: React.FC<IDCardGeneratorProps> = ({ member, isAdminView, variant = 'modern' }) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const CardComponent = variant === 'image' ? NewIDCardPreview : IDCardPreview;
 
   // Instead of using window.print(), create a new window with only the card content
   const handlePrintCard = () => {
@@ -135,7 +138,7 @@ const IDCardGenerator: React.FC<IDCardGeneratorProps> = ({ member, isAdminView }
 
         <div className="flex flex-col items-center">
           <div className="mb-6" ref={cardRef}>
-            <IDCardPreview member={member} />
+            <CardComponent member={member} />
           </div>
           <div className="text-center mb-4">
             <p className="text-gray-700 mb-4">
