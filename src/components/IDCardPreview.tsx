@@ -90,9 +90,8 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }) =
             <div
               className={`bg-white rounded-lg overflow-hidden shadow-xl border ${theme.border}`}
               style={{
-                width: 'min(100%, 400px)',
-                height: 'calc(min(90vw, 400px) * 0.63)', // Credit card ratio (1.586:1 inverted = 0.63)
-                minHeight: '200px'
+                width: '400px',
+                height: '252px'
               }}
             >
               <div className="relative h-full w-full">
@@ -181,9 +180,8 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }) =
             <div
               className={`bg-white rounded-lg overflow-hidden shadow-xl border ${theme.border}`}
               style={{
-                width: 'min(100%, 400px)',
-                height: 'calc(min(90vw, 400px) * 0.63)',
-                minHeight: '200px'
+                width: '400px',
+                height: '252px'
               }}
             >
               <div className="relative h-full">

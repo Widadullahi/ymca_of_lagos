@@ -172,17 +172,31 @@ const AdminUpdatesPage = () => {
         }
       }
 
-      // Handle attachments
-      if (formData.attachments && Array.isArray(formData.attachments)) {
-        const mapped = formData.attachments
-          .filter((att: any) => att.base64 || att.file)
-          .map((att: any) => ({
-            file_base64: att.base64,
-            file_name: att.name,
-            type: att.type
-          }));
-        apiData.attachments = mapped;
-        apiData.new_attachments = mapped;
+      // Handle attachments (including extra images beyond the primary)
+      const mappedAttachments = (formData.attachments && Array.isArray(formData.attachments))
+        ? formData.attachments
+            .filter((att: any) => att.base64 || att.file)
+            .map((att: any) => ({
+              file_base64: att.base64,
+              file_name: att.name,
+              type: att.type
+            }))
+        : [];
+
+      const extraImageAttachments = (formData.imageBase64s && Array.isArray(formData.imageBase64s) && formData.imageBase64s.length > 1)
+        ? formData.imageBase64s.slice(1).map((base64: string, index: number) => ({
+            file_base64: base64,
+            file_name:
+              (formData.imageFiles && Array.isArray(formData.imageFiles) && formData.imageFiles[index + 1]?.name) ||
+              `image_${index + 2}.png`,
+            type: 'image'
+          }))
+        : [];
+
+      const combinedAttachments = [...mappedAttachments, ...extraImageAttachments];
+      if (combinedAttachments.length > 0) {
+        apiData.attachments = combinedAttachments;
+        apiData.new_attachments = combinedAttachments;
       }
 
       console.log('Sending to API:', apiData);

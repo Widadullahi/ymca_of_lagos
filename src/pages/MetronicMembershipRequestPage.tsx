@@ -67,7 +67,14 @@ const MetronicMembershipRequestPage = () => {
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     const nextValue = name === 'email' ? value.toLowerCase() : value;
-    setFormData({...formData, [name]: nextValue});
+    if (name === 'unit') {
+      const unitLower = nextValue.toLowerCase();
+      if (unitLower.includes("y's men") || unitLower.includes('central club')) {
+        setFormData({ ...formData, unit: nextValue, club: '' });
+        return;
+      }
+    }
+    setFormData({ ...formData, [name]: nextValue });
   };
 
   return (
@@ -185,16 +192,18 @@ const MetronicMembershipRequestPage = () => {
                   required 
                 />
               </div>
-              <div className="mb-4">
-                <label className="block text-sm font-bold mb-2">Club</label>
-                <input 
-                  type="text" 
-                  name="club"
-                  value={formData.club}
-                  onChange={handleChange}
-                  className="border rounded w-full py-2 px-3" 
-                />
-              </div>
+              {!formData.unit.toLowerCase().includes("y's men") && !formData.unit.toLowerCase().includes('central club') && (
+                <div className="mb-4">
+                  <label className="block text-sm font-bold mb-2">Club</label>
+                  <input 
+                    type="text" 
+                    name="club"
+                    value={formData.club}
+                    onChange={handleChange}
+                    className="border rounded w-full py-2 px-3" 
+                  />
+                </div>
+              )}
             </div>
 
             <button type="submit" className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 w-full">

@@ -2,6 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Visible scrollbar for modal content (Chrome/WebKit) */
+.modal-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 8px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb {
+  background: #c7c7c7;
+  border-radius: 8px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
 /* Add this to your global CSS file (e.g., styles/globals.css) */
 
 @media print {

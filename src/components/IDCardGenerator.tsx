@@ -3,16 +3,22 @@ import IDCardPreview from './IDCardPreview';
 import NewIDCardPreview from './NewIDCardPreview';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { useAuth } from '../context/NewAuthContext';
 
 interface IDCardGeneratorProps {
   member?: any;
   isAdminView?: boolean;
-  variant?: 'modern' | 'image';
+  variant?: 'modern' | 'image' | 'auto';
 }
 
-const IDCardGenerator: React.FC<IDCardGeneratorProps> = ({ member, isAdminView, variant = 'modern' }) => {
+const IDCardGenerator: React.FC<IDCardGeneratorProps> = ({ member, isAdminView, variant = 'auto' }) => {
+  const { user: authUser } = useAuth();
   const cardRef = useRef<HTMLDivElement>(null);
-  const CardComponent = variant === 'image' ? NewIDCardPreview : IDCardPreview;
+  const effectiveUser = member || authUser;
+  const membershipType = (effectiveUser?.membership_type || '').toString().toLowerCase();
+  const shouldUseTemplate = membershipType === 'ordinary' || membershipType === 'full';
+  const resolvedVariant = variant === 'auto' ? (shouldUseTemplate ? 'image' : 'modern') : variant;
+  const CardComponent = resolvedVariant === 'image' ? NewIDCardPreview : IDCardPreview;
 
   // Instead of using window.print(), create a new window with only the card content
   const handlePrintCard = () => {
@@ -132,7 +138,7 @@ const IDCardGenerator: React.FC<IDCardGeneratorProps> = ({ member, isAdminView, 
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
+    <div className="w-full max-w-none mx-auto">
       <div className={`${isAdminView ? '' : 'bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4'}`}>
         {!isAdminView && <h2 className="text-2xl font-bold mb-6 text-center">ID Card Generator</h2>}
 

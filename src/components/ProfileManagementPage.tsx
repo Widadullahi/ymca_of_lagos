@@ -145,6 +145,17 @@ const ProfileManagementPage: React.FC = () => {
     }
     return null;
   };
+  const formatValidIdType = (value?: string | null) => {
+    const key = (value ?? '').toString().trim().toLowerCase();
+    const labels: Record<string, string> = {
+      national_id: 'National ID',
+      international_passport: 'International Passport',
+      voters_card: 'Voters Card',
+      drivers_license: "Driver's License",
+      others: 'Others',
+    };
+    return labels[key] || value || 'Not provided';
+  };
   const getExpiryDate = () => {
     const now = new Date();
     return new Date(now.getFullYear() + 1, 4, 31);
@@ -683,9 +694,10 @@ const ProfileManagementPage: React.FC = () => {
                       <div>
                         <h4 className="text-sm font-medium text-gray-500">Valid ID Type</h4>
                       <p className="mt-1">
-                        {pickValue(profile.user_request, ['valid_id_type', 'validIdType', 'valid_id_number', 'validIdNumber']) ||
-                          pickValue(profile, ['valid_id_type', 'validIdType', 'valid_id_number', 'validIdNumber']) ||
-                          'Not provided'}
+                        {formatValidIdType(
+                          pickValue(profile.user_request, ['valid_id_type', 'validIdType']) ||
+                          pickValue(profile, ['valid_id_type', 'validIdType'])
+                        )}
                       </p>
                       </div>
                       <div>

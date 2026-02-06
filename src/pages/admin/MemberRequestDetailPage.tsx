@@ -45,9 +45,12 @@ interface MemberRequest {
   
   // Referral Information
   next_of_kin: string;
+  next_of_kin_name?: string;
+  next_of_kin_phone?: string;
   referral_source: string;
   referral_name: string;
   referred_by: string;
+  valid_id_type?: string;
 }
 
 const MemberRequestDetailPage: React.FC = () => {
@@ -63,6 +66,18 @@ const MemberRequestDetailPage: React.FC = () => {
   const [showApproveConfirmation, setShowApproveConfirmation] = useState<boolean>(false);
   const [showRejectConfirmation, setShowRejectConfirmation] = useState<boolean>(false);
   const [processingAction, setProcessingAction] = useState<boolean>(false);
+  const normalize = (value?: string | null) => (value ?? '').toString().trim().toLowerCase();
+  const formatValidIdType = (value?: string | null) => {
+    const key = normalize(value);
+    const labels: Record<string, string> = {
+      national_id: 'National ID',
+      international_passport: 'International Passport',
+      voters_card: 'Voters Card',
+      drivers_license: "Driver's License",
+      others: 'Others',
+    };
+    return labels[key] || value || 'Not Provided';
+  };
 
   useEffect(() => {
     const fetchMemberRequest = async () => {
@@ -237,11 +252,6 @@ const MemberRequestDetailPage: React.FC = () => {
                 </div>
                 
                 <div>
-                  <p className="text-xs text-gray-500">Place of Birth</p>
-                  <p className="text-sm">{memberRequest.place_of_birth || 'Not Provided'}</p>
-                </div>
-                
-                <div>
                   <p className="text-xs text-gray-500">Marital Status</p>
                   <p className="text-sm">{memberRequest.marital_status || 'Not Provided'}</p>
                 </div>
@@ -258,13 +268,15 @@ const MemberRequestDetailPage: React.FC = () => {
                 
                 <div>
                   <p className="text-xs text-gray-500">Religion</p>
-                  <p className="text-sm">{memberRequest.religion || 'Not Provided'}</p>
+                  <p className="text-sm">{memberRequest.religion || 'Other'}</p>
                 </div>
                 
-                <div className="md:col-span-2">
-                  <p className="text-xs text-gray-500">Church Name</p>
-                  <p className="text-sm">{memberRequest.church_name || 'Not Provided'}</p>
-                </div>
+                {normalize(memberRequest.religion) === 'christian' && (
+                  <div className="md:col-span-2">
+                    <p className="text-xs text-gray-500">Church Name</p>
+                    <p className="text-sm">{memberRequest.church_name || 'Not Provided'}</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -298,10 +310,6 @@ const MemberRequestDetailPage: React.FC = () => {
                   <p className="text-sm">{memberRequest.home_address || memberRequest.address || 'Not Provided'}</p>
                 </div>
                 
-                <div className="md:col-span-3">
-                  <p className="text-xs text-gray-500">Office Address</p>
-                  <p className="text-sm">{memberRequest.office_address || 'Not Provided'}</p>
-                </div>
               </div>
             </div>
 
@@ -327,21 +335,23 @@ const MemberRequestDetailPage: React.FC = () => {
               <h3 className="text-base font-medium border-b pb-2 mb-4">Identification</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              </div>
-              
-              {/* Valid ID File */}
-              {memberRequest.valid_id_file && (
-                <div className="mt-4">
-                  <p className="text-xs text-gray-500 mb-2">Valid ID Document</p>
-                  <div className="flex justify-start">
+                <div>
+                  <p className="text-xs text-gray-500">Valid ID Type</p>
+                  <p className="text-sm">{formatValidIdType(memberRequest.valid_id_type)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Valid ID Document</p>
+                  {memberRequest.valid_id_file ? (
                     <img 
                       src={memberRequest.valid_id_file} 
                       alt="Valid ID Document"
-                      className="w-32 h-20 object-contain rounded-lg border border-gray-300 shadow-sm"
+                      className="mt-2 w-32 h-20 object-contain rounded-lg border border-gray-300 shadow-sm"
                     />
-                  </div>
+                  ) : (
+                    <p className="text-sm">Not Provided</p>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Referral Information */}
@@ -351,22 +361,24 @@ const MemberRequestDetailPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-gray-500">Referred By</p>
-                  <p className="text-sm">{memberRequest.referred_by === 'yes' ? 'Yes' : 'No'}</p>
+                  <p className="text-sm">{normalize(memberRequest.referred_by) === 'yes' ? 'Yes' : 'No'}</p>
+                </div>
+
+                {normalize(memberRequest.referred_by) === 'yes' && (
+                  <div>
+                    <p className="text-xs text-gray-500">Referral Name</p>
+                    <p className="text-sm">{memberRequest.referral_name || 'Not Provided'}</p>
+                  </div>
+                )}
+                
+                <div>
+                  <p className="text-xs text-gray-500">Next of Kin Name</p>
+                  <p className="text-sm">{memberRequest.next_of_kin_name || memberRequest.next_of_kin || 'Not Provided'}</p>
                 </div>
                 
                 <div>
-                  <p className="text-xs text-gray-500">Referral Source</p>
-                  <p className="text-sm">{memberRequest.referral_source || 'Not Provided'}</p>
-                </div>
-                
-                <div>
-                  <p className="text-xs text-gray-500">Referral Name</p>
-                  <p className="text-sm">{memberRequest.referral_name || 'Not Provided'}</p>
-                </div>
-                
-                <div>
-                  <p className="text-xs text-gray-500">Next of Kin</p>
-                  <p className="text-sm">{memberRequest.next_of_kin || 'Not Provided'}</p>
+                  <p className="text-xs text-gray-500">Next of Kin Phone Number</p>
+                  <p className="text-sm">{memberRequest.next_of_kin_phone || 'Not Provided'}</p>
                 </div>
               </div>
             </div>

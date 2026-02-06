@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { useAuth } from '../context/NewAuthContext.js';
@@ -36,6 +36,7 @@ export default function LatestNewsAndUpcomingEvents() {
   const [selectedUpdate, setSelectedUpdate] = useState<Update | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const modalBodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isModalOpen) {
@@ -44,6 +45,23 @@ export default function LatestNewsAndUpcomingEvents() {
       document.body.classList.remove('overflow-hidden');
     }
     return () => document.body.classList.remove('overflow-hidden');
+  }, [isModalOpen]);
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!modalBodyRef.current) return;
+
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        const direction = event.key === 'ArrowDown' ? 1 : -1;
+        modalBodyRef.current.scrollBy({ top: 80 * direction, left: 0, behavior: 'smooth' });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isModalOpen]);
 
   const mediaBaseUrl = BACKEND_URL.replace(/\/api\/v1\/?$/, '');
@@ -133,7 +151,11 @@ export default function LatestNewsAndUpcomingEvents() {
     }
   };
 
-  const getUpdateImages = (update: Update): string[] => update.images?.length ? update.images : [];
+  const getUpdateImages = (update: Update): string[] => {
+    if (update.images?.length) return update.images;
+    if (update.imageUrl) return [update.imageUrl];
+    return [];
+  };
 
   const openModal = (update: Update) => {
     setSelectedUpdate(update);
@@ -351,7 +373,7 @@ export default function LatestNewsAndUpcomingEvents() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
+              className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col min-h-0 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
@@ -376,14 +398,18 @@ export default function LatestNewsAndUpcomingEvents() {
               </div>
 
               {/* Modal Content - Scrollable */}
-              <div className="flex-grow overflow-y-auto">
+              <div
+                ref={modalBodyRef}
+                className="flex-grow overflow-y-scroll min-h-0 modal-scrollbar"
+                style={{ scrollbarGutter: 'stable', maxHeight: '70vh' }}
+              >
                 <div className="p-6">
                   {/* Image Gallery - Carousel */}
-                  {selectedUpdate.images && selectedUpdate.images.length > 0 && (
+                  {getUpdateImages(selectedUpdate).length > 0 && (
                     <div className="mb-8">
                       <div className="relative">
                         <img
-                          src={selectedUpdate.images[currentImageIndex]}
+                          src={getUpdateImages(selectedUpdate)[currentImageIndex]}
                           alt={`${selectedUpdate.title} - Image ${currentImageIndex + 1}`}
                           className="w-full h-96 object-cover rounded-lg"
                           onError={(e) => {
@@ -391,10 +417,10 @@ export default function LatestNewsAndUpcomingEvents() {
                           }}
                         />
                         
-                        {selectedUpdate.images.length > 1 && (
+                        {getUpdateImages(selectedUpdate).length > 1 && (
                           <>
                             <button
-                              onClick={() => prevImage(selectedUpdate.images!)}
+                              onClick={() => prevImage(getUpdateImages(selectedUpdate))}
                               className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 transition-all"
                               aria-label="Previous image"
                             >
@@ -403,7 +429,7 @@ export default function LatestNewsAndUpcomingEvents() {
                               </svg>
                             </button>
                             <button
-                              onClick={() => nextImage(selectedUpdate.images!)}
+                              onClick={() => nextImage(getUpdateImages(selectedUpdate))}
                               className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 transition-all"
                               aria-label="Next image"
                             >
@@ -414,7 +440,7 @@ export default function LatestNewsAndUpcomingEvents() {
                             
                             {/* Image Indicators */}
                             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                              {selectedUpdate.images.map((_, idx) => (
+                              {getUpdateImages(selectedUpdate).map((_, idx) => (
                                 <button
                                   key={idx}
                                   onClick={() => setCurrentImageIndex(idx)}
@@ -426,16 +452,16 @@ export default function LatestNewsAndUpcomingEvents() {
                             
                             {/* Image Counter */}
                             <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white text-sm px-3 py-1 rounded-full">
-                              {currentImageIndex + 1} / {selectedUpdate.images.length}
+                              {currentImageIndex + 1} / {getUpdateImages(selectedUpdate).length}
                             </div>
                           </>
                         )}
                       </div>
                       
                       {/* Thumbnails */}
-                      {selectedUpdate.images.length > 1 && (
+                      {getUpdateImages(selectedUpdate).length > 1 && (
                         <div className="flex space-x-2 mt-4 overflow-x-auto pb-2">
-                          {selectedUpdate.images.map((img, idx) => (
+                          {getUpdateImages(selectedUpdate).map((img, idx) => (
                             <button
                               key={idx}
                               onClick={() => setCurrentImageIndex(idx)}

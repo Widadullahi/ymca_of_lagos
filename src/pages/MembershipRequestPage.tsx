@@ -621,13 +621,13 @@ const RequestForm: React.FC = () => {
   const getAvailableClubs = useCallback((age: number, unitValue: string): ClubOption[] => {
     const unit = units.find(u => u.value === unitValue);
     if (!unit?.dropDown) return [];
+    const unitName = unit.label.toLowerCase();
+    if (unitName.includes("y's men") || unitName.includes('central club')) return [];
     
     const allClubs: ClubOption[] = unit.dropDown.map((club: any) => {
       const key = Object.keys(club)[0];
       return { value: club[key], label: club[key] };
     });
-    
-    const unitName = unit.label.toLowerCase();
     
     // YOUTH COUNCIL - STRICT AGE RULES
     if (unitName.includes('youth')) {
@@ -948,14 +948,25 @@ const RequestForm: React.FC = () => {
       }
       const formDataToSend = new FormData();
       
+      const keyMap: Record<string, string> = {
+        validIdType: 'valid_id_type',
+        validIdFile: 'valid_id_file',
+        nextOfKinName: 'next_of_kin_name',
+        nextOfKinNumber: 'next_of_kin_phone',
+        churchName: 'church_name',
+        referredBy: 'referred_by',
+        referralName: 'referral_name'
+      };
+
       // Append all form data
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== null && value !== undefined && value !== '') {
+          const payloadKey = keyMap[key] || key;
           if (value instanceof File) {
-            formDataToSend.append(key, value);
+            formDataToSend.append(payloadKey, value);
           } else {
             const finalValue = key === 'email' ? value.toString().toLowerCase() : value.toString();
-            formDataToSend.append(key, finalValue);
+            formDataToSend.append(payloadKey, finalValue);
           }
         }
       });
@@ -1612,7 +1623,9 @@ const RequestForm: React.FC = () => {
           )}
 
           {/* No Clubs Available Message */}
-          {formData.age && formData.unit && availableClubs.length === 0 && (
+          {formData.age && formData.unit && availableClubs.length === 0 &&
+            !formData.unit.toLowerCase().includes("y's men") &&
+            !formData.unit.toLowerCase().includes('central club') && (
             <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
               <p className="text-sm text-yellow-700">
                 {(() => {

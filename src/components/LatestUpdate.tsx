@@ -278,7 +278,7 @@ export default function LatestUpdate() {
         {isModalOpen && selectedUpdate && (
           <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
             <motion.div
-              className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-auto"
+              className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-auto max-h-[90vh] overflow-hidden flex flex-col"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
@@ -290,7 +290,7 @@ export default function LatestUpdate() {
                 ×
               </button>
 
-              <div className="p-6">
+              <div className="p-6 overflow-y-auto">
                 <h3 className="text-xl font-bold mb-2">{selectedUpdate.title}</h3>
                 <p className="text-sm text-gray-500 mb-4">
                   Posted by {selectedUpdate.postedBy} -{' '}
@@ -318,6 +318,9 @@ export default function LatestUpdate() {
                         >
                           ›
                         </button>
+                        <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                          {currentImageIndex + 1} / {selectedUpdate.images.length}
+                        </div>
                       </>
                     )}
                   </div>

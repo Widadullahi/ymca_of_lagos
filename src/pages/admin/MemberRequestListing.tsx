@@ -16,6 +16,7 @@ const MemberRequestListing: React.FC = () => {
   const [unitFilter, setUnitFilter] = useState<string>('');
   const [genderFilter, setGenderFilter] = useState<string>('');
   const [membershipCategoryFilter, setMembershipCategoryFilter] = useState<string>('');
+  const [religionFilter, setReligionFilter] = useState<string>('');
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [hasNextPage, setHasNextPage] = useState<boolean>(false);
@@ -231,8 +232,15 @@ const MemberRequestListing: React.FC = () => {
       );
     }
 
+    // Apply religion filter
+    if (religionFilter) {
+      result = result.filter(member =>
+        normalize(member.religion || 'Other') === normalize(religionFilter)
+      );
+    }
+
     setFilteredMembers(result);
-  }, [members, searchTerm, categoryFilter, statusFilter, unitFilter, genderFilter, membershipCategoryFilter]);
+  }, [members, searchTerm, categoryFilter, statusFilter, unitFilter, genderFilter, membershipCategoryFilter, religionFilter]);
 
   // Format date
   const formatDate = (dateString: string): string => {
@@ -253,6 +261,7 @@ const MemberRequestListing: React.FC = () => {
     setUnitFilter('');
     setGenderFilter('');
     setMembershipCategoryFilter('');
+    setReligionFilter('');
   };
 
   return (
@@ -396,6 +405,22 @@ const MemberRequestListing: React.FC = () => {
               <option value="Female">Female</option>
             </select>
           </div>
+          
+          <div>
+            <label htmlFor="religion" className="block text-sm font-medium text-gray-700 mb-1">
+              Religion
+            </label>
+            <select
+              id="religion"
+              value={religionFilter}
+              onChange={(e) => setReligionFilter(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            >
+              <option value="">All Religions</option>
+              <option value="Christian">Christian</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
         </div>
 
         <div className="mt-6 flex justify-end">
@@ -514,7 +539,7 @@ const MemberRequestListing: React.FC = () => {
                       <div className="text-sm text-gray-900">{member.marital_status || 'N/A'}</div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap hidden xl:table-cell">
-                      <div className="text-sm text-gray-900">{member.religion || 'N/A'}</div>
+                      <div className="text-sm text-gray-900">{member.religion || 'Other'}</div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap hidden xl:table-cell">
                       <div className="text-sm text-gray-900">
