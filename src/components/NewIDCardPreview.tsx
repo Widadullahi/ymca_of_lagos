@@ -40,6 +40,7 @@ const formatExpiryDate = (user: any) => {
 
 const NewIDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }) => {
   const [systemSignature, setSystemSignature] = React.useState<string | null>(null);
+  const [fetchingSignature, setFetchingSignature] = React.useState(true);
   const { user: authUser, fetchWithAuth } = useAuth();
   const user = member || authUser;
   const frontCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -57,16 +58,12 @@ const NewIDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }
         }
       } catch (error) {
         console.error('Error fetching system signature:', error);
+      } finally {
+        setFetchingSignature(false);
       }
     };
     fetchSystemSignature();
   }, []);
-
-
-
-  console.log(systemSignature);
-  console.log(systemSignature);
-  console.log(systemSignature);
 
   const drawFront = async () => {
     const canvas = frontCanvasRef.current;
@@ -241,7 +238,18 @@ const NewIDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }
   useEffect(() => {
     drawFront();
     drawBack();
-  }, [user,systemSignature]);
+  }, [user, systemSignature]);
+
+  if (!user || fetchingSignature) {
+    return (
+      <div className="w-full flex items-center justify-center p-12 bg-gray-50 rounded-lg">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-500 text-sm">Preparing ID card preview...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-gray-100 p-4" ref={forwardedRef}>
