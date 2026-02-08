@@ -9,13 +9,17 @@ interface RoleBasedRouteProps {
 }
 
 const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({ element, requiredRole }) => {
-  const { user } = useAuth();
+  const { user, globalLoading } = useAuth();
+
+  if (globalLoading && !user) {
+    return <div>Verifying authorization...</div>;
+  }
 
   if (!user || user.role !== requiredRole) {
     return <Navigate to="/unauthorized" />;
   }
 
-  return <Layout>{element}</Layout>;; 
+  return <Layout>{element}</Layout>;;
 };
 
 export default RoleBasedRoute;

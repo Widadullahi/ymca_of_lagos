@@ -14,9 +14,26 @@ const AdminSignaturePage: React.FC = () => {
 
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
+  const [systemSignature, setSystemSignature] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const currentSignature = useMemo(() => user?.signature || null, [user]);
+  const fetchSystemSignature = async () => {
+    try {
+      const response = await fetchWithAuth({
+        method: 'GET',
+        path: '/admin/system/card-signature/',
+      });
+      if (response?.data?.signature) {
+        setSystemSignature(response.data.signature);
+      }
+    } catch (error) {
+      console.error('Error fetching system signature:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchSystemSignature();
+  }, []);
 
   useEffect(() => {
     if (!signatureFile) {
@@ -52,13 +69,13 @@ const AdminSignaturePage: React.FC = () => {
 
       const response = await fetchWithAuth({
         method: 'POST',
-        path: `/account/signature/`,
+        path: `/admin/system/card-signature/`,
         body: formData,
         isFormData: true,
       });
 
       if (response?.data) {
-        await fetchUserProfile();
+        await fetchSystemSignature();
         setSignatureFile(null);
         displayNotification?.('success', 'Authorised signature updated successfully.');
       }
@@ -110,8 +127,8 @@ const AdminSignaturePage: React.FC = () => {
             <div className="border rounded-md p-4 min-h-[120px] flex items-center justify-center bg-gray-50">
               {signaturePreview ? (
                 <img src={signaturePreview} alt="Signature preview" className="h-24 object-contain" />
-              ) : currentSignature ? (
-                <img src={currentSignature} alt="Authorised signature" className="h-24 object-contain" />
+              ) : systemSignature ? (
+                <img src={systemSignature} alt="Authorised signature" className="h-24 object-contain" />
               ) : (
                 <span className="text-sm text-gray-400">No signature uploaded</span>
               )}

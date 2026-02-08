@@ -1,8 +1,14 @@
-import React from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+import React, { useEffect, useRef } from 'react';
 import { useAuth } from '../context/NewAuthContext';
 import frontCard from '../assets/idcard/front.png';
-import backCard from '../assets/idcard/back.png';
+import backCard from '../assets/idcard/back-blank.png';
+import defaultSignature from '../assets/idcard/default-signature-1.png';
+import QRCode from 'qrcode';
+
+// Build fix for missing @types/qrcode
+declare module 'qrcode' {
+  export function toDataURL(text: string, options?: any): Promise<string>;
+}
 
 interface IDCardPreviewProps {
   member?: any;
@@ -33,107 +39,219 @@ const formatExpiryDate = (user: any) => {
 };
 
 const NewIDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }) => {
-  const { user: authUser } = useAuth();
+  const [systemSignature, setSystemSignature] = React.useState<string | null>(null);
+  const { user: authUser, fetchWithAuth } = useAuth();
   const user = member || authUser;
-  const verificationUrl = `${window.location.origin}/verify/#verify=${user?.card?.id_number}`;
-  const memberSignature = user?.card?.signature || null;
-  const resolvedAuthorisedSignature = member ? authUser?.signature : user?.signature || null;
-  const expiryDate = formatExpiryDate(user);
+  const frontCanvasRef = useRef<HTMLCanvasElement>(null);
+  const backCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const fetchSystemSignature = async () => {
+      try {
+        const response = await fetchWithAuth({
+          method: 'GET',
+          path: '/admin/system/card-signature/',
+        });
+        if (response?.data?.signature) {
+          setSystemSignature(response.data.signature);
+        }
+      } catch (error) {
+        console.error('Error fetching system signature:', error);
+      }
+    };
+    fetchSystemSignature();
+  }, []);
+
+
+
+  console.log(systemSignature);
+  console.log(systemSignature);
+  console.log(systemSignature);
+
+  const drawFront = async () => {
+    const canvas = frontCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const width = 400;
+    const height = 252;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    ctx.scale(dpr, dpr);
+
+    const loadImage = (src: string): Promise<HTMLImageElement> => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+      });
+    };
+
+    try {
+      const bg = await loadImage(frontCard);
+      ctx.drawImage(bg, 0, 0, width, height);
+
+      if (user?.image) {
+        try {
+          const photo = await loadImage(user.image);
+          // Further refinement based on latest screenshot
+          const photoW = width * 0.25;
+          const photoH = height * 0.41;
+          const photoX = width * 0.052;
+          const photoY = height * 0.48;
+
+          ctx.drawImage(photo, photoX, photoY, photoW, photoH);
+        } catch (e) {
+          console.error("Failed to load user image", e);
+        }
+      }
+
+      // 3. Draw Details
+      const detailsX = width * 0.33;
+      const detailsY = height * 0.40;
+
+      ctx.fillStyle = 'black';
+      ctx.textAlign = 'left';
+
+      // Name
+      ctx.font = `bold ${Math.floor(width * 0.04)}px sans-serif`;
+      const fullName = `${user?.last_name?.toUpperCase() || ''} ${user?.first_name?.toUpperCase() || ''}`;
+      ctx.fillText(fullName, detailsX, detailsY + 15);
+
+      ctx.font = `${Math.floor(width * 0.028)}px sans-serif`;
+      ctx.fillStyle = '#1f2937';
+
+      // Reg No
+      let currentY = detailsY + 42;
+      ctx.fillText(`Registration No.: `, detailsX, currentY);
+      const regNo = (user?.card?.id_number || '').toUpperCase();
+      ctx.font = `bold ${Math.floor(width * 0.028)}px sans-serif`;
+      ctx.fillStyle = 'black';
+      ctx.fillText(regNo, detailsX + ctx.measureText(`Registration No.: `).width + 5, currentY);
+
+      // Category
+      currentY += 20;
+      ctx.font = `${Math.floor(width * 0.028)}px sans-serif`;
+      ctx.fillStyle = '#1f2937';
+      ctx.fillText(`Category: `, detailsX, currentY);
+      const category = formatMembershipLabel(user?.membership_type).toUpperCase();
+      ctx.font = `bold ${Math.floor(width * 0.028)}px sans-serif`;
+      ctx.fillStyle = 'black';
+      ctx.fillText(category, detailsX + ctx.measureText(`Category: `).width + 5, currentY);
+
+      // Expiry
+      const expiryDate = formatExpiryDate(user);
+      if (expiryDate) {
+        currentY += 20;
+        ctx.font = `${Math.floor(width * 0.028)}px sans-serif`;
+        ctx.fillStyle = '#1f2937';
+        ctx.fillText(`Reg. Period Ending: `, detailsX, currentY);
+        ctx.font = `bold ${Math.floor(width * 0.028)}px sans-serif`;
+        ctx.fillStyle = 'black';
+        ctx.fillText(expiryDate, detailsX + ctx.measureText(`Reg. Period Ending: `).width + 5, currentY);
+      }
+
+      // Signature
+      const memberSignature = user?.card?.signature || null;
+      if (memberSignature) {
+        currentY += 28;
+        ctx.font = `${Math.floor(width * 0.028)}px sans-serif`;
+        ctx.fillStyle = '#1f2937';
+        ctx.fillText(`Signature`, detailsX, currentY);
+
+        try {
+          const sigImg = await loadImage(memberSignature);
+          ctx.drawImage(sigImg, detailsX + 65, currentY - 15, 60, 20);
+        } catch (e) {
+          console.error("Failed to load signature", e);
+        }
+      }
+
+      // 4. Draw QR Code
+      const verificationUrl = `${window.location.origin}/verify/#verify=${user?.card?.id_number}`;
+      const qrDataUrl = await QRCode.toDataURL(verificationUrl, { margin: 1, width: 44 * dpr });
+      const qrImg = await loadImage(qrDataUrl);
+      // Shifted left (0.88 -> 0.82) to avoid "MEMBER ID" vertical text
+      ctx.drawImage(qrImg, width * 0.78, height * 0.12, 40, 40);
+
+    } catch (err) {
+      console.error('Error drawing front card:', err);
+    }
+  };
+
+  const drawBack = async () => {
+    const canvas = backCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const width = 400;
+    const height = 252;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    ctx.scale(dpr, dpr);
+
+    const loadImage = (src: string): Promise<HTMLImageElement> => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+      });
+    };
+
+    try {
+      const bg = await loadImage(backCard);
+      ctx.drawImage(bg, 0, 0, width, height);
+
+      // Drawing authorized signature
+      const resolvedAuthorisedSignature = member ? authUser?.signature : user?.signature || null;
+      const signatureToDraw = resolvedAuthorisedSignature || systemSignature || defaultSignature;
+
+      if (signatureToDraw) {
+        try {
+          const sigImg = await loadImage(signatureToDraw);
+          const sigW = width * 0.36;
+          const sigH = height * 0.10;
+          const sigX = (width - sigW) / 2;
+          // Positioned higher to stay clearly above the line (0.72 -> 0.58)
+          const sigY = height * 0.58;
+          ctx.drawImage(sigImg, sigX, sigY, sigW, sigH);
+        } catch (e) {
+          console.error("Failed to load authorised signature", e);
+        }
+      }
+    } catch (err) {
+      console.error('Error drawing back card:', err);
+    }
+  };
+
+  useEffect(() => {
+    drawFront();
+    drawBack();
+  }, [user,systemSignature]);
 
   return (
     <div className="w-full bg-gray-100 p-4" ref={forwardedRef}>
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col items-center space-y-8">
-          {/* Front of ID Card */}
-          <div className="relative">
-            <div
-              className="rounded-lg overflow-hidden shadow-xl relative"
-              style={{
-                width: '400px',
-                height: '252px',
-                backgroundImage: `url(${frontCard})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center'
-              }}
-            >
-              <div className="relative h-full w-full">
-                {/* Photo */}
-                <div className="absolute top-[36%] left-[6%] w-[5.5%] h-[9%] rounded-sm overflow-hidden bg-white">
-                  {user?.image && (
-                    <img src={user.image} alt="Member" className="w-full h-full object-cover" />
-                  )}
-                </div>
-
-                {/* Details */}
-                <div className="absolute top-[36%] left-[28%] w-[50%] text-[0.6rem] sm:text-[0.65rem] text-black">
-                  <div className="mb-1 text-[0.8rem] sm:text-[0.9rem] font-bold leading-tight">
-                    {user?.last_name?.toUpperCase() || ''} {user?.first_name?.toUpperCase() || ''}
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <span className="text-gray-800">Registration No.:</span>
-                    <span className="font-semibold">{user?.card?.id_number || ''}</span>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <span className="text-gray-800">Category:</span>
-                    <span className="font-semibold">{formatMembershipLabel(user?.membership_type)}</span>
-                  </div>
-
-                  {expiryDate && (
-                    <div className="flex items-center gap-1">
-                      <span className="text-gray-800">Reg. Period Ending:</span>
-                      <span className="font-semibold">{expiryDate}</span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-gray-800">Signature</span>
-                    <div className="h-4 w-14 bg-white/70">
-                      {memberSignature && (
-                        <img src={memberSignature} alt="Signature" className="h-full w-full object-contain" />
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* QR Code */}
-                <div className="absolute top-[26%] right-[6%]">
-                  <div className="bg-white p-1 rounded shadow-sm">
-                    <QRCodeSVG value={verificationUrl} size={44} />
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="relative shadow-xl rounded-lg overflow-hidden">
+            <canvas ref={frontCanvasRef} />
           </div>
-
-          {/* Back of ID Card */}
-          <div className="relative">
-            <div
-              className="rounded-lg overflow-hidden shadow-xl"
-              style={{
-                width: '400px',
-                height: '252px',
-                backgroundImage: `url(${backCard})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center'
-              }}
-            >
-              <div className="relative h-full w-full">
-                {/* Authorised signature overlay */}
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-[18%] w-[36%] h-[10%] flex items-center justify-center pointer-events-none">
-                  {resolvedAuthorisedSignature ? (
-                    <img
-                      src={resolvedAuthorisedSignature}
-                      alt="Authorised Signature"
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  ) : (
-                    <div className="w-full h-full"></div>
-                  )}
-                </div>
-              </div>
-            </div>
+          <div className="relative shadow-xl rounded-lg overflow-hidden">
+            <canvas ref={backCanvasRef} />
           </div>
         </div>
       </div>

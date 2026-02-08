@@ -67,12 +67,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
   useEffect(() => {
-    // Check if there's an auth token in localStorage and set the user on page load
-    const token = localStorage.getItem('tokens');
-    if (token) {
-      fetchUserProfile();
-    }
-    setLoading(false);
+    const initializeAuth = async () => {
+      const tokens = localStorage.getItem('tokens');
+      if (tokens) {
+        try {
+          await fetchUserProfile();
+        } catch (error) {
+          console.error('Failed to initialize auth:', error);
+        }
+      }
+      setLoading(false);
+    };
+
+    initializeAuth();
   }, []); // This runs once on page load to check the token
 
   // Mimicking the login API call to check username and assign role
