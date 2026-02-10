@@ -27,6 +27,8 @@ const formatExpiryDate = (user: any) => {
   if (user?.card?.expired_at) return user.card.expired_at;
   const type = (user?.membership_type || '').toString().toLowerCase();
   if (type === 'honorary' || type === 'life') return '';
+  // Only show expiry if card is active (payment made)
+  if (!user?.card?.is_active) return '';
 
   const baseDate =
     (user?.card?.created_at && new Date(user.card.created_at)) ||

@@ -753,11 +753,11 @@ const RequestForm: React.FC = () => {
         return;
       }
 
-      const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+      const maxSize = 10 * 1024 * 1024; // 10MB in bytes
       if (file.size > maxSize) {
         setFieldErrors(prev => ({
           ...prev,
-          [field]: 'File size must be less than 2MB'
+          [field]: 'File size must be less than 10MB'
         }));
         return;
       }
@@ -1043,6 +1043,7 @@ const RequestForm: React.FC = () => {
       requestData.append('marital_status', formData.marital_status);
       requestData.append('valid_id_type', formData.validIdType);
       requestData.append('next_of_kin', formData.nextOfKinName);
+      requestData.append('next_of_kin_phone', formData.nextOfKinNumber);
       requestData.append('referral_source', formData.referralSource);
       requestData.append('referral_name', formData.referralName);
       requestData.append('referred_by', formData.referredBy);
@@ -1463,7 +1464,9 @@ const RequestForm: React.FC = () => {
                 type="text"
                 placeholder="Enter your church name"
                 value={formData.churchName}
-                onChange={handleInputChange}
+                onChange={(e) => { console.log('churchName onChange:', e.target.value); handleInputChange(e); }}
+                onFocus={(e) => { console.log('churchName onFocus'); }}
+                data-test="church-name-input"
                 error={fieldErrors.churchName}
                 required
                 className={getInputBorderColor('churchName', formData.churchName)}
@@ -1713,7 +1716,7 @@ const RequestForm: React.FC = () => {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                Upload a clear image of your ID document (JPEG, JPG, PNG, max 2MB)
+                Upload a clear image of your ID document (JPEG, JPG, PNG, max 10MB)
               </p>
               {fieldErrors.validIdFile && <p className="text-red-500 text-sm mt-2">{fieldErrors.validIdFile}</p>}
             </div>
@@ -1777,7 +1780,7 @@ const RequestForm: React.FC = () => {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                Upload a clear passport picture of yourself (JPEG, JPG, or PNG, max 2MB)
+                Upload a clear passport picture of yourself (JPEG, JPG, or PNG, max 10MB)
               </p>
               {fieldErrors.passportPhoto && <p className="text-red-500 text-sm mt-2">{fieldErrors.passportPhoto}</p>}
             </div>
@@ -1834,7 +1837,7 @@ const RequestForm: React.FC = () => {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                Upload a clear handwritten or e-signature image (JPEG, JPG, or PNG, max 2MB)
+                Upload a clear handwritten or e-signature image (JPEG, JPG, or PNG, max 10MB)
               </p>
               {fieldErrors.signature && <p className="text-red-500 text-sm mt-2">{fieldErrors.signature}</p>}
             </div>

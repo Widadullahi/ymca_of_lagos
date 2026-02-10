@@ -122,16 +122,18 @@ const LoginForm: React.FC= () => {
           >
             {loading ? 'Authenticating...' : 'Sign In'}
           </button>
-          {/* <a 
-            className="inline-block align-baseline font-bold text-sm text-red-600 hover:text-red-800"
-            href="/register"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate('/register');
-            }}
-          >
-            Register
-          </a> */}
+        </div>
+        
+        <div className="mt-4 text-center">
+          <p className="text-gray-700 text-sm">
+            Don't have an account?{' '}
+            <a 
+              href="/membership-request"
+              className="font-bold text-red-600 hover:text-red-800"
+            >
+              Register Now
+            </a>
+          </p>
         </div>
       </form>
     </div>

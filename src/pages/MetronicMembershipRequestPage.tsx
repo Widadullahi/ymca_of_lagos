@@ -192,6 +192,36 @@ const MetronicMembershipRequestPage = () => {
                   required 
                 />
               </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-bold mb-2">Religion</label>
+                <select
+                  name="religion"
+                  value={formData.religion}
+                  onChange={handleChange}
+                  className="border rounded w-full py-2 px-3"
+                >
+                  <option value="">Select Religion</option>
+                  <option value="Christian">Christian</option>
+                  <option value="Muslim">Muslim</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              {(formData.religion || '').toLowerCase() === 'christian' || (formData.unit || '').toLowerCase().includes('council') ? (
+                <div className="mb-4 md:col-span-2">
+                  <label className="block text-sm font-bold mb-2">Church Name</label>
+                  <input 
+                    type="text" 
+                    name="churchName"
+                    value={formData.churchName}
+                    onChange={handleChange}
+                    className="border rounded w-full py-2 px-3" 
+                    placeholder="Type your church name"
+                  />
+                </div>
+              ) : null}
+              
               {!formData.unit.toLowerCase().includes("y's men") && !formData.unit.toLowerCase().includes('central club') && (
                 <div className="mb-4">
                   <label className="block text-sm font-bold mb-2">Club</label>

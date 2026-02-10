@@ -490,11 +490,11 @@ const UserDetailPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-xs text-gray-500">Name</p>
-                  <p className="text-sm">{member.user_request?.next_of_kin || member.user_request?.nextOfKinName || member.user_request?.next_of_kin_name || member.next_of_kin_name || member.next_of_kin || 'N/A'}</p>
+                  <p className="text-sm">{member.user_request?.next_of_kin || member.user_request?.next_of_kin_name || member.user_request?.nextOfKinName || member.next_of_kin_name || member.next_of_kin || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Phone Number</p>
-                  <p className="text-sm">{member.user_request?.next_of_kin_phone || member.user_request?.nextOfKinNumber || member.next_of_kin_phone || 'N/A'}</p>
+                  <p className="text-sm">{member.user_request?.next_of_kin_phone || member.user_request?.nextOfKinNumber || member.next_of_kin_phone || member.nextOfKinNumber || 'N/A'}</p>
                 </div>
               </div>
 
@@ -502,7 +502,7 @@ const UserDetailPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-xs text-gray-500">Valid ID Type</p>
-                  <p className="text-sm">{member.user_request?.valid_id_type || member.user_request?.validIdType || member.valid_id_type || 'N/A'}</p>
+                  <p className="text-sm">{member.user_request?.valid_id_type || member.user_request?.validIdType || member.valid_id_type || member.validIdType || 'N/A'}</p>
                 </div>
                 <div className="md:col-span-2">
                   <p className="text-xs text-gray-500">Valid ID Document</p>
@@ -539,6 +539,34 @@ const UserDetailPage: React.FC = () => {
                 ) : (
                   <p className="text-sm text-gray-500">No signature available</p>
                 )}
+              </div>
+
+              <h3 className="text-lg font-semibold border-b pb-2 mt-6 mb-4 text-blue-700">Card Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <p className="text-xs text-gray-500">Card ID Number</p>
+                  <p className="text-sm font-mono font-semibold">{member.card?.id_number || 'Not assigned'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Card Status</p>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold inline-block ${member.card?.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {member.card?.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Card Expiry Date</p>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      name="card_expiry_date"
+                      value={formData.card_expiry_date || (member.card?.expired_at ? member.card.expired_at.split('T')[0] : '')}
+                      onChange={handleInputChange}
+                      className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:outline-none transition"
+                    />
+                  ) : (
+                    <p className="text-sm">{member.card?.expired_at ? new Date(member.card.expired_at).toLocaleDateString() : 'Not set'}</p>
+                  )}
+                </div>
               </div>
 
               {/* Password Update Section */}
@@ -752,10 +780,12 @@ const UserDetailPage: React.FC = () => {
                       <p className="text-xs text-gray-500">Religion</p>
                       <p className="text-sm">{member.user_request.religion || 'N/A'}</p>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Church Name</p>
-                      <p className="text-sm">{member.user_request.church_name || 'N/A'}</p>
-                    </div>
+                    {member.user_request?.religion?.toLowerCase() === 'christian' && (
+                      <div>
+                        <p className="text-xs text-gray-500">Church Name</p>
+                        <p className="text-sm">{member.user_request.church_name || 'N/A'}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -799,8 +829,12 @@ const UserDetailPage: React.FC = () => {
                       <p className="text-sm">{member.user_request.unit || 'N/A'}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">Club</p>
-                      <p className="text-sm">{member.user_request.club || 'N/A'}</p>
+                      <p className="text-xs text-gray-500">Club / Church</p>
+                      {member.user_request?.unit?.toLowerCase().includes('council') ? (
+                        <p className="text-sm">{member.user_request.club || member.user_request.church_name || 'N/A'}</p>
+                      ) : (
+                        <p className="text-sm">{member.user_request.club || 'N/A'}</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -811,7 +845,7 @@ const UserDetailPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <p className="text-xs text-gray-500">Valid ID Type</p>
-                      <p className="text-sm">{member.user_request.valid_id_type || member.valid_id_type || 'N/A'}</p>
+                      <p className="text-sm">{member.user_request?.valid_id_type || member.user_request?.validIdType || member.valid_id_type || 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Passport Photo</p>
@@ -856,7 +890,7 @@ const UserDetailPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <p className="text-xs text-gray-500">Next of Kin</p>
-                      <p className="text-sm">{member.user_request.next_of_kin || member.next_of_kin_name || member.next_of_kin || 'N/A'}</p>
+                      <p className="text-sm">{member.user_request?.next_of_kin || member.user_request?.next_of_kin_name || member.user_request?.nextOfKinName || member.next_of_kin_name || member.next_of_kin || 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Referral Source</p>

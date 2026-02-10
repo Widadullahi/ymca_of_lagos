@@ -23,12 +23,25 @@ const AddUserModal: React.FC<{
     church: '',
     youthCouncilGroup: '',
     status: false,
-    category: 'Adult Member' as Member['category']
+    category: 'Adult Member' as Member['category'],
+    dateOfBirth: '',
+    location: '',
+    profession: '',
+    expiryDate: ''
   });
 
-  // const [churches, setChurches] = useState<{value: string, label: string}[]>(youthGroups || []);
-  // const [youthGroups, setYouthGroups] = useState<{value: string, label: string}[]>(churches || []);
-  const [isUploading, setIsUploading] = useState(false);
+  const [filePreviews, setFilePreviews] = useState<{
+    passportPhoto?: string;
+    signature?: string;
+  }>({});
+
+  const [uploadedFiles, setUploadedFiles] = useState<{
+    passportPhoto?: File;
+    signature?: File;
+  }>({});
+
+  // Local UI state
+  const [isUploading, setIsUploading] = useState<boolean>(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const unitOptions = [
@@ -81,6 +94,56 @@ const AddUserModal: React.FC<{
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const maxSize = 10 * 1024 * 1024; // 10MB
+
+      // Validate file type
+      if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+        setErrors(prev => ({
+          ...prev,
+          [field]: 'Only JPEG, JPG, or PNG files are allowed'
+        }));
+        return;
+      }
+
+      // Validate file size
+      if (file.size > maxSize) {
+        setErrors(prev => ({
+          ...prev,
+          [field]: 'File size must be less than 10MB'
+        }));
+        return;
+      }
+
+      // Store file and preview
+      setUploadedFiles(prev => ({
+        ...prev,
+        [field]: file
+      }));
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setFilePreviews(prev => ({
+          ...prev,
+          [field]: e.target?.result as string
+        }));
+      };
+      reader.readAsDataURL(file);
+
+      // Clear error
+      if (errors[field]) {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[field];
+          return newErrors;
+        });
+      }
+    }
+  };
+
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -108,15 +171,13 @@ const AddUserModal: React.FC<{
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(formData)
-    console.log(validateForm())
     if (!validateForm()) return;
     
     try {
       setIsUploading(true);
       
-      // Prepare user data using a structure similar to the RegisterForm
-      const userData = {
+      // Prepare user data
+      let userData: any = {
         first_name: formData.firstName,
         last_name: formData.lastName,
         email: formData.email,
@@ -128,24 +189,48 @@ const AddUserModal: React.FC<{
         status: formData.status,
         category: formData.category,
         join_date: new Date().toISOString(),
+        date_of_birth: formData.dateOfBirth || null,
+        location: formData.location || null,
+        profession: formData.profession || null,
       };
+
+      // If expiry date is provided, include it
+      if (formData.expiryDate) {
+        userData.card_expiry_date = formData.expiryDate;
+      }
+
+      // Create FormData for file uploads
+      const submitFormData = new FormData();
       
-      // If using fetchWithAuth (for API integration)
+      // Add all user data as JSON
+      Object.keys(userData).forEach(key => {
+        submitFormData.append(key, userData[key] || '');
+      });
+
+      // Add file uploads if present
+      if (uploadedFiles.passportPhoto) {
+        submitFormData.append('image', uploadedFiles.passportPhoto);
+      }
+
+      if (uploadedFiles.signature) {
+        submitFormData.append('signature', uploadedFiles.signature);
+      }
+
+      // Send to API
       if (fetchWithAuth) {
         const response = await fetchWithAuth({
           method: 'POST',
-          path: '/admin/members/', // Adjust the endpoint as needed
-          body: userData,
+          path: '/admin/members/',
+          body: uploadedFiles.passportPhoto || uploadedFiles.signature ? submitFormData : userData,
+          isFormData: uploadedFiles.passportPhoto || uploadedFiles.signature ? true : false,
         });
 
-        console.log(response)
         displayNotification("success", response?.message || "Member created successfully");
       }
-      onAddMember()
+      onAddMember();
       closeModal();
     } catch (error) {
       console.error('Error adding new member:', error);
-      // Handle API errors if needed
     } finally {
       setIsUploading(false);
     }
@@ -156,8 +241,8 @@ const AddUserModal: React.FC<{
 
   return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="p-6">
+        <div className="bg-white rounded-lg max-w-3xl w-full max-h-[95vh] overflow-y-auto">
+          <div className="p-6 sticky top-0 bg-white border-b">
             <div className="flex justify-between items-start mb-6">
               <h2 className="text-2xl font-bold">Add New Member</h2>
               <button
@@ -169,14 +254,10 @@ const AddUserModal: React.FC<{
                 </svg>
               </button>
             </div>
-    
-            {Object.keys(errors).length > 0 && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                Please correct the errors in the form.
-              </div>
-            )}
-    
-            <form onSubmit={handleSubmit}>
+          </div>
+
+            <div className="p-6">
+              <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Basic Information */}
                 <div className="md:col-span-2">
@@ -262,6 +343,50 @@ const AddUserModal: React.FC<{
                     ))}
                   </select>
                   {errors.gender && <p className="text-red-500 text-xs mt-1">{errors.gender}</p>}
+                </div>
+                
+                <div>
+                  <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-1">
+                    Date of Birth
+                  </label>
+                  <input
+                    type="date"
+                    id="dateOfBirth"
+                    name="dateOfBirth"
+                    value={formData.dateOfBirth}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="profession" className="block text-sm font-medium text-gray-700 mb-1">
+                    Profession
+                  </label>
+                  <input
+                    type="text"
+                    id="profession"
+                    name="profession"
+                    value={formData.profession}
+                    onChange={handleChange}
+                    placeholder="e.g., Engineer, Teacher"
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+                    Location/State/LGA
+                  </label>
+                  <input
+                    type="text"
+                    id="location"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    placeholder="e.g., Lagos, Ikoyi"
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  />
                 </div>
                 
                 <div>
@@ -373,9 +498,71 @@ const AddUserModal: React.FC<{
                     ))}
                   </select>
                 </div>
-                {/* Password Fields - Optional, based on your needs */}
+                {/* Card & Documents */}
                 <div className="md:col-span-2">
-                  <h3 className="text-lg font-medium border-b pb-2 mb-4 mt-4">Account Default Password is YMCA123456789</h3>
+                  <h3 className="text-lg font-medium border-b pb-2 mb-4 mt-4">Card Information</h3>
+                </div>
+
+                <div>
+                  <label htmlFor="expiryDate" className="block text-sm font-medium text-gray-700 mb-1">
+                    Card Expiry Date (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    id="expiryDate"
+                    name="expiryDate"
+                    value={formData.expiryDate}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  />
+                  <p className="text-gray-500 text-xs mt-1">Leave empty for default (May 31st of next year)</p>
+                </div>
+
+                {/* File Uploads */}
+                <div className="md:col-span-2">
+                  <h3 className="text-lg font-medium border-b pb-2 mb-4 mt-4">Documents (Optional)</h3>
+                </div>
+
+                <div>
+                  <label htmlFor="passportPhoto" className="block text-sm font-medium text-gray-700 mb-1">
+                    Passport Photo
+                  </label>
+                  <input
+                    type="file"
+                    id="passportPhoto"
+                    accept="image/jpeg,image/jpg,image/png"
+                    onChange={(e) => handleFileChange(e, 'passportPhoto')}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  />
+                  <p className="text-gray-500 text-xs mt-1">JPEG, JPG, or PNG (max 10MB)</p>
+                  {errors.passportPhoto && <p className="text-red-500 text-xs mt-1">{errors.passportPhoto}</p>}
+                  {filePreviews.passportPhoto && (
+                    <img src={filePreviews.passportPhoto} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded" />
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="signature" className="block text-sm font-medium text-gray-700 mb-1">
+                    Signature
+                  </label>
+                  <input
+                    type="file"
+                    id="signature"
+                    accept="image/jpeg,image/jpg,image/png"
+                    onChange={(e) => handleFileChange(e, 'signature')}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  />
+                  <p className="text-gray-500 text-xs mt-1">JPEG, JPG, or PNG (max 10MB)</p>
+                  {errors.signature && <p className="text-red-500 text-xs mt-1">{errors.signature}</p>}
+                  {filePreviews.signature && (
+                    <img src={filePreviews.signature} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded" />
+                  )}
+                </div>
+
+                {/* Password Info */}
+                <div className="md:col-span-2">
+                  <h3 className="text-lg font-medium border-b pb-2 mb-4 mt-4">Account Credentials</h3>
+                  <p className="text-gray-600 text-sm">Default Account Password: <span className="font-mono font-bold">YMCA123456789</span></p>
                 </div>
               </div>
     

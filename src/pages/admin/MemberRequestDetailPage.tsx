@@ -78,6 +78,27 @@ const MemberRequestDetailPage: React.FC = () => {
     };
     return labels[key] || value || 'Not Provided';
   };
+  // Helper to read multiple possible keys from the memberRequest object (and nested user_request if present)
+  const getField = (keys: string[]) => {
+    const containers = [
+      memberRequest,
+      (memberRequest as any)?.user_request,
+      (memberRequest as any)?.user,
+      (memberRequest as any)?.member_request,
+    ];
+    for (const container of containers) {
+      if (!container) continue;
+      for (const k of keys) {
+        const v = (container as any)?.[k];
+        if (v !== undefined && v !== null && `${v}`.toString().trim() !== '') return v;
+        if (v && typeof v === 'object') {
+          if ((v as any).name && `${(v as any).name}`.toString().trim() !== '') return (v as any).name;
+          if ((v as any).phone && `${(v as any).phone}`.toString().trim() !== '') return (v as any).phone;
+        }
+      }
+    }
+    return undefined;
+  };
 
   useEffect(() => {
     const fetchMemberRequest = async () => {
@@ -86,7 +107,20 @@ const MemberRequestDetailPage: React.FC = () => {
         
         setLoading(true);
         const response = await memberRequestsApi.getMemberRequestById(requestId);
-        setMemberRequest(response.data);
+        // API may return the member request directly or wrapped in a `data` property.
+        const payload = response?.data ?? response;
+        // Some responses embed the request under `user_request`.
+        const finalPayload = {
+          ...(payload || {}),
+          ...((payload as any)?.user_request || {}),
+        };
+        console.log('Full API response:', response);
+        console.log('Extracted payload:', payload);
+        console.log('Nested user_request payload:', payload?.user_request);
+        console.log('next_of_kin_name:', finalPayload?.next_of_kin_name || finalPayload?.next_of_kin);
+        console.log('next_of_kin_phone:', finalPayload?.next_of_kin_phone);
+        console.log('valid_id_type:', finalPayload?.valid_id_type || finalPayload?.validIdType);
+        setMemberRequest(finalPayload);
       } catch (error) {
         console.error('Error fetching member request:', error);
         toast.error('Failed to load member request details');
@@ -324,8 +358,12 @@ const MemberRequestDetailPage: React.FC = () => {
                 </div>
                 
                 <div>
-                  <p className="text-xs text-gray-500">Club</p>
-                  <p className="text-sm">{memberRequest.club || 'Not Provided'}</p>
+                  <p className="text-xs text-gray-500">Club / Church</p>
+                  {normalize(memberRequest.unit).includes('council') ? (
+                    <p className="text-sm">{memberRequest.club || memberRequest.church_name || 'Not Provided'}</p>
+                  ) : (
+                    <p className="text-sm">{memberRequest.club || 'Not Provided'}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -337,7 +375,16 @@ const MemberRequestDetailPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-gray-500">Valid ID Type</p>
-                  <p className="text-sm">{formatValidIdType(memberRequest.valid_id_type)}</p>
+                  <p className="text-sm">{formatValidIdType(getField([
+                    'valid_id_type',
+                    'validIdType',
+                    'valid_id_type_name',
+                    'valid_id_type_display',
+                    'valid_id_type_id',
+                    'id_type',
+                    'id_type_name',
+                    'valid_id',
+                  ]))}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Valid ID Document</p>
@@ -373,12 +420,26 @@ const MemberRequestDetailPage: React.FC = () => {
                 
                 <div>
                   <p className="text-xs text-gray-500">Next of Kin Name</p>
-                  <p className="text-sm">{memberRequest.next_of_kin_name || memberRequest.next_of_kin || 'Not Provided'}</p>
+                  <p className="text-sm">{getField([
+                    'next_of_kin_name',
+                    'nextOfKinName',
+                    'next_of_kin',
+                    'nextOfKin',
+                    'next_of_kin_full_name',
+                    'nok_name',
+                  ]) || 'Not Provided'}</p>
                 </div>
-                
+
                 <div>
                   <p className="text-xs text-gray-500">Next of Kin Phone Number</p>
-                  <p className="text-sm">{memberRequest.next_of_kin_phone || 'Not Provided'}</p>
+                  <p className="text-sm">{getField([
+                    'next_of_kin_phone',
+                    'nextOfKinNumber',
+                    'next_of_kin_phone_number',
+                    'next_of_kin_number',
+                    'next_of_kin_contact',
+                    'nok_phone',
+                  ]) || 'Not Provided'}</p>
                 </div>
               </div>
             </div>
