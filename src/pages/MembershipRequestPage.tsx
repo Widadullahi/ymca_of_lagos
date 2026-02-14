@@ -684,7 +684,7 @@ const RequestForm: React.FC = () => {
       
       // If current unit is not available for this age, reset it
       if (formData.unit && !filtered.some(u => u.value === formData.unit)) {
-        setFormData(prev => ({ ...prev, unit: '', club: '', churchName: '' }));
+        setFormData(prev => ({ ...prev, unit: '', club: '' }));
         setAvailableClubs([]);
         setAvailableChurches([]);
       }
@@ -697,13 +697,19 @@ const RequestForm: React.FC = () => {
   // Update clubs when age or unit changes
   useEffect(() => {
     if (formData.age && formData.unit) {
+      const isCouncilOfChurch = formData.unit.toLowerCase().includes('council of church');
+      if (isCouncilOfChurch) {
+        setAvailableClubs([]);
+        return;
+      }
+
       const ageNum = parseInt(formData.age);
       const clubs = getAvailableClubs(ageNum, formData.unit);
       setAvailableClubs(clubs);
       
       // Reset club if no longer valid
       if (formData.club && !clubs.some(c => c.value === formData.club)) {
-        setFormData(prev => ({ ...prev, club: '', churchName: '' }));
+        setFormData(prev => ({ ...prev, club: '' }));
       }
     } else {
       setAvailableClubs([]);
@@ -716,17 +722,14 @@ const RequestForm: React.FC = () => {
       const churches = getAvailableChurches(formData.unit);
       setAvailableChurches(churches);
       
-      // Reset church if no longer valid
-      if (formData.churchName && !churches.some(c => c.value === formData.churchName)) {
-        setFormData(prev => ({ ...prev, churchName: '' }));
+      // Reset church selection if no longer valid
+      if (formData.club && !churches.some(c => c.value === formData.club)) {
+        setFormData(prev => ({ ...prev, club: '' }));
       }
     } else {
       setAvailableChurches([]);
-      if (formData.churchName) {
-        setFormData(prev => ({ ...prev, churchName: '' }));
-      }
     }
-  }, [formData.unit, formData.churchName, getAvailableChurches]);
+  }, [formData.unit, formData.club, getAvailableChurches]);
 
   // Update age validation message
   useEffect(() => {
@@ -796,6 +799,11 @@ const RequestForm: React.FC = () => {
     }
     
     const nextValue = name === 'email' ? value.toLowerCase() : value;
+    if (name === 'religion' && value !== 'Christian') {
+      setFormData(prev => ({ ...prev, [name]: nextValue, churchName: '' }));
+      return;
+    }
+
     setFormData(prev => ({ ...prev, [name]: nextValue }));
   };
 
@@ -815,11 +823,9 @@ const RequestForm: React.FC = () => {
     
     // Cascade resets
     if (name === 'unit') {
-      setFormData(prev => ({ ...prev, club: '', churchName: '' }));
+      setFormData(prev => ({ ...prev, club: '' }));
       setAvailableClubs([]);
       setAvailableChurches([]);
-    } else if (name === 'club') {
-      setFormData(prev => ({ ...prev, churchName: '' }));
     }
   };
 
@@ -876,6 +882,9 @@ const RequestForm: React.FC = () => {
     if (!formData.validIdType) errors.validIdType = 'ID type is required';
     if (!formData.validIdFile) errors.validIdFile = 'ID document is required';
     if (!formData.passport_photo) errors.passport_photo = 'Passport photo is required';
+    if (formData.religion === 'Christian' && !formData.churchName.trim()) {
+      errors.churchName = 'Church name is required for Christians';
+    }
     
     // Email validation
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -914,14 +923,16 @@ const RequestForm: React.FC = () => {
       }
     }
     
+    const clubValue = (formData.club ?? '').toString().trim();
+
     // Club validation
-    if (availableClubs.length > 0 && !formData.club) {
+    if (availableClubs.length > 0 && !clubValue) {
       errors.club = 'Club selection is required';
     }
     
     // Church validation for Council of Church
-    if (formData.unit.toLowerCase().includes('council of church') && !formData.churchName) {
-      errors.churchName = 'Church selection is required for Council of Church';
+    if (formData.unit.toLowerCase().includes('council of church') && availableChurches.length > 0 && !clubValue) {
+      errors.club = 'Church selection is required for Council of Church';
     }
     
     setFieldErrors(errors);
@@ -1246,27 +1257,6 @@ const RequestForm: React.FC = () => {
       >
         <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Submit Application</h2>
 
-        {Object.keys(fieldErrors).length > 0 && (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 shadow"
-          >
-            <div className="flex items-center mb-2">
-              <svg className="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              <h3 className="font-semibold text-red-800">Please correct the following:</h3>
-            </div>
-            <ul className="list-disc list-inside space-y-1 text-sm">
-              {Object.entries(fieldErrors).map(([field, error]) => (
-                <li key={field} className="text-red-600">
-                  {error}
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        )}
 
         {/* Section Divider: Personal Information */}
         <div className="mb-8">
@@ -1611,13 +1601,13 @@ const RequestForm: React.FC = () => {
               </label>
               <MobileFriendlySelect
                 options={availableChurches}
-                value={availableChurches.find(c => c.value === formData.churchName)}
-                onChange={(option: any) => handleSelectChange('churchName', option?.value)}
+                value={availableChurches.find(c => c.value === formData.club)}
+                onChange={(option: any) => handleSelectChange('club', option?.value)}
                 placeholder="Select your church"
-                className={getInputBorderColor('churchName', formData.churchName)}
+                className={getInputBorderColor('club', formData.club)}
               />
-              {fieldErrors.churchName && (
-                <p className="text-red-500 text-sm mt-1">{fieldErrors.churchName}</p>
+              {fieldErrors.club && (
+                <p className="text-red-500 text-sm mt-1">{fieldErrors.club}</p>
               )}
             </div>
           )}

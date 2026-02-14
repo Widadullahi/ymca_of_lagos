@@ -58,6 +58,8 @@ const formatMembershipLabel = (membershipType: string) => {
 const formatExpiryDate = (user: any) => {
   const type = (user?.membership_type || '').toString().toLowerCase();
   if (type === 'honorary' || type === 'life') return '';
+  // Only show expiry if card is active (payment made)
+  if (!user?.card?.is_active) return '';
   // Use payment/activation year if available; always expire on May 31 of the following year.
   const baseDate =
     (user?.card?.created_at && new Date(user.card.created_at)) ||

@@ -136,8 +136,9 @@ const MainNavigation: React.FC<MainNavigationProps> = () => {
               YMCA History
             </button>
             
-            {/* Membership Dropdown */}
-            <div className="relative">
+            
+            {/* Membership Dropdown - COMMENTED OUT */}
+            {/* <div className="relative">
               <button 
                 onClick={() => setIsMembershipDropdownOpen(!isMembershipDropdownOpen)}
                 className="text-gray-700 hover:text-red-700 font-medium transition-colors flex items-center space-x-1"
@@ -179,7 +180,21 @@ const MainNavigation: React.FC<MainNavigationProps> = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
+            </div> */}
+            
+            <button 
+              onClick={() => navigate('/login')}
+              className="text-gray-700 hover:text-red-700 font-medium transition-colors border border-gray-300 px-4 py-2 rounded-lg hover:border-red-700"
+            >
+              Login
+            </button>
+            
+            <button 
+              onClick={() => navigate('/membership-request')}
+              className="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition-colors font-medium"
+            >
+              Register
+            </button>
             
             <button 
               onClick={openDonationModal}
@@ -240,8 +255,8 @@ const MainNavigation: React.FC<MainNavigationProps> = () => {
                   YMCA History
                 </button>
                 
-                {/* Mobile Membership Options */}
-                <div className="pl-2">
+                {/* Mobile Membership Options - COMMENTED OUT */}
+                {/* <div className="pl-2">
                   <div className="text-gray-700 font-medium mb-2">Membership</div>
                   <div className="pl-4 space-y-2">
                     <button 
@@ -263,7 +278,7 @@ const MainNavigation: React.FC<MainNavigationProps> = () => {
                       Membership Login
                     </button>
                   </div>
-                </div>
+                </div> */}
                 
                 <button 
                   onClick={() => {
@@ -273,6 +288,26 @@ const MainNavigation: React.FC<MainNavigationProps> = () => {
                   className="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition-colors text-left w-fit"
                 >
                   Donate
+                </button>
+                
+                <button 
+                  onClick={() => {
+                    navigate('/login');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="block text-gray-600 hover:text-red-700 transition-colors text-left border border-gray-300 px-4 py-2 rounded-lg hover:border-red-700 w-fit"
+                >
+                  Login
+                </button>
+                
+                <button 
+                  onClick={() => {
+                    navigate('/membership-request');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition-colors text-left w-fit"
+                >
+                  Register
                 </button>
               </div>
             </motion.div>

@@ -188,7 +188,7 @@ const MemberViewModal: React.FC<{
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Name</p>
-                    <p className="font-medium">{member.next_of_kin_name || 'N/A'}</p>
+                    <p className="font-medium">{member.next_of_kin_name || member.next_of_kin || member.user_request?.next_of_kin || member.user_request?.next_of_kin_name || 'N/A'}</p>
                   </div>
                   
                   <div>
@@ -198,7 +198,7 @@ const MemberViewModal: React.FC<{
                   
                   <div>
                     <p className="text-sm text-gray-500">Phone Number</p>
-                    <p className="font-medium">{member.next_of_kin_phone || 'N/A'}</p>
+                    <p className="font-medium">{member.next_of_kin_phone || member.user_request?.next_of_kin_phone || 'N/A'}</p>
                   </div>
                   
                   <div className="md:col-span-3">

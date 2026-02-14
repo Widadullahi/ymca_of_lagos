@@ -128,7 +128,7 @@ const Footer: React.FC<FooterProps> = ({ openDonationModal, logo }) => {
 
         {/* Bottom line */}
         <div className="mt-10 pt-6 border-t border-gray-700 text-center text-gray-400">
-          © 2025 YMCA Lagos. All rights reserved.
+          © {new Date().getFullYear()} YMCA Lagos. All rights reserved.
         </div>
       </div>
     </footer>

@@ -19,6 +19,7 @@ const RegisterForm: React.FC = () => {
     nationality: '',
     profession: '',
     religion: '',
+    churchName: '',
     denomination: '',
     academicQualification: '',
     nextOfKinName: '',
@@ -62,6 +63,12 @@ const RegisterForm: React.FC = () => {
   const referralOptions = [
     { value: 'Yes', label: 'Yes' },
     { value: 'No', label: 'No' }
+  ];
+
+  const religionOptions = [
+    { value: 'Christian', label: 'Christian' },
+    { value: 'Muslim', label: 'Muslim' },
+    { value: 'Other', label: 'Other' }
   ];
 
   const { fetchWithAuth, displayNotification, setUser, setAuthToken } = useAuth();
@@ -205,6 +212,10 @@ const RegisterForm: React.FC = () => {
     if (formData.wasReferred === 'Yes' && !formData.referrerName.trim()) {
       errors.referrerName = 'Please provide referrer name';
     }
+
+    if (formData.religion === 'Christian' && !formData.churchName.trim()) {
+      errors.churchName = 'Please provide the name of your church';
+    }
     
     if (!formData.password) errors.password = 'Password is required';
     if (formData.password !== formData.confirmPassword) {
@@ -244,6 +255,7 @@ const RegisterForm: React.FC = () => {
         nationality: formData.nationality,
         profession: formData.profession,
         religion: formData.religion,
+        church_name: formData.religion === 'Christian' ? formData.churchName : null,
         denomination: formData.denomination,
         academic_qualification: formData.academicQualification,
         next_of_kin_name: formData.nextOfKinName,
@@ -493,11 +505,10 @@ const RegisterForm: React.FC = () => {
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <FormInput
+            <FormSelect
               label="Religion"
               name="religion"
-              type="text"
-              placeholder="Religion"
+              options={religionOptions}
               value={formData.religion}
               onChange={handleInputChange}
               error={fieldErrors.religion}
@@ -513,6 +524,19 @@ const RegisterForm: React.FC = () => {
               error={fieldErrors.denomination}
             />
           </div>
+
+          {formData.religion === 'Christian' && (
+            <FormInput
+              label="Name of Church"
+              name="churchName"
+              type="text"
+              placeholder="Type your church name"
+              value={formData.churchName}
+              onChange={handleInputChange}
+              error={fieldErrors.churchName}
+              required
+            />
+          )}
 
           <FormInput
             label="Academic Qualification"
