@@ -44,6 +44,8 @@ static/
 # Backend repo (if cloned inside this repo)
 ymca_api/.env
 ymca_api/.env.*
+ymca_api/.git_disabled/
+ymca_api/.git_internal_backup/
 ymca_api/.venv/
 ymca_api/venv/
 ymca_api/env/
