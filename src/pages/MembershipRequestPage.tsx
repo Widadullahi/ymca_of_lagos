@@ -444,7 +444,7 @@ const validIdOptions = [
   { value: 'international_passport', label: 'International Passport' },
   { value: 'voters_card', label: 'Voters Card' },
   { value: 'drivers_license', label: "Driver's License" },
-  { value: 'others', label: 'Others' },
+  { value: 'bvn', label: 'BVN' },
 ];
 
 // Mobile-friendly Select component wrapper
@@ -831,15 +831,15 @@ const RequestForm: React.FC = () => {
 
   // Handle file upload
   const handleFileChange = (field: 'validIdFile' | 'passport_photo' | 'signature', file: File) => {
-    // Validate file type and size
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    // Match backend ImageField validation for all uploads.
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (!allowedTypes.includes(file.type)) {
-      setFieldErrors(prev => ({ ...prev, [field]: 'File must be JPEG, JPG, PNG, or PDF' }));
+      setFieldErrors(prev => ({ ...prev, [field]: 'File must be JPEG, JPG, or PNG' }));
       return;
     }
     
-    if (file.size > 10 * 1024 * 1024) {
-      setFieldErrors(prev => ({ ...prev, [field]: 'File size must be less than 10MB' }));
+    if (file.size > 2 * 1024 * 1024) {
+      setFieldErrors(prev => ({ ...prev, [field]: 'File size must be less than 2MB' }));
       return;
     }
     
@@ -962,7 +962,7 @@ const RequestForm: React.FC = () => {
       const keyMap: Record<string, string> = {
         validIdType: 'valid_id_type',
         validIdFile: 'valid_id_file',
-        nextOfKinName: 'next_of_kin_name',
+        nextOfKinName: 'next_of_kin',
         nextOfKinNumber: 'next_of_kin_phone',
         churchName: 'church_name',
         referredBy: 'referred_by',
