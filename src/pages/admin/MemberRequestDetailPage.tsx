@@ -263,7 +263,7 @@ const MemberRequestDetailPage: React.FC = () => {
               {memberRequest.status === 'rejected' && (
                 <button
                   onClick={() => setShowReconsiderConfirmation(true)}
-                  className="px-3 py-1 bg-amber-500 text-white rounded-md hover:bg-amber-600 text-sm"
+                  className="px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 text-sm"
                   disabled={processingAction}
                 >
                   Reconsider
@@ -557,7 +557,7 @@ const MemberRequestDetailPage: React.FC = () => {
         message="Are you sure you want to move this rejected request back to pending review?"
         confirmText="Reconsider"
         cancelText="Cancel"
-        confirmButtonClass="bg-amber-500 hover:bg-amber-600"
+        confirmButtonClass="bg-yellow-500 hover:bg-yellow-600"
         onConfirm={handleReconsider}
         onCancel={() => setShowReconsiderConfirmation(false)}
       />

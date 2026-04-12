@@ -626,7 +626,7 @@ const MemberRequestListing: React.FC = () => {
                       {member?.status === 'rejected' && (
                         <button
                           onClick={() => openReconsiderModal(member)}
-                          className="text-amber-600 hover:text-amber-900"
+                          className="text-yellow-600 hover:text-yellow-800"
                         >
                           Reconsider
                         </button>
@@ -794,7 +794,7 @@ const MemberRequestListing: React.FC = () => {
               <textarea
                 value={reviewNotes}
                 onChange={(e) => setReviewNotes(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 rows={3}
                 placeholder="Add note about why this request is being reconsidered..."
               />
@@ -810,7 +810,7 @@ const MemberRequestListing: React.FC = () => {
               <button
                 onClick={handleReconsiderRequest}
                 disabled={isProcessing}
-                className="px-4 py-2 bg-amber-500 text-white rounded-md text-sm font-medium hover:bg-amber-600 disabled:opacity-50"
+                className="px-4 py-2 bg-yellow-500 text-white rounded-md text-sm font-medium hover:bg-yellow-600 disabled:opacity-50"
               >
                 {isProcessing ? 'Reconsidering...' : 'Reconsider'}
               </button>

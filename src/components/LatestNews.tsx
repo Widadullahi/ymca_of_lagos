@@ -15,6 +15,8 @@ interface Update {
   content: string;
   type: 'latest-news' | 'upcoming-event';
   category: string;
+  actionButtonLabel?: string;
+  actionButtonUrl?: string;
   imageUrl?: string;
   images?: string[];
   postedBy: string;
@@ -114,6 +116,8 @@ export default function LatestNewsAndUpcomingEvents() {
             content: item.content,
             type: updateType,
             category: category,
+            actionButtonLabel: item.action_button_label || item.actionButtonLabel || '',
+            actionButtonUrl: item.action_button_url || item.actionButtonUrl || '',
             imageUrl: allImages[0] || '',
             images: allImages,
             postedAt: new Date(item.created_at),
@@ -490,6 +494,19 @@ export default function LatestNewsAndUpcomingEvents() {
                       </p>
                     </div>
                   </div>
+
+                  {selectedUpdate.actionButtonLabel && selectedUpdate.actionButtonUrl && (
+                    <div className="mb-8">
+                      <a
+                        href={selectedUpdate.actionButtonUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700"
+                      >
+                        {selectedUpdate.actionButtonLabel}
+                      </a>
+                    </div>
+                  )}
 
                   {/* Attachments */}
                   {selectedUpdate.attachments && selectedUpdate.attachments.length > 0 && (
