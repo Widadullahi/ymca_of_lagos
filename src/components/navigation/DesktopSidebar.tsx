@@ -35,7 +35,6 @@ const DesktopSidebar = () => {
           {user?.role == "Member" ? (
             <>
             <NavItem to="/dashboard" icon={<GoHome />} label="Home" />
-            <NavItem to="/updates" icon={<MdOutlineNewspaper />} label="Updates" />
             </>
           ):(
             <>

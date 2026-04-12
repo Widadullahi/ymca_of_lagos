@@ -20,6 +20,8 @@ export interface Update {
   title: string;
   content: string;
   category: string;
+  actionButtonLabel?: string;
+  actionButtonUrl?: string;
   imageUrl?: string;
   created_at: string | number | Date;
   postedAt: Date;
@@ -37,6 +39,9 @@ interface ApiResponse {
   content: string;
   category: string;
   type?: 'latest-news' | 'upcoming-event';
+  post_type?: 'latest-news' | 'upcoming-event';
+  action_button_label?: string;
+  action_button_url?: string;
   created_at: string;
   imageUrl?: string;
   images?: string[];
@@ -106,7 +111,11 @@ const AdminUpdatesPage = () => {
           // Ensure type is always defined and matches expected values
           type: item.type && (item.type === 'latest-news' || item.type === 'upcoming-event') 
             ? item.type 
+            : item.post_type && (item.post_type === 'latest-news' || item.post_type === 'upcoming-event')
+              ? item.post_type
             : (item.category === 'Events' ? 'upcoming-event' : 'latest-news'),
+          actionButtonLabel: item.action_button_label || item.actionButtonLabel || '',
+          actionButtonUrl: item.action_button_url || item.actionButtonUrl || '',
           postedAt: new Date(item.created_at),
           imageUrl: toAbsoluteUrl(item.image || item.image_url || item.imageUrl || item?.image_base64),
           images: [
@@ -157,6 +166,9 @@ const AdminUpdatesPage = () => {
         title: formData.title,
         content: formData.content,
         type: formData.type,
+        post_type: formData.type,
+        action_button_label: formData.actionButtonLabel || '',
+        action_button_url: formData.actionButtonUrl || '',
         // Map type to category for backward compatibility
         category: formData.type === 'upcoming-event' ? 'Events' : 'Announcements'
       };
@@ -217,7 +229,11 @@ const AdminUpdatesPage = () => {
                 // Ensure type is defined
                 type: (normalized?.type && (normalized.type === 'latest-news' || normalized.type === 'upcoming-event')) 
                   ? normalized.type 
+                  : (normalized?.post_type && (normalized.post_type === 'latest-news' || normalized.post_type === 'upcoming-event'))
+                    ? normalized.post_type
                   : 'latest-news',
+                actionButtonLabel: normalized?.action_button_label || normalized?.actionButtonLabel || '',
+                actionButtonUrl: normalized?.action_button_url || normalized?.actionButtonUrl || '',
                 postedAt: new Date(createdAt),
                 created_at: createdAt,
                 imageUrl: toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64),
@@ -248,7 +264,11 @@ const AdminUpdatesPage = () => {
             // Ensure type is defined
             type: (normalized?.type && (normalized.type === 'latest-news' || normalized.type === 'upcoming-event')) 
               ? normalized.type 
+              : (normalized?.post_type && (normalized.post_type === 'latest-news' || normalized.post_type === 'upcoming-event'))
+                ? normalized.post_type
               : 'latest-news',
+            actionButtonLabel: normalized?.action_button_label || normalized?.actionButtonLabel || '',
+            actionButtonUrl: normalized?.action_button_url || normalized?.actionButtonUrl || '',
             postedAt: new Date(createdAt),
             created_at: createdAt,
             imageUrl: toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64),

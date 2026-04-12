@@ -14,11 +14,26 @@ const MemberViewModal: React.FC<{
     onDeleteMember: (memberId: string) => void;
   }> = ({ member, closeModal, onStatusChange, onDeleteMember }) => {
 
-    const { fetchWithAuth, displayNotification } = useAuth();
+    const { fetchWithAuth, displayNotification, BACKEND_URL } = useAuth();
     const [showStatusConfirmation, setShowStatusConfirmation] = useState(false);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
   
     if (!member) return null;
+
+    const toAbsoluteUrl = (url?: string | null) => {
+      if (!url) return '';
+      if (url.startsWith('http://') || url.startsWith('https://')) return url;
+      const baseUrl = (BACKEND_URL || '').replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '');
+      const suffix = url.startsWith('/') ? url : `/${url}`;
+      return `${baseUrl}${suffix}`;
+    };
+
+    const openImagePreview = (src?: string | null, alt = 'Preview image') => {
+      const resolvedSrc = toAbsoluteUrl(src);
+      if (!resolvedSrc) return;
+      setPreviewImage({ src: resolvedSrc, alt });
+    };
   
     const handleStatusChange = async () => {
       const payload = {
@@ -80,9 +95,10 @@ const MemberViewModal: React.FC<{
             <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-8">
               <div className="md:col-span-1">
                 <img 
-                  src={member.image || avatar} 
+                  src={toAbsoluteUrl(member.image) || avatar} 
                   alt={`${member.first_name} ${member.last_name}`} 
-                  className="h-56 w-56 rounded-full mx-auto object-cover border-4 border-indigo-100" 
+                  className="h-56 w-56 cursor-zoom-in rounded-full mx-auto object-cover border-4 border-indigo-100"
+                  onClick={() => openImagePreview(member.image || avatar, `${member.first_name} ${member.last_name}`)}
                 />
                 
                 <div className="mt-4 text-center">
@@ -211,13 +227,67 @@ const MemberViewModal: React.FC<{
                 <div className="mt-2">
                   {member.signature ? (
                     <img 
-                      src={member.signature} 
+                      src={toAbsoluteUrl(member.signature)} 
                       alt="Member Signature" 
-                      className="max-h-20 border border-gray-200 p-2 rounded"
+                      className="max-h-20 cursor-zoom-in border border-gray-200 p-2 rounded"
+                      onClick={() => openImagePreview(member.signature, 'Member Signature')}
                     />
                   ) : (
                     <p className="text-gray-500 italic">No signature uploaded</p>
                   )}
+                </div>
+
+                <h3 className="text-lg font-medium border-b pb-2 mt-6 mb-4">Uploaded Images</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500 mb-2">Passport Photo</p>
+                    {(member.user_request?.passport_photo || member.passport_photo || member.image) ? (
+                      <img
+                        src={toAbsoluteUrl(member.user_request?.passport_photo || member.passport_photo || member.image)}
+                        alt="Passport Photo"
+                        className="h-28 w-full cursor-zoom-in rounded border object-cover"
+                        onClick={() =>
+                          openImagePreview(
+                            member.user_request?.passport_photo || member.passport_photo || member.image,
+                            'Passport Photo'
+                          )
+                        }
+                      />
+                    ) : (
+                      <p className="text-gray-500 italic">No passport photo uploaded</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 mb-2">Valid ID Document</p>
+                    {(member.user_request?.valid_id_file || member.user_request?.validIdFile || member.valid_id_file) ? (
+                      <img
+                        src={toAbsoluteUrl(member.user_request?.valid_id_file || member.user_request?.validIdFile || member.valid_id_file)}
+                        alt="Valid ID Document"
+                        className="h-28 w-full cursor-zoom-in rounded border object-contain bg-white"
+                        onClick={() =>
+                          openImagePreview(
+                            member.user_request?.valid_id_file || member.user_request?.validIdFile || member.valid_id_file,
+                            'Valid ID Document'
+                          )
+                        }
+                      />
+                    ) : (
+                      <p className="text-gray-500 italic">No valid ID uploaded</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 mb-2">Signature</p>
+                    {member.signature ? (
+                      <img
+                        src={toAbsoluteUrl(member.signature)}
+                        alt="Signature"
+                        className="h-28 w-full cursor-zoom-in rounded border object-contain bg-white"
+                        onClick={() => openImagePreview(member.signature, 'Member Signature')}
+                      />
+                    ) : (
+                      <p className="text-gray-500 italic">No signature uploaded</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -273,6 +343,29 @@ const MemberViewModal: React.FC<{
           onConfirm={handleDeleteMember}
           onCancel={() => setShowDeleteConfirmation(false)}
         />
+
+        {previewImage && (
+          <div
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4"
+            onClick={() => setPreviewImage(null)}
+          >
+            <button
+              type="button"
+              className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+              onClick={() => setPreviewImage(null)}
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <img
+              src={previewImage.src}
+              alt={previewImage.alt}
+              className="max-h-[90vh] max-w-[90vw] rounded-lg bg-white object-contain p-2 shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            />
+          </div>
+        )}
       </div>
     );
   };

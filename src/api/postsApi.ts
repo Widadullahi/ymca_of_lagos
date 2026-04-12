@@ -11,9 +11,13 @@ interface PostResponse {
   } | null;
   title: string;
   content: string;
+  category: string;
   created_at: string;
   updated_at: string;
   image: string | null;
+  action_button_label?: string | null;
+  action_button_url?: string | null;
+  post_type?: 'latest-news' | 'upcoming-event';
   attachments: {
     id: string;
     file: string;
@@ -57,7 +61,10 @@ const transformPostToUpdate = (post: PostResponse | null | undefined): any => {
     id: post.id,
     title: post.title,
     content: post.content,
-    category: 'Announcements', // You might want to add a category field to your backend model
+    category: post.category,
+    type: post.post_type || 'latest-news',
+    actionButtonLabel: post.action_button_label || '',
+    actionButtonUrl: post.action_button_url || '',
     imageUrl: post.image,
     postedBy: postedBy,
     postedAt: new Date(post.created_at),
@@ -140,6 +147,10 @@ export const createPostsApi = (fetchWithAuth: any) => ({
     
     if (postData.title !== undefined) requestBody.title = postData.title;
     if (postData.content !== undefined) requestBody.content = postData.content;
+    if ((postData as any).category !== undefined) requestBody.category = (postData as any).category;
+    if ((postData as any).post_type !== undefined) requestBody.post_type = (postData as any).post_type;
+    if ((postData as any).action_button_label !== undefined) requestBody.action_button_label = (postData as any).action_button_label;
+    if ((postData as any).action_button_url !== undefined) requestBody.action_button_url = (postData as any).action_button_url;
     
     // Handle image update
     if (postData.removeImage) {

@@ -145,8 +145,6 @@ const MobileSidebar = ({ isOpen, setIsOpen }: MobileSidebarProps) => {
               {user?.role == "Member" ? (
                 <>
                 <NavItem to="/dashboard" icon={<GoHome />} label="Home" />
-                <NavItem to="/updates" icon={<MdOutlineNewspaper />} label="Updates" />
-                
                 </>
               ): (
                 <>

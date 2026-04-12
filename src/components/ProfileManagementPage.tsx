@@ -123,6 +123,7 @@ const ProfileManagementPage: React.FC = () => {
   const [profileForm, setProfileForm] = useState<Partial<UserProfile>>({});
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
+  const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
   
   // Modal state
   const [modalOpen, setModalOpen] = useState<ModalType>(null);
@@ -133,7 +134,7 @@ const ProfileManagementPage: React.FC = () => {
   const toAbsoluteUrl = (url?: string | null) => {
     if (!url) return '';
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    const prefix = BACKEND_URL?.replace(/\/+$/, '') || '';
+    const prefix = (BACKEND_URL || '').replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '');
     const suffix = url.startsWith('/') ? url : `/${url}`;
     return `${prefix}${suffix}`;
   };
@@ -152,9 +153,16 @@ const ProfileManagementPage: React.FC = () => {
       international_passport: 'International Passport',
       voters_card: 'Voters Card',
       drivers_license: "Driver's License",
+      bvn: 'BVN',
       others: 'Others',
     };
     return labels[key] || value || 'Not provided';
+  };
+
+  const openImagePreview = (src?: string | null, alt = 'Preview image') => {
+    const resolvedSrc = toAbsoluteUrl(src);
+    if (!resolvedSrc) return;
+    setPreviewImage({ src: resolvedSrc, alt });
   };
   const getExpiryDate = () => {
     const now = new Date();
@@ -526,9 +534,10 @@ const ProfileManagementPage: React.FC = () => {
           <div className="flex flex-col md:flex-row">
             <div className="md:w-1/3 mb-6 md:mb-0">
               <img
-                src={profile?.image || thumbnail}
+                src={toAbsoluteUrl(profile?.image) || thumbnail}
                 alt={getFullName()}
-                className="w-32 h-32 rounded-full object-cover"
+                className="w-32 h-32 cursor-zoom-in rounded-full object-cover"
+                onClick={() => openImagePreview(profile?.image || thumbnail, getFullName() || 'Profile image')}
               />
               <div className="mt-4 text-sm text-gray-500">
                 Member since {formatDate(profile?.created_at)}
@@ -537,10 +546,11 @@ const ProfileManagementPage: React.FC = () => {
               {!isAdmin && profile?.card?.signature && (
                 <div className="mt-4">
                   <h3 className="text-sm font-medium text-gray-500">Signature</h3>
-                  <img 
-                    src={profile.card.signature} 
+                  <img
+                    src={toAbsoluteUrl(profile.card.signature)}
                     alt="Signature" 
-                    className="mt-2 h-16 border border-gray-200 p-1 rounded"
+                    className="mt-2 h-16 cursor-zoom-in border border-gray-200 p-1 rounded"
+                    onClick={() => openImagePreview(profile.card.signature, 'Signature')}
                   />
                 </div>
               )}
@@ -710,7 +720,14 @@ const ProfileManagementPage: React.FC = () => {
                                 pickValue(profile, ['valid_id_file', 'validIdFile'])
                             )}
                             alt="Valid ID Document"
-                            className="mt-2 h-28 w-auto max-w-full object-contain rounded border"
+                            className="mt-2 h-28 w-auto max-w-full cursor-zoom-in object-contain rounded border"
+                            onClick={() =>
+                              openImagePreview(
+                                pickValue(profile.user_request, ['valid_id_file', 'validIdFile']) ||
+                                  pickValue(profile, ['valid_id_file', 'validIdFile']),
+                                'Valid ID Document'
+                              )
+                            }
                           />
                         ) : (
                           <p className="mt-1">No ID document uploaded</p>
@@ -887,6 +904,29 @@ const ProfileManagementPage: React.FC = () => {
         setModalOpen={setModalOpen}
         handleDeleteAccount={handleDeleteAccount}
       />
+    )}
+
+    {previewImage && (
+      <div
+        className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4"
+        onClick={() => setPreviewImage(null)}
+      >
+        <button
+          type="button"
+          className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+          onClick={() => setPreviewImage(null)}
+        >
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        <img
+          src={previewImage.src}
+          alt={previewImage.alt}
+          className="max-h-[90vh] max-w-[90vw] rounded-lg bg-white object-contain p-2 shadow-2xl"
+          onClick={(event) => event.stopPropagation()}
+        />
+      </div>
     )}
   </div>
     </>

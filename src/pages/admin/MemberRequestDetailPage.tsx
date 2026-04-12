@@ -56,7 +56,7 @@ interface MemberRequest {
 const MemberRequestDetailPage: React.FC = () => {
   const { requestId } = useParams<{ requestId: string }>();
   const navigate = useNavigate();
-  const { fetchWithAuth } = useAuth();
+  const { fetchWithAuth, BACKEND_URL } = useAuth();
   
   // Initialize API
   const memberRequestsApi = createMemberRequestsApi(fetchWithAuth);
@@ -65,6 +65,7 @@ const MemberRequestDetailPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [showApproveConfirmation, setShowApproveConfirmation] = useState<boolean>(false);
   const [showRejectConfirmation, setShowRejectConfirmation] = useState<boolean>(false);
+  const [showReconsiderConfirmation, setShowReconsiderConfirmation] = useState<boolean>(false);
   const [processingAction, setProcessingAction] = useState<boolean>(false);
   const normalize = (value?: string | null) => (value ?? '').toString().trim().toLowerCase();
   const formatValidIdType = (value?: string | null) => {
@@ -74,9 +75,18 @@ const MemberRequestDetailPage: React.FC = () => {
       international_passport: 'International Passport',
       voters_card: 'Voters Card',
       drivers_license: "Driver's License",
-      others: 'Others',
+      bvn: 'BVN',
     };
     return labels[key] || value || 'Not Provided';
+  };
+  const mediaBaseUrl = BACKEND_URL.replace(/\/api\/v1\/?$/, '');
+  const toAbsoluteUrl = (value?: string | null) => {
+    const url = (value ?? '').toString().trim();
+    if (!url) return '';
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('//')) return `${window.location.protocol}${url}`;
+    if (url.startsWith('/')) return `${mediaBaseUrl}${url}`;
+    return `${mediaBaseUrl}/${url.replace(/^\/+/, '')}`;
   };
   // Helper to read multiple possible keys from the memberRequest object (and nested user_request if present)
   const getField = (keys: string[]) => {
@@ -185,6 +195,23 @@ const MemberRequestDetailPage: React.FC = () => {
     }
   };
 
+  const handleReconsider = async () => {
+    if (!memberRequest) return;
+
+    setProcessingAction(true);
+    try {
+      await memberRequestsApi.reconsiderMemberRequest(memberRequest.id);
+      toast.success('Member request moved back to pending');
+      setMemberRequest(prev => prev ? { ...prev, status: 'pending' } : prev);
+    } catch (error) {
+      console.error('Error reconsidering member request:', error);
+      toast.error('Failed to reconsider member request');
+    } finally {
+      setProcessingAction(false);
+      setShowReconsiderConfirmation(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -233,8 +260,17 @@ const MemberRequestDetailPage: React.FC = () => {
                   </button>
                 </>
               )}
+              {memberRequest.status === 'rejected' && (
+                <button
+                  onClick={() => setShowReconsiderConfirmation(true)}
+                  className="px-3 py-1 bg-amber-500 text-white rounded-md hover:bg-amber-600 text-sm"
+                  disabled={processingAction}
+                >
+                  Reconsider
+                </button>
+              )}
               <button
-                onClick={() => navigate('/admin/member-requests')}
+                onClick={() => navigate('/admin/membership-request')}
                 className="text-gray-500 hover:text-gray-700 focus:outline-none"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -388,9 +424,9 @@ const MemberRequestDetailPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Valid ID Document</p>
-                  {memberRequest.valid_id_file ? (
+                  {getField(['valid_id_file', 'validIdFile']) ? (
                     <img 
-                      src={memberRequest.valid_id_file} 
+                      src={toAbsoluteUrl(getField(['valid_id_file', 'validIdFile']))} 
                       alt="Valid ID Document"
                       className="mt-2 w-32 h-20 object-contain rounded-lg border border-gray-300 shadow-sm"
                     />
@@ -421,9 +457,9 @@ const MemberRequestDetailPage: React.FC = () => {
                 <div>
                   <p className="text-xs text-gray-500">Next of Kin Name</p>
                   <p className="text-sm">{getField([
+                    'next_of_kin',
                     'next_of_kin_name',
                     'nextOfKinName',
-                    'next_of_kin',
                     'nextOfKin',
                     'next_of_kin_full_name',
                     'nok_name',
@@ -507,12 +543,23 @@ const MemberRequestDetailPage: React.FC = () => {
       <ConfirmationModal
         isOpen={showRejectConfirmation}
         title="Reject Member Request"
-        message="Are you sure you want to reject this member request? This action cannot be undone."
+        message="Are you sure you want to reject this member request? You can still reconsider it later."
         confirmText="Reject"
         cancelText="Cancel"
         confirmButtonClass="bg-red-500 hover:bg-red-600"
         onConfirm={handleReject}
         onCancel={() => setShowRejectConfirmation(false)}
+      />
+
+      <ConfirmationModal
+        isOpen={showReconsiderConfirmation}
+        title="Reconsider Member Request"
+        message="Are you sure you want to move this rejected request back to pending review?"
+        confirmText="Reconsider"
+        cancelText="Cancel"
+        confirmButtonClass="bg-amber-500 hover:bg-amber-600"
+        onConfirm={handleReconsider}
+        onCancel={() => setShowReconsiderConfirmation(false)}
       />
     </div>
   );

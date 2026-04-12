@@ -24,7 +24,8 @@ const MemberRequestListing: React.FC = () => {
   // Modal states
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [showApproveModal, setShowApproveModal] = useState<boolean>(false);
-  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [showRejectModal, setShowRejectModal] = useState<boolean>(false);
+  const [showReconsiderModal, setShowReconsiderModal] = useState<boolean>(false);
   const [reviewNotes, setReviewNotes] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   // View modal replaced with dedicated page
@@ -39,10 +40,12 @@ const MemberRequestListing: React.FC = () => {
         path: `/admin/requests/?page_size=10&page=${page}`,
       });
 
+      const visibleResults = (response?.results || []).filter((member: Member) => member?.status !== 'approved');
+
       if (append) {
-        setMembers(prev => [...prev, ...response?.results]);
+        setMembers(prev => [...prev, ...visibleResults]);
       } else {
-        setMembers(response?.results);
+        setMembers(visibleResults);
       }
       setIsLoading(false)
       setHasNextPage(!!response.metadata.next);
@@ -76,12 +79,8 @@ const MemberRequestListing: React.FC = () => {
         }
       });
       
-      // Update the member in the local state
-      setMembers(prev => prev.map(member => 
-        member.id === selectedMember.id 
-          ? { ...member, status: 'approved' }
-          : member
-      ));
+      // Approved requests should leave the request queue immediately.
+      setMembers(prev => prev.filter(member => member.id !== selectedMember.id));
       
       setShowApproveModal(false);
       setSelectedMember(null);
@@ -107,8 +106,8 @@ const MemberRequestListing: React.FC = () => {
     }
   };
 
-  // Handle delete request
-  const handleDeleteRequest = async () => {
+  // Handle reject request
+  const handleRejectRequest = async () => {
     if (!selectedMember) return;
     
     setIsProcessing(true);
@@ -122,17 +121,53 @@ const MemberRequestListing: React.FC = () => {
         }
       });
       
-      // Remove the member from local state or update status
-      setMembers(prev => prev.filter(member => member.id !== selectedMember.id));
+      setMembers(prev => prev.map(member =>
+        member.id === selectedMember.id
+          ? { ...member, status: 'rejected' }
+          : member
+      ));
       
-      setShowDeleteModal(false);
+      setShowRejectModal(false);
       setSelectedMember(null);
       setReviewNotes('');
       
-      alert('Request deleted successfully!');
+      alert('Request rejected successfully!');
     } catch (error) {
-      console.error('Error deleting request:', error);
-      alert('Failed to delete request. Please try again.');
+      console.error('Error rejecting request:', error);
+      alert('Failed to reject request. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleReconsiderRequest = async () => {
+    if (!selectedMember) return;
+
+    setIsProcessing(true);
+    try {
+      await fetchWithAuth({
+        method: 'PATCH',
+        path: `/admin/requests/${selectedMember.id}/status/`,
+        body: {
+          status: 'pending',
+          review_notes: reviewNotes
+        }
+      });
+
+      setMembers(prev => prev.map(member =>
+        member.id === selectedMember.id
+          ? { ...member, status: 'pending' }
+          : member
+      ));
+
+      setShowReconsiderModal(false);
+      setSelectedMember(null);
+      setReviewNotes('');
+
+      alert('Request moved back to pending successfully!');
+    } catch (error) {
+      console.error('Error reconsidering request:', error);
+      alert('Failed to reconsider request. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -148,14 +183,20 @@ const MemberRequestListing: React.FC = () => {
     setShowApproveModal(true);
   };
 
-  const openDeleteModal = (member: Member) => {
+  const openRejectModal = (member: Member) => {
     setSelectedMember(member);
-    setShowDeleteModal(true);
+    setShowRejectModal(true);
+  };
+
+  const openReconsiderModal = (member: Member) => {
+    setSelectedMember(member);
+    setShowReconsiderModal(true);
   };
 
   const closeModals = () => {
     setShowApproveModal(false);
-    setShowDeleteModal(false);
+    setShowRejectModal(false);
+    setShowReconsiderModal(false);
     setSelectedMember(null);
     setReviewNotes('');
   };
@@ -283,7 +324,7 @@ const MemberRequestListing: React.FC = () => {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Requests</p>
+              <p className="text-sm font-medium text-gray-600">Queue Size</p>
               <p className="text-2xl font-semibold text-gray-900">{members.length}</p>
             </div>
           </div>
@@ -307,22 +348,6 @@ const MemberRequestListing: React.FC = () => {
 
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Approved</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                {members.filter(m => m.status === 'approved').length}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex items-center">
             <div className="p-2 bg-red-100 rounded-lg">
               <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -332,6 +357,22 @@ const MemberRequestListing: React.FC = () => {
               <p className="text-sm font-medium text-gray-600">Rejected</p>
               <p className="text-2xl font-semibold text-gray-900">
                 {members.filter(m => m.status === 'rejected').length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-amber-100 rounded-lg">
+              <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M4.93 19h14.14c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.2 16c-.77 1.33.19 3 1.73 3z"></path>
+              </svg>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Needs Action</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {members.filter(m => m.status === 'pending' || !m.status || m.status === 'rejected').length}
               </p>
             </div>
           </div>
@@ -367,7 +408,6 @@ const MemberRequestListing: React.FC = () => {
             >
               <option value="">All Statuses</option>
               <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
             </select>
           </div>
@@ -567,7 +607,7 @@ const MemberRequestListing: React.FC = () => {
                       >
                         View
                       </button>
-                      {member?.status !== 'approved' && (
+                      {member?.status === 'pending' && (
                         <button
                           onClick={() => openApproveModal(member)}
                           className="text-green-600 hover:text-green-900 mr-3"
@@ -575,12 +615,22 @@ const MemberRequestListing: React.FC = () => {
                           Approve
                         </button>
                       )}
-                      <button
-                        onClick={() => openDeleteModal(member)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
+                      {member?.status === 'pending' && (
+                        <button
+                          onClick={() => openRejectModal(member)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Reject
+                        </button>
+                      )}
+                      {member?.status === 'rejected' && (
+                        <button
+                          onClick={() => openReconsiderModal(member)}
+                          className="text-amber-600 hover:text-amber-900"
+                        >
+                          Reconsider
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -662,12 +712,12 @@ const MemberRequestListing: React.FC = () => {
         </div>
       )}
 
-      {/* Delete Modal */}
-      {showDeleteModal && selectedMember && (
+      {/* Reject Modal */}
+      {showRejectModal && selectedMember && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 shadow-lg rounded-md bg-white">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Delete Request</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Reject Request</h3>
               <button
                 onClick={closeModals}
                 className="text-gray-400 hover:text-gray-600"
@@ -679,21 +729,21 @@ const MemberRequestListing: React.FC = () => {
             </div>
             <div className="mb-4">
               <p className="text-sm text-gray-600">
-                Are you sure you want to delete the membership request for{' '}
+                Are you sure you want to reject the membership request for{' '}
                 <span className="font-semibold">{selectedMember.first_name} {selectedMember.last_name}</span>?
               </p>
-              <p className="text-sm text-red-600 mt-2">This action cannot be undone.</p>
+              <p className="text-sm text-red-600 mt-2">Rejected requests can still be reconsidered later.</p>
             </div>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Reason for Deletion (Optional)
+                Reason for Rejection (Optional)
               </label>
               <textarea
                 value={reviewNotes}
                 onChange={(e) => setReviewNotes(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                 rows={3}
-                placeholder="Add reason for deleting this request..."
+                placeholder="Add reason for rejecting this request..."
               />
             </div>
             <div className="flex justify-end space-x-3">
@@ -705,11 +755,64 @@ const MemberRequestListing: React.FC = () => {
                 Cancel
               </button>
               <button
-                onClick={handleDeleteRequest}
+                onClick={handleRejectRequest}
                 disabled={isProcessing}
                 className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 disabled:opacity-50"
               >
-                {isProcessing ? 'Deleting...' : 'Delete Request'}
+                {isProcessing ? 'Rejecting...' : 'Reject Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reconsider Modal */}
+      {showReconsiderModal && selectedMember && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Reconsider Request</h3>
+              <button
+                onClick={closeModals}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">
+                Move the rejected request for{' '}
+                <span className="font-semibold">{selectedMember.first_name} {selectedMember.last_name}</span> back to pending review?
+              </p>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Reconsideration Note (Optional)
+              </label>
+              <textarea
+                value={reviewNotes}
+                onChange={(e) => setReviewNotes(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
+                rows={3}
+                placeholder="Add note about why this request is being reconsidered..."
+              />
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={closeModals}
+                disabled={isProcessing}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReconsiderRequest}
+                disabled={isProcessing}
+                className="px-4 py-2 bg-amber-500 text-white rounded-md text-sm font-medium hover:bg-amber-600 disabled:opacity-50"
+              >
+                {isProcessing ? 'Reconsidering...' : 'Reconsider'}
               </button>
             </div>
           </div>

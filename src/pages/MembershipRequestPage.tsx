@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { startTransition, useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/NewAuthContext';
 import FormInput from '../components/forms/FormInput';
 import FormSelect from '../components/forms/FormSelect';
@@ -784,19 +784,18 @@ const RequestForm: React.FC = () => {
   };
 
   // Handle input change
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
-    setTouchedFields(prev => ({ ...prev, [name]: true }));
-    
-    // Clear error for this field
-    if (fieldErrors[name]) {
+    startTransition(() => {
+      setTouchedFields(prev => ({ ...prev, [name]: true }));
       setFieldErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
+        if (!prev[name]) return prev;
+        const nextErrors = { ...prev };
+        delete nextErrors[name];
+        return nextErrors;
       });
-    }
+    });
     
     const nextValue = name === 'email' ? value.toLowerCase() : value;
     if (name === 'religion' && value !== 'Christian') {
@@ -805,19 +804,19 @@ const RequestForm: React.FC = () => {
     }
 
     setFormData(prev => ({ ...prev, [name]: nextValue }));
-  };
+  }, []);
 
   // Handle Select change (for react-select components)
-  const handleSelectChange = (name: string, value: string | null) => {
-    setTouchedFields(prev => ({ ...prev, [name]: true }));
-    
-    if (fieldErrors[name]) {
+  const handleSelectChange = useCallback((name: string, value: string | null) => {
+    startTransition(() => {
+      setTouchedFields(prev => ({ ...prev, [name]: true }));
       setFieldErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
+        if (!prev[name]) return prev;
+        const nextErrors = { ...prev };
+        delete nextErrors[name];
+        return nextErrors;
       });
-    }
+    });
     
     setFormData(prev => ({ ...prev, [name]: value || '' }));
     
@@ -827,10 +826,10 @@ const RequestForm: React.FC = () => {
       setAvailableClubs([]);
       setAvailableChurches([]);
     }
-  };
+  }, []);
 
   // Handle file upload
-  const handleFileChange = (field: 'validIdFile' | 'passport_photo' | 'signature', file: File) => {
+  const handleFileChange = useCallback((field: 'validIdFile' | 'passport_photo' | 'signature', file: File) => {
     // Match backend ImageField validation for all uploads.
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (!allowedTypes.includes(file.type)) {
@@ -858,14 +857,15 @@ const RequestForm: React.FC = () => {
     }
     
     // Clear error
-    if (fieldErrors[field]) {
+    startTransition(() => {
       setFieldErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
+        if (!prev[field]) return prev;
+        const nextErrors = { ...prev };
+        delete nextErrors[field];
+        return nextErrors;
       });
-    }
-  };
+    });
+  }, []);
 
   // Validate form
   const validateForm = (): boolean => {
@@ -1119,7 +1119,7 @@ const RequestForm: React.FC = () => {
               : 'Drag & drop or click to browse'}
           </p>
           <p className="text-xs text-gray-500 mt-1">
-            Accepted: JPEG, JPG, PNG, PDF (Max 10MB)
+            Accepted: JPEG, JPG, PNG (Max 2MB)
           </p>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React, { SelectHTMLAttributes } from 'react';
+import React, { SelectHTMLAttributes, memo } from 'react';
 
 interface Option {
   value: string;
@@ -48,4 +48,4 @@ const FormSelect: React.FC<FormSelectProps> = ({
   );
 };
 
-export default FormSelect;
+export default memo(FormSelect);

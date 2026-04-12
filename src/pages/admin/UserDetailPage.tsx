@@ -69,13 +69,19 @@ const UserDetailPage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { fetchWithAuth, displayNotification, BACKEND_URL } = useAuth();
+  const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
 
   const toAbsoluteUrl = (url?: string | null) => {
     if (!url) return '';
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    const prefix = BACKEND_URL?.replace(/\/+$/, '') || '';
+    const prefix = (BACKEND_URL || '').replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '');
     const suffix = url.startsWith('/') ? url : `/${url}`;
     return `${prefix}${suffix}`;
+  };
+  const openImagePreview = (url?: string | null, alt = 'Preview image') => {
+    const resolved = toAbsoluteUrl(url);
+    if (!resolved) return;
+    setPreviewImage({ src: resolved, alt });
   };
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -256,9 +262,10 @@ const UserDetailPage: React.FC = () => {
             {/* Avatar and status */}
             <div className="flex flex-col items-center gap-4 md:gap-6 md:w-1/4">
               <img 
-                src={member.image || avatar} 
+                src={toAbsoluteUrl(member.image) || avatar} 
                 alt={`${member.first_name} ${member.last_name}`} 
-                className="h-36 w-36 md:h-44 md:w-44 rounded-full object-cover border-4 border-blue-100 shadow-lg transition-transform duration-300 hover:scale-105" 
+                className="h-36 w-36 md:h-44 md:w-44 cursor-zoom-in rounded-full object-cover border-4 border-blue-100 shadow-lg transition-transform duration-300 hover:scale-105" 
+                onClick={() => openImagePreview(member.image || avatar, `${member.first_name} ${member.last_name}`)}
               />
               <span className={`px-4 py-1 rounded-full text-xs font-semibold shadow ${member.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{member.is_active ? 'Active' : 'Inactive'}</span>
               <div className="flex flex-col w-full gap-2 mt-2">
@@ -532,9 +539,10 @@ const UserDetailPage: React.FC = () => {
               <div className="mt-2">
                 {member.card?.signature || member.user_request?.signature ? (
                   <img 
-                    src={member.card?.signature || member.user_request?.signature} 
+                    src={toAbsoluteUrl(member.card?.signature || member.user_request?.signature)} 
                     alt="Member Signature" 
-                    className="max-h-20 border border-gray-200 rounded"
+                    className="max-h-20 cursor-zoom-in border border-gray-200 rounded"
+                    onClick={() => openImagePreview(member.card?.signature || member.user_request?.signature, 'Member Signature')}
                   />
                 ) : (
                   <p className="text-sm text-gray-500">No signature available</p>
@@ -851,9 +859,10 @@ const UserDetailPage: React.FC = () => {
                       <p className="text-xs text-gray-500">Passport Photo</p>
                       {member.user_request.passport_photo ? (
                         <img 
-                          src={member.user_request.passport_photo} 
+                          src={toAbsoluteUrl(member.user_request.passport_photo)} 
                           alt="Passport" 
-                          className="h-20 w-20 object-cover rounded border"
+                          className="h-20 w-20 cursor-zoom-in object-cover rounded border"
+                          onClick={() => openImagePreview(member.user_request.passport_photo, 'Passport Photo')}
                         />
                       ) : (
                         <p className="text-sm">No photo uploaded</p>
@@ -866,7 +875,13 @@ const UserDetailPage: React.FC = () => {
                           <img
                             src={toAbsoluteUrl(member.user_request?.valid_id_file || member.user_request?.validIdFile || member.valid_id_file)}
                             alt="Valid ID Document"
-                            className="h-24 w-auto max-w-full object-contain rounded border"
+                            className="h-24 w-auto max-w-full cursor-zoom-in object-contain rounded border"
+                            onClick={() =>
+                              openImagePreview(
+                                member.user_request?.valid_id_file || member.user_request?.validIdFile || member.valid_id_file,
+                                'Valid ID Document'
+                              )
+                            }
                           />
                           <a
                             href={toAbsoluteUrl(member.user_request?.valid_id_file || member.user_request?.validIdFile || member.valid_id_file)}
@@ -970,6 +985,29 @@ const UserDetailPage: React.FC = () => {
           onConfirm={handleDeleteMember}
           onCancel={() => setShowDeleteConfirmation(false)}
         />
+      )}
+
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setPreviewImage(null)}
+        >
+          <button
+            type="button"
+            className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+            onClick={() => setPreviewImage(null)}
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <img
+            src={previewImage.src}
+            alt={previewImage.alt}
+            className="max-h-[90vh] max-w-[90vw] rounded-lg bg-white object-contain p-2 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          />
+        </div>
       )}
     </PageWrapper>
   );

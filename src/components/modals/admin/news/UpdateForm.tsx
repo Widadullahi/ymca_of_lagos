@@ -18,6 +18,8 @@ interface Update {
   title: string;
   content: string;
   type: 'latest-news' | 'upcoming-event';
+  actionButtonLabel?: string;
+  actionButtonUrl?: string;
   imageUrl?: string;
   images?: string[];
   attachments?: Attachment[];
@@ -45,6 +47,8 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [type, setType] = useState<'latest-news' | 'upcoming-event'>('latest-news');
+  const [actionButtonLabel, setActionButtonLabel] = useState('');
+  const [actionButtonUrl, setActionButtonUrl] = useState('');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [imageBase64s, setImageBase64s] = useState<string[]>([]);
@@ -65,6 +69,8 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
       setTitle(update.title);
       setContent(update.content);
       setType(update.type || 'latest-news');
+      setActionButtonLabel(update.actionButtonLabel || '');
+      setActionButtonUrl(update.actionButtonUrl || '');
       
       // Set image previews - check for both imageUrl and images
       const imageUrls: string[] = [];
@@ -95,6 +101,8 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
       setTitle('');
       setContent('');
       setType('latest-news');
+      setActionButtonLabel('');
+      setActionButtonUrl('');
       setImageFiles([]);
       setImagePreviews([]);
       setImageBase64s([]);
@@ -179,6 +187,8 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
       title,
       content,
       type,
+      actionButtonLabel: actionButtonLabel.trim(),
+      actionButtonUrl: actionButtonUrl.trim(),
       postedAt: isEditing && update ? update.postedAt : new Date(),
       imageBase64s: imageBase64s.length > 0 ? imageBase64s : undefined,
       imageFiles: imageFiles.length > 0 ? imageFiles : undefined,
@@ -275,6 +285,29 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
               onChange={(e) => setContent(e.target.value)} 
               required
             />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Action Button Text</label>
+              <input
+                type="text"
+                placeholder="e.g. Register Now"
+                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={actionButtonLabel}
+                onChange={(e) => setActionButtonLabel(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Action Button Link</label>
+              <input
+                type="url"
+                placeholder="https://example.com"
+                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={actionButtonUrl}
+                onChange={(e) => setActionButtonUrl(e.target.value)}
+              />
+            </div>
           </div>
 
           {/* Images Upload Section */}

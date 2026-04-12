@@ -81,6 +81,13 @@ const MemberDashboardMember: React.FC = () => {
     return renew ? 2500 : 3000;
   };
 
+  const calculateMembershipFee = (renew: boolean, years: number): number => {
+    const safeYears = Math.max(1, years);
+    if (isHonoraryOrLife) return 0;
+    if (renew) return getDueAmount(true) * safeYears;
+    return getDueAmount(false) + (Math.max(0, safeYears - 1) * getDueAmount(true));
+  };
+
   async function handleRenewSubscription(renew: boolean) {
     // First payment for demo (you might want to adjust this logic)
     try {
@@ -98,7 +105,7 @@ const MemberDashboardMember: React.FC = () => {
 
     const payload = {
       redirect_url: FRONTEND_URL + '/payment',
-      amount: getDueAmount(renew) * Math.max(1, paymentYears),
+      amount: calculateMembershipFee(renew, paymentYears),
       membership_type: membershipType || 'full',
       years: Math.max(1, paymentYears),
     };
@@ -131,10 +138,11 @@ const MemberDashboardMember: React.FC = () => {
 
   // Determine membership status
   const membershipActive = isCardActive && !isExpired;
+  const membershipInactive = !isCardActive;
   const firstPaymentAmount = getDueAmount(false);
   const renewalAmount = getDueAmount(true);
-  const totalFirstPayment = firstPaymentAmount * Math.max(1, paymentYears);
-  const totalRenewalPayment = renewalAmount * Math.max(1, paymentYears);
+  const totalFirstPayment = calculateMembershipFee(false, paymentYears);
+  const totalRenewalPayment = calculateMembershipFee(true, paymentYears);
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -166,11 +174,13 @@ const MemberDashboardMember: React.FC = () => {
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                   membershipActive
                     ? "bg-green-100 text-green-800"
-                    : isExpired
+                    : membershipInactive
+                      ? "bg-yellow-100 text-yellow-800"
+                      : isExpired
                       ? "bg-red-100 text-red-800"
                       : "bg-yellow-100 text-red-800"
                 }`}>
-                  {membershipActive ? "ACTIVE" : "EXPIRED"}
+                  {membershipActive ? "ACTIVE" : membershipInactive ? "INACTIVE" : "EXPIRED"}
                 </span>
               </div>
               
@@ -185,6 +195,8 @@ const MemberDashboardMember: React.FC = () => {
                 <FaCalendarAlt size={12} className="mr-1" />
                 {membershipActive
                   ? `Valid until: ${expiryDate}`
+                  : membershipInactive
+                    ? `Inactive until payment is completed`
                   : `Expired on: ${expiryDate}`}
               </div>
             </div>
@@ -245,7 +257,7 @@ const MemberDashboardMember: React.FC = () => {
                     <BiErrorCircle size={32} className="text-yellow-500" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg">Expired Membership</h3>
+                    <h3 className="font-bold text-lg">Inactive Membership</h3>
                     <p className="text-sm text-gray-600">Your digital ID is currently inactive</p>
                     <p className="text-xs text-gray-500 mt-1">
                       Membership expires annually on May 31st of next year
@@ -327,22 +339,27 @@ const MemberDashboardMember: React.FC = () => {
                   </p>
                 </div>
                 
-                {daysRemaining < 60 && (
-                  <div className="mt-4">
+                <div className="mt-4">
+                  {daysRemaining < 60 && (
                     <p className="text-amber-600 mb-2">
                       {daysRemaining < 30 
                         ? "Your membership expires soon!" 
                         : "Your membership expiry is approaching."}
                     </p>
-                    <button 
-                      onClick={() => handleRenewSubscription(true)}
-                      className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                      <FaCreditCard size={16} className="mr-2" />
-                      Renew Now (NGN {totalRenewalPayment.toLocaleString()})
-                    </button>
-                  </div>
-                )}
+                  )}
+                  <button 
+                    onClick={() => handleRenewSubscription(true)}
+                    className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <FaCreditCard size={16} className="mr-2" />
+                    Renew Now (NGN {totalRenewalPayment.toLocaleString()})
+                  </button>
+                  {daysRemaining >= 60 && (
+                    <p className="text-[11px] text-gray-500 mt-2">
+                      Early renewal is available anytime.
+                    </p>
+                  )}
+                </div>
               </div>
             ) : (
               <div>

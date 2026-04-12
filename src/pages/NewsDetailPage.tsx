@@ -17,6 +17,8 @@ interface Update {
   title: string;
   content: string;
   category: string;
+  actionButtonLabel?: string;
+  actionButtonUrl?: string;
   imageUrl?: string;
   images?: string[];
   postedBy: string;
@@ -75,6 +77,8 @@ export default function NewsDetailPage() {
             title: item.title,
             content: item.content,
             category: item.category,
+            actionButtonLabel: item.action_button_label || item.actionButtonLabel || '',
+            actionButtonUrl: item.action_button_url || item.actionButtonUrl || '',
             imageUrl: allImages[0] || '',
             images: allImages,
             postedAt: new Date(item.created_at),
@@ -142,6 +146,18 @@ export default function NewsDetailPage() {
             <div className="prose prose-lg max-w-none mb-10 text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>
               <p className="whitespace-pre-line">{update.content}</p>
             </div>
+            {update.actionButtonLabel && update.actionButtonUrl && (
+              <div className="mb-10">
+                <a
+                  href={update.actionButtonUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700"
+                >
+                  {update.actionButtonLabel}
+                </a>
+              </div>
+            )}
             {update.attachments && update.attachments.length > 0 && (
               <div className="border-t pt-6 mt-10">
                 <h4 className="font-semibold mb-3 text-lg">Attachments</h4>

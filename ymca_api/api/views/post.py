@@ -48,56 +48,11 @@ class PostViewSet(viewsets.ModelViewSet):
     #     return success_response(data=response.data, message='Post created successfully', status_code=response.status_code)
 
     def create(self, request, *args, **kwargs):
-        title = request.data.get('title')
-        content = request.data.get('content')
-        category = request.data.get('category')  # Not in model yet
-        posted_by = request.user
-        image_base64 = request.data.get('imageBase64')
-        attachments = request.data.get('attachments', [])
-
-        # Step 1: Validate required fields
-        if not title or not content:
-            return Response({"detail": "Title and content are required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Step 2: Process image (optional)
-        image_file = None
-        if image_base64:
-            image_file = base64_to_file(image_base64)
-            if not image_file:
-                return Response({"detail": "Invalid base64 image format."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Step 3: Create Post
-        post = Post.objects.create(
-            title=title,
-            content=content,
-            user=posted_by,
-            category=category,
-            image=image_file  # Can be None
-        )
-
-        print(post.user)
-
-        # Step 4: Handle attachments (optional)
-        for att in attachments:
-            base64_data = att.get('base64')
-            name = att.get('name') or f"{uuid.uuid4()}"
-            if not base64_data:
-                continue  # Skip invalid attachment
-            file_obj = base64_to_file(base64_data, filename=name)
-            if not file_obj:
-                continue  # Skip malformed base64
-            UpdateAttachment.objects.create(post=post, file=file_obj)
-
-
-
-        post = Post.objects.select_related('user').prefetch_related('updateattachment_set').get(id=post.id)
-
-
-        # Optional: Serialize response (or return data directly)
-        return Response(
-            # PostListSerializer(post).data,
-            status=200
-        )
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        post = serializer.save()
+        output = PostListSerializer(post, context={'request': request}).data
+        return success_response(data=output, message='Post created successfully', status_code=status.HTTP_201_CREATED)
     
     def update(self, request, *args, **kwargs):
         response = super().update(request, *args, **kwargs)

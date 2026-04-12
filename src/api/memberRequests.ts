@@ -48,6 +48,24 @@ export const createMemberRequestsApi = (fetchWithAuth: any) => ({
       console.error('Error rejecting member request:', error);
       throw error;
     }
+  },
+
+  // Reconsider a rejected member request by moving it back to pending
+  async reconsiderMemberRequest(requestId: string, reviewNotes: string = '') {
+    try {
+      const response = await fetchWithAuth({
+        method: 'PATCH',
+        path: `/admin/requests/${requestId}/status/`,
+        body: {
+          status: 'pending',
+          review_notes: reviewNotes
+        }
+      });
+      return response;
+    } catch (error) {
+      console.error('Error reconsidering member request:', error);
+      throw error;
+    }
   }
 });
 
