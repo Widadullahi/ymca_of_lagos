@@ -67,7 +67,12 @@ export default function HeroSectionS2({
           />
         </AnimatePresence>
         {/* Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80"></div>
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(to bottom, rgba(79, 16, 32, 0.7), rgba(111, 24, 48, 0.45), rgba(47, 9, 20, 0.8))',
+          }}
+        ></div>
       </div>
 
       {/* Content */}

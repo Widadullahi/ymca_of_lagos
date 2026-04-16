@@ -24,6 +24,8 @@ interface Update {
   attachments?: Attachment[];
 }
 
+const collectPostAttachments = (item: any) => item.attachments || item.attachments_data || [];
+
 // Function to truncate content to a maximum number of words
 const truncateContent = (content: string, maxWords: number = 30): string => {
   const words = content.split(' ');
@@ -83,17 +85,40 @@ export default function LatestNewsAndUpcomingEvents() {
   const toAbsoluteUrl = (value?: any): string => {
     const url = getImageValue(value);
     if (!url) return '';
+    // Debug logging
+    console.log('DEBUG toAbsoluteUrl - input:', value, 'url:', url, 'isAbsolute:', /^https?:\/\//i.test(url));
+    // If already an absolute URL, return as is (don't double-process)
     if (/^https?:\/\//i.test(url)) return url;
     if (url.startsWith('//')) return `${window.location.protocol}${url}`;
     if (url.startsWith('/')) return `${mediaBaseUrl}${url}`;
     return `${mediaBaseUrl}/${url.replace(/^\/+/, '')}`;
   };
+  const createInlinePlaceholder = (width: number, height: number, label: string) =>
+    `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+        <rect width="100%" height="100%" fill="#f3f4f6"/>
+        <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#9ca3af" font-family="Arial, sans-serif" font-size="20">
+          ${label}
+        </text>
+      </svg>`
+    )}`;
 
   useEffect(() => {
     const fetchUpdates = async () => {
       try {
         const response = await fetchWithAuth({ method: 'GET', path: `/posts` });
-        const normalized = (response?.data || [])
+        console.log('DEBUG LatestNews - full response:', response);
+        console.log('DEBUG LatestNews - response.data:', response?.data);
+        
+        // Handle different response structures
+        const responseData = response?.data || response;
+        console.log('DEBUG LatestNews - using responseData:', responseData);
+        
+        // Check if responseData is an array or has a data property
+        const items = Array.isArray(responseData) ? responseData : (responseData?.data || []);
+        console.log('DEBUG LatestNews - items to process:', items.length, items);
+        
+        const normalized = items
           .filter(Boolean)
           .map((item: any) => {
           const updateType = item.type || (item.category === 'Events' ? 'upcoming-event' : 'latest-news');
@@ -101,14 +126,33 @@ export default function LatestNewsAndUpcomingEvents() {
           const primaryImage =
             item.image || item.image_url || item.imageUrl || item?.image_base64;
           const imageList = item.images || item.image_list || item.imageUrls || [];
-          const attachmentImages = (item.attachments || [])
+          const postAttachments = collectPostAttachments(item);
+          const attachmentImages = postAttachments
             .map((att: any) => toAbsoluteUrl(att?.file || att?.url))
             .filter(isImageFile);
+          
+          // Debug logging
+          console.log('DEBUG LatestNews - API item:', {
+            id: item.id,
+            title: item.title,
+            image: item.image,
+            image_url: item.image_url,
+            imageUrl: item.imageUrl,
+            primaryImage: primaryImage
+          });
+          
+          const processedPrimary = toAbsoluteUrl(primaryImage);
+          const processedList = (imageList || []).map((img: any) => toAbsoluteUrl(img));
+          
+          console.log('DEBUG allImages - processedPrimary:', processedPrimary, 'processedList:', processedList, 'attachmentImages:', attachmentImages);
+          
           const allImages = Array.from(new Set([
-            toAbsoluteUrl(primaryImage),
-            ...(imageList || []).map((img: any) => toAbsoluteUrl(img)),
+            processedPrimary,
+            ...processedList,
             ...attachmentImages
           ])).filter(Boolean) as string[];
+          
+          console.log('DEBUG allImages - final:', allImages);
           
           return {
             id: item.id,
@@ -122,11 +166,13 @@ export default function LatestNewsAndUpcomingEvents() {
             images: allImages,
             postedAt: new Date(item.created_at),
             postedBy: item.user?.first_name || item.user?.email || 'Anonymous',
-            attachments: (item.attachments || []).map((att: any) => {
-              const fileType = att.file.split('.').pop()?.toLowerCase() || 'file';
+            attachments: postAttachments.map((att: any) => {
+              const attachmentUrl = toAbsoluteUrl(att?.file || att?.url);
+              const fileName = (att?.file || att?.url || '').split('/').pop() || 'attachment';
+              const fileType = fileName.split('.').pop()?.toLowerCase() || 'file';
               return {
-                name: att.file.split('/').pop() || 'attachment',
-                url: toAbsoluteUrl(att.file),
+                name: fileName,
+                url: attachmentUrl,
                 type: fileType,
               };
             }),
@@ -248,7 +294,8 @@ export default function LatestNewsAndUpcomingEvents() {
                           alt={update.title}
                           className="w-full h-64 object-cover"
                           onError={(e) => {
-                            e.currentTarget.src = 'https://via.placeholder.com/400x256?text=No+Image';
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = createInlinePlaceholder(400, 256, 'No Image');
                           }}
                         />
                       ) : (
@@ -332,7 +379,8 @@ export default function LatestNewsAndUpcomingEvents() {
                           alt={update.title}
                           className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-500"
                           onError={(e) => {
-                            e.currentTarget.src = 'https://via.placeholder.com/400x224?text=No+Image';
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = createInlinePlaceholder(400, 224, 'No Image');
                           }}
                         />
                       ) : (
@@ -417,7 +465,8 @@ export default function LatestNewsAndUpcomingEvents() {
                           alt={`${selectedUpdate.title} - Image ${currentImageIndex + 1}`}
                           className="w-full h-96 object-cover rounded-lg"
                           onError={(e) => {
-                            e.currentTarget.src = 'https://via.placeholder.com/800x400?text=Image+Not+Available';
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = createInlinePlaceholder(800, 400, 'Image Not Available');
                           }}
                         />
                         
@@ -476,7 +525,8 @@ export default function LatestNewsAndUpcomingEvents() {
                                 alt={`Thumbnail ${idx + 1}`}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
-                                  e.currentTarget.src = 'https://via.placeholder.com/80x80?text=Thumb';
+                                  e.currentTarget.onerror = null;
+                                  e.currentTarget.src = createInlinePlaceholder(80, 80, 'Thumb');
                                 }}
                               />
                             </button>
@@ -495,18 +545,22 @@ export default function LatestNewsAndUpcomingEvents() {
                     </div>
                   </div>
 
-                  {selectedUpdate.actionButtonLabel && selectedUpdate.actionButtonUrl && (
-                    <div className="mb-8">
-                      <a
-                        href={selectedUpdate.actionButtonUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700"
-                      >
-                        {selectedUpdate.actionButtonLabel}
-                      </a>
-                    </div>
-                  )}
+                   {(selectedUpdate.actionButtonLabel || selectedUpdate.actionButtonUrl) && (
+                     <div className="mb-8">
+                       <a
+                         href={selectedUpdate.actionButtonUrl || '#'}
+                         target={selectedUpdate.actionButtonUrl ? "_blank" : "_self"}
+                         rel={selectedUpdate.actionButtonUrl ? "noopener noreferrer" : undefined}
+                         className={`inline-flex items-center rounded-lg px-5 py-3 font-semibold transition ${
+                           selectedUpdate.actionButtonUrl 
+                             ? "bg-blue-600 text-white hover:bg-blue-700" 
+                             : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                         }`}
+                       >
+                         {selectedUpdate.actionButtonLabel || "Button"}
+                       </a>
+                     </div>
+                   )}
 
                   {/* Attachments */}
                   {selectedUpdate.attachments && selectedUpdate.attachments.length > 0 && (

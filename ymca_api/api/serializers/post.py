@@ -56,6 +56,8 @@ class PostListSerializer(serializers.ModelSerializer):
 
         return data
 class PostCreateUpdateSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(read_only=True)
+    category = serializers.CharField(required=False, allow_blank=True)
     # Base64 file fields for creating/updating
     image_base64 = serializers.CharField(write_only=True, required=False, allow_blank=True)
     image_name = serializers.CharField(write_only=True, required=False, allow_blank=True)
@@ -78,7 +80,7 @@ class PostCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = [
-            'id', 'user', 'title', 'content', 'created_at', 'updated_at', 'image',
+            'id', 'user', 'title', 'content', 'category', 'created_at', 'updated_at', 'image',
             'image_base64', 'image_name', 'attachments', 'new_attachments', 
             'remove_image', 'attachments_data',
             'action_button_label', 'action_button_url', 'post_type'
@@ -113,12 +115,28 @@ class PostCreateUpdateSerializer(serializers.ModelSerializer):
         validated_data.pop('new_attachments', None)  # Not used in create
         validated_data.pop('remove_image', None)  # Not used in create
 
+        # Debug logging
+        print(f"DEBUG: image_base64={'present' if image_base64 else 'None'}, image_name={image_name}")
+
         # Set user from request
         validated_data['user'] = self.context['request'].user
 
-        # Handle image
+        # Handle image - make sure we have both base64 and name
         if image_base64 and image_name:
-            validated_data['image'] = self._decode_base64_file(image_base64, image_name)
+            try:
+                validated_data['image'] = self._decode_base64_file(image_base64, image_name)
+            except Exception as e:
+                print(f"DEBUG: Error decoding image: {e}")
+                raise serializers.ValidationError({"image": f"Failed to process image: {str(e)}"})
+        elif image_base64 and not image_name:
+            # If we have base64 but no name, generate a default name
+            print("DEBUG: Have image_base64 but no image_name, using default")
+            image_name = 'image.jpg'
+            try:
+                validated_data['image'] = self._decode_base64_file(image_base64, image_name)
+            except Exception as e:
+                print(f"DEBUG: Error decoding image: {e}")
+                raise serializers.ValidationError({"image": f"Failed to process image: {str(e)}"})
 
         # Create post
         post = Post.objects.create(**validated_data)

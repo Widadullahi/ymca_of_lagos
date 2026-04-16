@@ -46,8 +46,11 @@ interface ApiResponse {
   imageUrl?: string;
   images?: string[];
   attachments?: Attachment[];
+  attachments_data?: Attachment[];
   // Add other properties as needed
 }
+
+const collectPostAttachments = (item: any) => item.attachments || item.attachments_data || [];
 
 const AdminUpdatesPage = () => {
   const { fetchWithAuth, BACKEND_URL } = useAuth();
@@ -106,23 +109,30 @@ const AdminUpdatesPage = () => {
         // Transform data to include type field
         const transformedData: Update[] = response.data
           .filter(Boolean)
-          .map((item: any) => ({
-          ...item,
-          // Ensure type is always defined and matches expected values
-          type: item.type && (item.type === 'latest-news' || item.type === 'upcoming-event') 
-            ? item.type 
-            : item.post_type && (item.post_type === 'latest-news' || item.post_type === 'upcoming-event')
-              ? item.post_type
-            : (item.category === 'Events' ? 'upcoming-event' : 'latest-news'),
-          actionButtonLabel: item.action_button_label || item.actionButtonLabel || '',
-          actionButtonUrl: item.action_button_url || item.actionButtonUrl || '',
-          postedAt: new Date(item.created_at),
-          imageUrl: toAbsoluteUrl(item.image || item.image_url || item.imageUrl || item?.image_base64),
-          images: [
-            ...((item.images || item.image_list || item.imageUrls || []).map((img: any) => toAbsoluteUrl(img))),
-            ...((item.attachments || []).map((att: any) => toAbsoluteUrl(att?.file || att?.url)).filter(isImageFile))
-          ].filter(Boolean)
-        }));
+          .map((item: any) => {
+            const postAttachments = collectPostAttachments(item);
+            const primaryImage = toAbsoluteUrl(item.image || item.image_url || item.imageUrl || item?.image_base64);
+
+            return {
+              ...item,
+              // Ensure type is always defined and matches expected values
+              type: item.type && (item.type === 'latest-news' || item.type === 'upcoming-event') 
+                ? item.type 
+                : item.post_type && (item.post_type === 'latest-news' || item.post_type === 'upcoming-event')
+                  ? item.post_type
+                : (item.category === 'Events' ? 'upcoming-event' : 'latest-news'),
+              actionButtonLabel: item.action_button_label || item.actionButtonLabel || '',
+              actionButtonUrl: item.action_button_url || item.actionButtonUrl || '',
+              postedAt: new Date(item.created_at),
+              imageUrl: primaryImage,
+              images: [
+                primaryImage,
+                ...((item.images || item.image_list || item.imageUrls || []).map((img: any) => toAbsoluteUrl(img))),
+                ...(postAttachments.map((att: any) => toAbsoluteUrl(att?.file || att?.url)).filter(isImageFile))
+              ].filter(Boolean),
+              attachments: postAttachments
+            };
+          });
         
       setUpdates(transformedData);
       setTotalCount(response.data.length);
@@ -165,7 +175,6 @@ const AdminUpdatesPage = () => {
       let apiData: any = {
         title: formData.title,
         content: formData.content,
-        type: formData.type,
         post_type: formData.type,
         action_button_label: formData.actionButtonLabel || '',
         action_button_url: formData.actionButtonUrl || '',
@@ -173,44 +182,37 @@ const AdminUpdatesPage = () => {
         category: formData.type === 'upcoming-event' ? 'Events' : 'Announcements'
       };
 
-      // Handle images (use base64s from form)
-      if (formData.imageBase64s && Array.isArray(formData.imageBase64s) && formData.imageBase64s.length > 0) {
-        apiData.images = formData.imageBase64s;
-        // Send a single image for backends expecting one field
-        apiData.image_base64 = formData.imageBase64s[0];
-        apiData.imageBase64 = formData.imageBase64s[0];
-        if (formData.imageFiles && Array.isArray(formData.imageFiles) && formData.imageFiles.length > 0) {
-          apiData.image_name = formData.imageFiles[0].name;
+      // Handle main image
+      if (formData.primaryImageBase64) {
+        apiData.image_base64 = formData.primaryImageBase64;
+
+        let imageName = formData.primaryImageFile?.name || '';
+        if (!imageName && formData.primaryImageBase64.includes(';base64,')) {
+          const format = formData.primaryImageBase64.split(';base64,')[0];
+          if (format.includes('image/')) {
+            imageName = `image.${format.split('image/')[1]}`;
+          }
         }
+        apiData.image_name = imageName || 'image.jpg';
       }
 
-      // Handle attachments (including extra images beyond the primary)
-      const mappedAttachments = (formData.attachments && Array.isArray(formData.attachments))
-        ? formData.attachments
-            .filter((att: any) => att.base64 || att.file)
-            .map((att: any) => ({
-              file_base64: att.base64,
-              file_name: att.name,
-              type: att.type
-            }))
-        : [];
-
-      const extraImageAttachments = (formData.imageBase64s && Array.isArray(formData.imageBase64s) && formData.imageBase64s.length > 1)
-        ? formData.imageBase64s.slice(1).map((base64: string, index: number) => ({
+      // Handle gallery images as attachments
+      const galleryImages = (formData.otherImageBase64s && Array.isArray(formData.otherImageBase64s))
+        ? formData.otherImageBase64s.map((base64: string, index: number) => ({
             file_base64: base64,
-            file_name:
-              (formData.imageFiles && Array.isArray(formData.imageFiles) && formData.imageFiles[index + 1]?.name) ||
-              `image_${index + 2}.png`,
+            file_name: formData.otherImageFiles?.[index]?.name || `image_${index + 2}.png`,
             type: 'image'
           }))
         : [];
 
-      const combinedAttachments = [...mappedAttachments, ...extraImageAttachments];
-      if (combinedAttachments.length > 0) {
-        apiData.attachments = combinedAttachments;
-        apiData.new_attachments = combinedAttachments;
+      if (galleryImages.length > 0) {
+        apiData.attachments = galleryImages;
+        apiData.new_attachments = galleryImages;
       }
 
+      console.log('Form data received:', formData);
+      console.log('PrimaryImage:', formData.primaryImageFile);
+      console.log('OtherImages:', formData.otherImageFiles);
       console.log('Sending to API:', apiData);
 
       let response: ApiResponse | undefined;
@@ -238,9 +240,11 @@ const AdminUpdatesPage = () => {
                 created_at: createdAt,
                 imageUrl: toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64),
                 images: [
+                  toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64),
                   ...((normalized?.images || normalized?.image_list || normalized?.imageUrls || []).map((img: any) => toAbsoluteUrl(img))),
-                  ...((normalized?.attachments || []).map((att: any) => toAbsoluteUrl(att?.file || att?.url)).filter(isImageFile))
-                ].filter(Boolean)
+                  ...(collectPostAttachments(normalized).map((att: any) => toAbsoluteUrl(att?.file || att?.url)).filter(isImageFile))
+                ].filter(Boolean),
+                attachments: collectPostAttachments(normalized)
               } : update
             )
           );
@@ -273,9 +277,11 @@ const AdminUpdatesPage = () => {
             created_at: createdAt,
             imageUrl: toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64),
             images: [
+              toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64),
               ...((normalized?.images || normalized?.image_list || normalized?.imageUrls || []).map((img: any) => toAbsoluteUrl(img))),
-              ...((normalized?.attachments || []).map((att: any) => toAbsoluteUrl(att?.file || att?.url)).filter(isImageFile))
-            ].filter(Boolean)
+              ...(collectPostAttachments(normalized).map((att: any) => toAbsoluteUrl(att?.file || att?.url)).filter(isImageFile))
+            ].filter(Boolean),
+            attachments: collectPostAttachments(normalized)
           };
           setUpdates(prev => [newUpdate, ...prev]);
           setTotalCount(prev => prev + 1);

@@ -21,6 +21,8 @@ interface Update {
   attachments?: Attachment[];
 }
 
+const collectPostAttachments = (item: any) => item.attachments || item.attachments_data || [];
+
 export default function LatestUpdate() {
   const { fetchWithAuth, displayNotification, BACKEND_URL } = useAuth();
 
@@ -69,7 +71,8 @@ export default function LatestUpdate() {
           const imageList = item.images || item.image_list || item.imageUrls || [];
           const mainImage = toAbsoluteUrl(primaryImage);
           const otherImages = (imageList || []).map((img: any) => toAbsoluteUrl(img));
-          const attachmentImages = (item.attachments || [])
+          const postAttachments = collectPostAttachments(item);
+          const attachmentImages = postAttachments
             .map((att: any) => toAbsoluteUrl(att?.file || att?.url))
             .filter(isImageFile);
           const allImages = [mainImage, ...otherImages, ...attachmentImages].filter(Boolean);
@@ -83,11 +86,13 @@ export default function LatestUpdate() {
             images: allImages,
             postedAt: new Date(item.created_at),
             postedBy: item.user?.first_name || item.user?.email || 'Anonymous',
-            attachments: (item.attachments || []).map((att: any) => {
-              const fileType = att.file.split('.').pop()?.toLowerCase();
+            attachments: postAttachments.map((att: any) => {
+              const attachmentUrl = toAbsoluteUrl(att?.file || att?.url);
+              const fileName = (att?.file || att?.url || '').split('/').pop() || 'attachment';
+              const fileType = fileName.split('.').pop()?.toLowerCase();
               return {
-                name: att.file.split('/').pop(),
-                url: toAbsoluteUrl(att.file),
+                name: fileName,
+                url: attachmentUrl,
                 type: fileType,
               };
             }),

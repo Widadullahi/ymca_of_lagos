@@ -26,6 +26,8 @@ interface Update {
   attachments?: Attachment[];
 }
 
+const collectPostAttachments = (item: any) => item.attachments || item.attachments_data || [];
+
 export default function NewsDetailPage() {
   // Dummy handler for donation modal (replace with actual if needed)
   const openDonationModal = () => {};
@@ -51,6 +53,7 @@ export default function NewsDetailPage() {
   const toAbsoluteUrl = (value?: any): string => {
     const url = getImageValue(value);
     if (!url) return '';
+    // If already an absolute URL, return as is
     if (/^https?:\/\//i.test(url)) return url;
     if (url.startsWith('//')) return `${window.location.protocol}${url}`;
     if (url.startsWith('/')) return `${mediaBaseUrl}${url}`;
@@ -63,7 +66,8 @@ export default function NewsDetailPage() {
         const response = await fetchWithAuth({ method: 'GET', path: `/posts/${id}` });
         const item = response?.data;
         if (item) {
-          const attachmentImages = (item.attachments || [])
+          const postAttachments = collectPostAttachments(item);
+          const attachmentImages = postAttachments
             .map((att: any) => toAbsoluteUrl(att?.file || att?.url))
             .filter(isImageFile);
           const allImages = [
@@ -83,10 +87,14 @@ export default function NewsDetailPage() {
             images: allImages,
             postedAt: new Date(item.created_at),
             postedBy: item.user?.first_name || item.user?.email || 'Anonymous',
-            attachments: (item.attachments || []).map((att: any) => ({
-              name: att.file.split('/').pop(),
-              url: toAbsoluteUrl(att.file),
-              type: att.file.split('.').pop()?.toLowerCase(),
+            attachments: postAttachments.map((att: any) => {
+              const attachmentUrl = toAbsoluteUrl(att?.file || att?.url);
+              const fileName = (att?.file || att?.url || '').split('/').pop() || 'attachment';
+              return {
+              name: fileName,
+              url: attachmentUrl,
+              type: fileName.split('.').pop()?.toLowerCase() || 'file',
+              };
             })),
           });
         }
@@ -146,15 +154,19 @@ export default function NewsDetailPage() {
             <div className="prose prose-lg max-w-none mb-10 text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>
               <p className="whitespace-pre-line">{update.content}</p>
             </div>
-            {update.actionButtonLabel && update.actionButtonUrl && (
+            {(update.actionButtonLabel || update.actionButtonUrl) && (
               <div className="mb-10">
                 <a
-                  href={update.actionButtonUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700"
+                  href={update.actionButtonUrl || '#'}
+                  target={update.actionButtonUrl ? "_blank" : "_self"}
+                  rel={update.actionButtonUrl ? "noopener noreferrer" : undefined}
+                  className={`inline-flex items-center rounded-lg px-5 py-3 font-semibold transition ${
+                    update.actionButtonUrl 
+                      ? "bg-blue-600 text-white hover:bg-blue-700" 
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
                 >
-                  {update.actionButtonLabel}
+                  {update.actionButtonLabel || "Button"}
                 </a>
               </div>
             )}

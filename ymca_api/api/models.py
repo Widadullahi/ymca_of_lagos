@@ -35,7 +35,7 @@ class Post(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)        
-    image = models.ImageField(upload_to='post-images')
+    image = models.ImageField(upload_to='post-images', null=True, blank=True)
 
 
 
