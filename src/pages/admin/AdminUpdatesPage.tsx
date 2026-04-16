@@ -170,6 +170,12 @@ const AdminUpdatesPage = () => {
       console.log('Form data received in parent:', formData);
 
       const normalizeResponse = (response: any) => response?.data ?? response;
+      const fallbackPrimaryImage =
+        formData.primaryImageUrl || formData.imageUrl || '';
+      const fallbackGalleryImages = [
+        fallbackPrimaryImage,
+        ...((formData.otherImageUrls || formData.images || []) as string[])
+      ].filter(Boolean);
 
       // Prepare data for API
       let apiData: any = {
@@ -238,11 +244,15 @@ const AdminUpdatesPage = () => {
                 actionButtonUrl: normalized?.action_button_url || normalized?.actionButtonUrl || '',
                 postedAt: new Date(createdAt),
                 created_at: createdAt,
-                imageUrl: toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64),
+                imageUrl:
+                  toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64) ||
+                  fallbackPrimaryImage,
                 images: [
-                  toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64),
+                  toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64) ||
+                    fallbackPrimaryImage,
                   ...((normalized?.images || normalized?.image_list || normalized?.imageUrls || []).map((img: any) => toAbsoluteUrl(img))),
-                  ...(collectPostAttachments(normalized).map((att: any) => toAbsoluteUrl(att?.file || att?.url)).filter(isImageFile))
+                  ...(collectPostAttachments(normalized).map((att: any) => toAbsoluteUrl(att?.file || att?.url)).filter(isImageFile)),
+                  ...fallbackGalleryImages
                 ].filter(Boolean),
                 attachments: collectPostAttachments(normalized)
               } : update
@@ -275,11 +285,15 @@ const AdminUpdatesPage = () => {
             actionButtonUrl: normalized?.action_button_url || normalized?.actionButtonUrl || '',
             postedAt: new Date(createdAt),
             created_at: createdAt,
-            imageUrl: toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64),
+            imageUrl:
+              toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64) ||
+              fallbackPrimaryImage,
             images: [
-              toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64),
+              toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64) ||
+                fallbackPrimaryImage,
               ...((normalized?.images || normalized?.image_list || normalized?.imageUrls || []).map((img: any) => toAbsoluteUrl(img))),
-              ...(collectPostAttachments(normalized).map((att: any) => toAbsoluteUrl(att?.file || att?.url)).filter(isImageFile))
+              ...(collectPostAttachments(normalized).map((att: any) => toAbsoluteUrl(att?.file || att?.url)).filter(isImageFile)),
+              ...fallbackGalleryImages
             ].filter(Boolean),
             attachments: collectPostAttachments(normalized)
           };

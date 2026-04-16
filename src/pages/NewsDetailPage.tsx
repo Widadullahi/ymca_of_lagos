@@ -91,11 +91,11 @@ export default function NewsDetailPage() {
               const attachmentUrl = toAbsoluteUrl(att?.file || att?.url);
               const fileName = (att?.file || att?.url || '').split('/').pop() || 'attachment';
               return {
-              name: fileName,
-              url: attachmentUrl,
-              type: fileName.split('.').pop()?.toLowerCase() || 'file',
+                name: fileName,
+                url: attachmentUrl,
+                type: fileName.split('.').pop()?.toLowerCase() || 'file',
               };
-            })),
+            }),
           });
         }
       } catch (error) {

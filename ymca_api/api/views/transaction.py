@@ -83,6 +83,19 @@ class ActivateMembershipView(generics.GenericAPIView):
         return Paystack.charge_user(request,request.user.id,transaction_type='ID')
 
 
+class RenewMembershipView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        redirect_url = request.data.get("redirect_url")
+        if not redirect_url:
+            return bad_request_response(
+                message='Redirect URL is required',
+            )
+
+        return Paystack.charge_user(request, request.user.id, transaction_type='RENEWAL')
+
+
 class VerifyPaymentView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 

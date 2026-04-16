@@ -89,20 +89,6 @@ const MemberDashboardMember: React.FC = () => {
   };
 
   async function handleRenewSubscription(renew: boolean) {
-    // First payment for demo (you might want to adjust this logic)
-    try {
-      const response = await fetchWithAuth({
-        method: 'POST',
-        path: `/membership/demo`,
-        body: {}
-      });
-      console.log(response);
-      window.location.reload();
-    } catch (error) {
-      console.error('Error fetching churches:', error);
-      displayNotification('error', 'Failed to load churches');
-    }
-
     const payload = {
       redirect_url: FRONTEND_URL + '/payment',
       amount: calculateMembershipFee(renew, paymentYears),

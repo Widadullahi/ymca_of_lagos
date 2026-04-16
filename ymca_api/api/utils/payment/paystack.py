@@ -1,5 +1,6 @@
 import datetime
 import requests
+from django.conf import settings
 from account.models import IDCard
 from api.utils.response.response_format import bad_request_response, success_response
 from transaction.models import Transaction
@@ -24,8 +25,10 @@ class Paystack:
 
     @staticmethod
     def get_header():
+        if not settings.PAYSTACK_SECRET_KEY:
+            raise ValueError("Paystack secret key is not configured")
         headers = {
-            "Authorization": f"Bearer sk_test_f2c4c12c87df60bc178d3be7a19ba4a975d17527",
+            "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
             "Content-Type": "application/json"
         }
         return headers
@@ -34,7 +37,18 @@ class Paystack:
     def charge_user(request,user_id, transaction_type, **kwargs):
         transaction=None
         try:
-            amount = 50000  # Example amount (in kobo)
+            requested_amount = request.data.get("amount")
+            if requested_amount in [None, ""]:
+                return bad_request_response(message="Amount is required")
+
+            try:
+                amount = int(round(float(requested_amount) * 100))
+            except (TypeError, ValueError):
+                return bad_request_response(message="Invalid amount")
+
+            if amount <= 0:
+                return bad_request_response(message="Amount must be greater than zero")
+
             redirect_url = f"{request.data.get('redirect_url')}"
 
             # Create transaction record in database
@@ -87,12 +101,10 @@ class Paystack:
     @staticmethod
     def charge_user_for_donation(request,amount, name, email=None):
         try:
-            amount = float(amount) * 100  # amount (in kobo)
+            amount = int(round(float(amount) * 100))  # amount (in kobo)
+            if amount <= 0:
+                return bad_request_response(message="Amount must be greater than zero")
             redirect_url = f"{request.data.get('redirect_url')}"
-
-            print(amount)
-            print(amount)
-            print(amount)
             metadata = {
                 "payment_mode": 'donation',
                 "name": name,
@@ -114,7 +126,6 @@ class Paystack:
                 json=data,
                 headers=Paystack.get_header()
             )
-            print(response.text) 
             if response.ok:
                 response_data = response.json()
                 if response.status_code == 200 and response_data["status"] == True:

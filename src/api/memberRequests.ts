@@ -50,14 +50,14 @@ export const createMemberRequestsApi = (fetchWithAuth: any) => ({
     }
   },
 
-  // Reconsider a rejected member request by moving it back to pending
+  // Reconsider a rejected member request by approving it
   async reconsiderMemberRequest(requestId: string, reviewNotes: string = '') {
     try {
       const response = await fetchWithAuth({
         method: 'PATCH',
         path: `/admin/requests/${requestId}/status/`,
         body: {
-          status: 'pending',
+          status: 'approved',
           review_notes: reviewNotes
         }
       });

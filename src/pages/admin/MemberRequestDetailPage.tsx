@@ -200,12 +200,23 @@ const MemberRequestDetailPage: React.FC = () => {
 
     setProcessingAction(true);
     try {
-      await memberRequestsApi.reconsiderMemberRequest(memberRequest.id);
-      toast.success('Member request moved back to pending');
-      setMemberRequest(prev => prev ? { ...prev, status: 'pending' } : prev);
-    } catch (error) {
+      const response = await memberRequestsApi.reconsiderMemberRequest(memberRequest.id);
+      if (response?.data?.user_created) {
+        toast.success(
+          `Member request approved successfully! User profile created for ${response.data.user_email} with default password 'member12345'`,
+          { autoClose: 8000 }
+        );
+      } else {
+        toast.success('Rejected member request approved successfully');
+      }
+      navigate('/admin/membership-request');
+    } catch (error: any) {
       console.error('Error reconsidering member request:', error);
-      toast.error('Failed to reconsider member request');
+      if (error?.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Failed to reconsider member request');
+      }
     } finally {
       setProcessingAction(false);
       setShowReconsiderConfirmation(false);
@@ -553,9 +564,9 @@ const MemberRequestDetailPage: React.FC = () => {
 
       <ConfirmationModal
         isOpen={showReconsiderConfirmation}
-        title="Reconsider Member Request"
-        message="Are you sure you want to move this rejected request back to pending review?"
-        confirmText="Reconsider"
+        title="Approve Rejected Member Request"
+        message="Are you sure you want to approve this previously rejected member request?"
+        confirmText="Approve"
         cancelText="Cancel"
         confirmButtonClass="bg-yellow-500 hover:bg-yellow-600"
         onConfirm={handleReconsider}

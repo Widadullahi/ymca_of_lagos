@@ -1,6 +1,8 @@
 import csv
 import io
 import openpyxl
+from django.conf import settings
+from django.core.mail import send_mail
 from django.http import HttpResponse
 from datetime import date
 from rest_framework import generics
@@ -9,15 +11,84 @@ from django.db import transaction,IntegrityError
 from django.utils import timezone
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
-from account.models import Category, Church, IDCard, User, UserRequest, YouthGroup, RequestStatus
+from account.models import Category, Church, EmailVerification, IDCard, User, UserRequest, YouthGroup, RequestStatus
 from account.serializers import IDCardSerializer, RegisterSerializer
 from account.serializers import UserSerializer
-from api.serializers.members import UserRequestListSerializer, UserRequestSerializer
+from api.serializers.members import (
+    EmailVerificationCodeSerializer,
+    EmailVerificationRequestSerializer,
+    UserRequestListSerializer,
+    UserRequestSerializer,
+)
 from api.utils.response.response_format import success_response, paginate_success_response, bad_request_response,internal_server_error_response
 
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
+
+
+class SendEmailVerificationCodeView(generics.GenericAPIView):
+    permission_classes = []
+    serializer_class = EmailVerificationRequestSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data['email']
+        verification, _ = EmailVerification.objects.get_or_create(email=email)
+        verification.refresh_code()
+        verification.save()
+
+        try:
+            send_mail(
+                'YMCA Lagos Email Verification Code',
+                f"Your YMCA Lagos verification code is {verification.code}. This code expires in 10 minutes.",
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=False,
+            )
+        except Exception as exc:
+            print(exc)
+            return internal_server_error_response(
+                message='Unable to send verification code right now. Please try again.'
+            )
+
+        return success_response(
+            message='Verification code sent successfully',
+            data={'email': email}
+        )
+
+
+class VerifyEmailVerificationCodeView(generics.GenericAPIView):
+    permission_classes = []
+    serializer_class = EmailVerificationCodeSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data['email']
+        code = serializer.validated_data['code']
+        verification = EmailVerification.objects.filter(email__iexact=email).first()
+
+        if not verification:
+            return bad_request_response(message='Please request a verification code first')
+
+        if verification.expires_at < timezone.now():
+            return bad_request_response(message='Verification code has expired. Please request a new one')
+
+        if verification.code != code:
+            return bad_request_response(message='Invalid verification code')
+
+        verification.is_verified = True
+        verification.verified_at = timezone.now()
+        verification.save(update_fields=['is_verified', 'verified_at', 'updated_at'])
+
+        return success_response(
+            message='Email verified successfully',
+            data={'email': email, 'verified': True}
+        )
 
 
 class AdminGetMemberOverview(generics.GenericAPIView):

@@ -145,26 +145,26 @@ const MemberRequestListing: React.FC = () => {
 
     setIsProcessing(true);
     try {
-      await fetchWithAuth({
+      const response = await fetchWithAuth({
         method: 'PATCH',
         path: `/admin/requests/${selectedMember.id}/status/`,
         body: {
-          status: 'pending',
+          status: 'approved',
           review_notes: reviewNotes
         }
       });
 
-      setMembers(prev => prev.map(member =>
-        member.id === selectedMember.id
-          ? { ...member, status: 'pending' }
-          : member
-      ));
+      setMembers(prev => prev.filter(member => member.id !== selectedMember.id));
 
       setShowReconsiderModal(false);
       setSelectedMember(null);
       setReviewNotes('');
 
-      alert('Request moved back to pending successfully!');
+      if (response?.data?.user_created) {
+        alert(`Request approved successfully! User profile created for ${response.data.user_email} with default password 'member12345'`);
+      } else {
+        alert('Rejected request approved successfully!');
+      }
     } catch (error) {
       console.error('Error reconsidering request:', error);
       alert('Failed to reconsider request. Please try again.');
@@ -771,7 +771,7 @@ const MemberRequestListing: React.FC = () => {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 shadow-lg rounded-md bg-white">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Reconsider Request</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Approve Rejected Request</h3>
               <button
                 onClick={closeModals}
                 className="text-gray-400 hover:text-gray-600"
@@ -783,20 +783,20 @@ const MemberRequestListing: React.FC = () => {
             </div>
             <div className="mb-4">
               <p className="text-sm text-gray-600">
-                Move the rejected request for{' '}
-                <span className="font-semibold">{selectedMember.first_name} {selectedMember.last_name}</span> back to pending review?
+                Approve the rejected request for{' '}
+                <span className="font-semibold">{selectedMember.first_name} {selectedMember.last_name}</span> now?
               </p>
             </div>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Reconsideration Note (Optional)
+                Approval Note (Optional)
               </label>
               <textarea
                 value={reviewNotes}
                 onChange={(e) => setReviewNotes(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 rows={3}
-                placeholder="Add note about why this request is being reconsidered..."
+                placeholder="Add note about approving this previously rejected request..."
               />
             </div>
             <div className="flex justify-end space-x-3">
@@ -812,7 +812,7 @@ const MemberRequestListing: React.FC = () => {
                 disabled={isProcessing}
                 className="px-4 py-2 bg-yellow-500 text-white rounded-md text-sm font-medium hover:bg-yellow-600 disabled:opacity-50"
               >
-                {isProcessing ? 'Reconsidering...' : 'Reconsider'}
+                {isProcessing ? 'Approving...' : 'Approve'}
               </button>
             </div>
           </div>

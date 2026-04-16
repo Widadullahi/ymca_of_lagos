@@ -1,7 +1,9 @@
 import random, uuid
+from datetime import timedelta
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
+from django.utils import timezone
 
 # Choices for Gender and Unit
 class Gender(models.TextChoices):
@@ -391,3 +393,29 @@ class UserRequest(models.Model):
 
 
 # serializers.py
+
+
+class EmailVerification(models.Model):
+    email = models.EmailField(unique=True)
+    code = models.CharField(max_length=6)
+    is_verified = models.BooleanField(default=False)
+    expires_at = models.DateTimeField()
+    verified_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return self.email
+
+    @classmethod
+    def generate_code(cls):
+        return f"{random.randint(0, 999999):06d}"
+
+    def refresh_code(self):
+        self.code = self.generate_code()
+        self.is_verified = False
+        self.verified_at = None
+        self.expires_at = timezone.now() + timedelta(minutes=10)

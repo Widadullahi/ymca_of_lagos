@@ -1,7 +1,7 @@
 
 from rest_framework import serializers
 
-from account.models import UserRequest
+from account.models import EmailVerification, User, UserRequest
 
 
 class UserRequestSerializer(serializers.ModelSerializer):
@@ -48,10 +48,12 @@ class UserRequestSerializer(serializers.ModelSerializer):
         if not value.strip():
             raise serializers.ValidationError("Email cannot be empty")
 
-        # check if no existing email
-        if UserRequest.objects.filter(email=value.strip()).exists():
+        email = value.strip().lower()
+        if UserRequest.objects.filter(email__iexact=email).exists() or User.objects.filter(email__iexact=email).exists():
             raise serializers.ValidationError("Email already exists")
-        return value.strip()
+        if not EmailVerification.objects.filter(email__iexact=email, is_verified=True).exists():
+            raise serializers.ValidationError("Please verify your email before continuing")
+        return email
     
     def validate_full_name(self, value):
         if not value.strip():
@@ -126,6 +128,30 @@ class UserRequestSerializer(serializers.ModelSerializer):
         # Set the user from the request context
         # validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
+
+
+class EmailVerificationRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        email = value.strip().lower()
+        if UserRequest.objects.filter(email__iexact=email).exists() or User.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError("Email already exists")
+        return email
+
+
+class EmailVerificationCodeSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField(max_length=6)
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+    def validate_code(self, value):
+        code = value.strip()
+        if not code.isdigit() or len(code) != 6:
+            raise serializers.ValidationError("Enter the 6-digit verification code")
+        return code
 
 
 class UserRequestListSerializer(serializers.ModelSerializer):

@@ -70,6 +70,15 @@ interface FormData {
   referralName: string;
 }
 
+interface EmailVerificationState {
+  isSending: boolean;
+  isVerifying: boolean;
+  codeSent: boolean;
+  isVerified: boolean;
+  code: string;
+  helperText: string;
+}
+
 // Country options
 const countries = [
   { value: 'AD', label: 'Andorra' },
@@ -527,6 +536,14 @@ const RequestForm: React.FC = () => {
   // UI state
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [emailVerification, setEmailVerification] = useState<EmailVerificationState>({
+    isSending: false,
+    isVerifying: false,
+    codeSent: false,
+    isVerified: false,
+    code: '',
+    helperText: '',
+  });
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [idPreview, setIdPreview] = useState<string | null>(null);
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
@@ -798,6 +815,16 @@ const RequestForm: React.FC = () => {
     });
     
     const nextValue = name === 'email' ? value.toLowerCase() : value;
+    if (name === 'email') {
+      setEmailVerification({
+        isSending: false,
+        isVerifying: false,
+        codeSent: false,
+        isVerified: false,
+        code: '',
+        helperText: '',
+      });
+    }
     if (name === 'religion' && value !== 'Christian') {
       setFormData(prev => ({ ...prev, [name]: nextValue, churchName: '' }));
       return;
@@ -873,6 +900,7 @@ const RequestForm: React.FC = () => {
     const ageNum = parseInt(formData.age);
     
     // Basic required fields
+    if (!formData.email.trim()) errors.email = 'Email is required';
     if (!formData.first_name.trim()) errors.first_name = 'First name is required';
     if (!formData.last_name.trim()) errors.last_name = 'Last name is required';
     if (!formData.phone_number.trim()) errors.phone_number = 'Phone number is required';
@@ -889,6 +917,9 @@ const RequestForm: React.FC = () => {
     // Email validation
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.email = 'Invalid email format';
+    }
+    if (formData.email && !emailVerification.isVerified) {
+      errors.email = errors.email || 'Please verify your email before continuing';
     }
     
     // Phone validation
@@ -937,6 +968,106 @@ const RequestForm: React.FC = () => {
     
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
+  };
+
+  const handleSendVerificationCode = async () => {
+    const email = formData.email.trim().toLowerCase();
+
+    if (!email) {
+      setFieldErrors(prev => ({ ...prev, email: 'Email is required' }));
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setFieldErrors(prev => ({ ...prev, email: 'Invalid email format' }));
+      return;
+    }
+
+    setEmailVerification(prev => ({
+      ...prev,
+      isSending: true,
+      isVerified: false,
+      codeSent: false,
+      code: '',
+      helperText: '',
+    }));
+
+    try {
+      await fetchWithAuth({
+        method: 'POST',
+        path: '/requests/email-verification/send/',
+        body: { email },
+      });
+
+      setFieldErrors(prev => {
+        const nextErrors = { ...prev };
+        delete nextErrors.email;
+        return nextErrors;
+      });
+      setEmailVerification(prev => ({
+        ...prev,
+        isSending: false,
+        codeSent: true,
+        helperText: 'A 6-digit verification code has been sent to this email.',
+      }));
+      displayNotification('Verification code sent to your email', 'success');
+    } catch (error: any) {
+      setEmailVerification(prev => ({
+        ...prev,
+        isSending: false,
+      }));
+      setFieldErrors(prev => ({
+        ...prev,
+        email: error?.response?.data?.message || 'Unable to send verification code',
+      }));
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    const email = formData.email.trim().toLowerCase();
+    const code = emailVerification.code.trim();
+
+    if (!code) {
+      setEmailVerification(prev => ({
+        ...prev,
+        helperText: 'Enter the verification code that was sent to your email.',
+      }));
+      return;
+    }
+
+    setEmailVerification(prev => ({
+      ...prev,
+      isVerifying: true,
+      helperText: '',
+    }));
+
+    try {
+      await fetchWithAuth({
+        method: 'POST',
+        path: '/requests/email-verification/verify/',
+        body: { email, code },
+      });
+
+      setFieldErrors(prev => {
+        const nextErrors = { ...prev };
+        delete nextErrors.email;
+        return nextErrors;
+      });
+      setEmailVerification(prev => ({
+        ...prev,
+        isVerifying: false,
+        isVerified: true,
+        helperText: 'Email verified successfully. You can continue with the application.',
+      }));
+      displayNotification('Email verified successfully', 'success');
+    } catch (error: any) {
+      setEmailVerification(prev => ({
+        ...prev,
+        isVerifying: false,
+        isVerified: false,
+        helperText: error?.response?.data?.message || 'Invalid verification code',
+      }));
+    }
   };
 
   // Handle form submission
@@ -1030,6 +1161,14 @@ const RequestForm: React.FC = () => {
         setTouchedFields({});
         setAvailableClubs([]);
         setAvailableChurches([]);
+        setEmailVerification({
+          isSending: false,
+          isVerifying: false,
+          codeSent: false,
+          isVerified: false,
+          code: '',
+          helperText: '',
+        });
         setAgeValidationMessage('');
         setFilteredUnits(units);
         
@@ -1287,7 +1426,7 @@ const RequestForm: React.FC = () => {
             />
 
             <FormInput
-              label="Email Address"
+              label="Email Address *"
               name="email"
               type="email"
               placeholder="Enter your email address"
@@ -1296,6 +1435,79 @@ const RequestForm: React.FC = () => {
               error={fieldErrors.email}
               className={getInputBorderColor('email', formData.email)}
             />
+
+            <div className="md:col-span-2 -mt-2 mb-4">
+              <div className="flex flex-col md:flex-row md:items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleSendVerificationCode}
+                  disabled={emailVerification.isSending || !formData.email.trim()}
+                  className={`px-4 py-2 rounded-lg font-semibold text-white transition-colors ${
+                    emailVerification.isSending || !formData.email.trim()
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                >
+                  {emailVerification.isSending
+                    ? 'Sending Code...'
+                    : emailVerification.codeSent
+                      ? 'Resend Code'
+                      : 'Send Code'}
+                </button>
+                {emailVerification.isVerified && (
+                  <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-2 text-sm font-semibold text-green-700">
+                    Email Verified
+                  </span>
+                )}
+              </div>
+
+              {emailVerification.codeSent && (
+                <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                  <label htmlFor="email-verification-code" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Verification Code
+                  </label>
+                  <div className="flex flex-col md:flex-row gap-3">
+                    <input
+                      id="email-verification-code"
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={emailVerification.code}
+                      onChange={(e) =>
+                        setEmailVerification(prev => ({
+                          ...prev,
+                          code: e.target.value.replace(/\D/g, '').slice(0, 6),
+                          helperText: '',
+                        }))
+                      }
+                      className="bg-white/70 backdrop-blur-md border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-200 rounded-lg w-full py-2.5 px-4 text-gray-800 placeholder-gray-400 shadow-sm"
+                      placeholder="Enter 6-digit code"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleVerifyCode}
+                      disabled={emailVerification.isVerifying || emailVerification.isVerified}
+                      className={`px-4 py-2 rounded-lg font-semibold text-white transition-colors ${
+                        emailVerification.isVerifying || emailVerification.isVerified
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-green-600 hover:bg-green-700'
+                      }`}
+                    >
+                      {emailVerification.isVerifying
+                        ? 'Verifying...'
+                        : emailVerification.isVerified
+                          ? 'Verified'
+                          : 'Verify Code'}
+                    </button>
+                  </div>
+                  {emailVerification.helperText && (
+                    <p className={`mt-2 text-sm ${emailVerification.isVerified ? 'text-green-600' : 'text-gray-600'}`}>
+                      {emailVerification.helperText}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
 
             <FormInput
               label="Phone Number *"
