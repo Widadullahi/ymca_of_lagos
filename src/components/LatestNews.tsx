@@ -201,6 +201,8 @@ export default function LatestNewsAndUpcomingEvents() {
     }
   };
 
+  void getAttachmentIcon;
+
   const getUpdateImages = (update: Update): string[] => {
     if (update.images?.length) return update.images;
     if (update.imageUrl) return [update.imageUrl];

@@ -125,8 +125,6 @@ const MemberDashboardMember: React.FC = () => {
   // Determine membership status
   const membershipActive = isCardActive && !isExpired;
   const membershipInactive = !isCardActive;
-  const firstPaymentAmount = getDueAmount(false);
-  const renewalAmount = getDueAmount(true);
   const totalFirstPayment = calculateMembershipFee(false, paymentYears);
   const totalRenewalPayment = calculateMembershipFee(true, paymentYears);
 

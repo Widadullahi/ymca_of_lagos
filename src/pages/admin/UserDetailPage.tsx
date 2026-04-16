@@ -857,12 +857,12 @@ const UserDetailPage: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Passport Photo</p>
-                      {member.user_request.passport_photo ? (
+                      {member.user_request?.passport_photo ? (
                         <img 
-                          src={toAbsoluteUrl(member.user_request.passport_photo)} 
+                          src={toAbsoluteUrl(member.user_request?.passport_photo)} 
                           alt="Passport" 
                           className="h-20 w-20 cursor-zoom-in object-cover rounded border"
-                          onClick={() => openImagePreview(member.user_request.passport_photo, 'Passport Photo')}
+                          onClick={() => openImagePreview(member.user_request?.passport_photo || '', 'Passport Photo')}
                         />
                       ) : (
                         <p className="text-sm">No photo uploaded</p>
