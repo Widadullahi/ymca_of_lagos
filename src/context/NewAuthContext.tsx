@@ -228,7 +228,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         response = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : null });
 
         if (!response.ok) {
-          handleErrorResponse(response, true);
+          await handleErrorResponse(response, true);
         }
 
         return response.json();
@@ -240,7 +240,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (!response.ok) {
-      handleErrorResponse(response, isAthenticated);
+      await handleErrorResponse(response, isAthenticated);
     }
 
     if (responseType === 'blob') {
@@ -262,36 +262,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return JSON.parse(text);
   }
 
-  const handleErrorResponse = (response: Response, isAthenticated: boolean) => {
+  const handleErrorResponse = async (response: Response, isAthenticated: boolean) => {
+    let errorData: any = null;
+
+    try {
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        errorData = await response.json();
+      }
+    } catch {
+      errorData = null;
+    }
+
     if (response.status === 400) {
-      response.json().then((errorData) => {
-        // Check if there is a 'message' in the error response
-        if (errorData?.message) {
-          displayNotification('error', errorData.message);
-        } else {
-          // If there's no general message, loop through the fields and show field-specific errors
-          for (const field in errorData) {
-            if (errorData.hasOwnProperty(field)) {
-              const errorMessages = errorData[field];
+      if (errorData?.message) {
+        displayNotification('error', errorData.message);
+      } else if (errorData && typeof errorData === 'object') {
+        for (const field in errorData) {
+          if (Object.prototype.hasOwnProperty.call(errorData, field)) {
+            const errorMessages = errorData[field];
+            if (Array.isArray(errorMessages)) {
               errorMessages.forEach((message: string) => {
                 displayNotification('error', `${field}: ${message}`);
               });
             }
           }
         }
-      });
+      }
     }
     if (response.status === 401) {
       if (isAthenticated && authToken?.access_token) {
         deleteUserFromLocalStorage();
       }
     }
-    if (response.status === 500) {
-      response.json().then((errorData) => {
-        displayNotification('error', errorData?.message);
-      });
+    if (response.status === 500 && errorData?.message) {
+      displayNotification('error', errorData.message);
     }
-    throw new Error(`Error fetching data: ${response.statusText}`);
+
+    throw new Error(errorData?.message || `Error fetching data: ${response.statusText}`);
   };
 
   // Logout function

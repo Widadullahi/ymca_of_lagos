@@ -36,6 +36,11 @@ class SendEmailVerificationCodeView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
 
         email = serializer.validated_data['email']
+        if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD or not settings.DEFAULT_FROM_EMAIL:
+            return internal_server_error_response(
+                message='Email delivery is not configured on the server. Please contact support.'
+            )
+
         verification, _ = EmailVerification.objects.get_or_create(email=email)
         verification.refresh_code()
         verification.save()

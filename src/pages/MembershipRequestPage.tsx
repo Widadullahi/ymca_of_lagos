@@ -1018,7 +1018,7 @@ const RequestForm: React.FC = () => {
       }));
       setFieldErrors(prev => ({
         ...prev,
-        email: error?.response?.data?.message || 'Unable to send verification code',
+        email: error?.message || 'Unable to send verification code',
       }));
     }
   };
@@ -1065,7 +1065,7 @@ const RequestForm: React.FC = () => {
         ...prev,
         isVerifying: false,
         isVerified: false,
-        helperText: error?.response?.data?.message || 'Invalid verification code',
+        helperText: error?.message || 'Invalid verification code',
       }));
     }
   };
