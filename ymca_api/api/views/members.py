@@ -4,7 +4,7 @@ import openpyxl
 from django.conf import settings
 from django.core.mail import send_mail
 from django.http import HttpResponse
-from datetime import date
+from datetime import date, timedelta
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.db import transaction,IntegrityError
@@ -41,9 +41,16 @@ class SendEmailVerificationCodeView(generics.GenericAPIView):
                 message='Email delivery is not configured on the server. Please contact support.'
             )
 
-        verification, _ = EmailVerification.objects.get_or_create(email=email)
-        verification.refresh_code()
-        verification.save()
+        verification = EmailVerification.objects.filter(email__iexact=email).first()
+        if verification:
+            verification.refresh_code()
+            verification.save()
+        else:
+            verification = EmailVerification.objects.create(
+                email=email,
+                code=EmailVerification.generate_code(),
+                expires_at=timezone.now() + timedelta(minutes=10),
+            )
 
         try:
             send_mail(
