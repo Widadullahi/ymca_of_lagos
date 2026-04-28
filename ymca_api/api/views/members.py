@@ -36,6 +36,21 @@ class SendEmailVerificationCodeView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
 
         email = serializer.validated_data['email']
+        masked_password = ''
+        if settings.EMAIL_HOST_PASSWORD:
+            masked_password = '*' * min(len(settings.EMAIL_HOST_PASSWORD), 8)
+        print(
+            'Email config debug:',
+            {
+                'EMAIL_HOST': settings.EMAIL_HOST,
+                'EMAIL_PORT': settings.EMAIL_PORT,
+                'EMAIL_USE_TLS': settings.EMAIL_USE_TLS,
+                'EMAIL_HOST_USER': settings.EMAIL_HOST_USER,
+                'DEFAULT_FROM_EMAIL': settings.DEFAULT_FROM_EMAIL,
+                'EMAIL_HOST_PASSWORD_SET': bool(settings.EMAIL_HOST_PASSWORD),
+                'EMAIL_HOST_PASSWORD_MASK': masked_password,
+            }
+        )
         if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD or not settings.DEFAULT_FROM_EMAIL:
             return internal_server_error_response(
                 message='Email delivery is not configured on the server. Please contact support.'
