@@ -1,5 +1,6 @@
 import csv
 import io
+import logging
 import openpyxl
 from django.conf import settings
 from django.core.mail import get_connection
@@ -27,6 +28,8 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 
+logger = logging.getLogger(__name__)
+
 
 class SendEmailVerificationCodeView(generics.GenericAPIView):
     permission_classes = []
@@ -48,49 +51,49 @@ class SendEmailVerificationCodeView(generics.GenericAPIView):
         return any(marker in normalized for marker in placeholder_markers)
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        email = serializer.validated_data['email']
-        masked_password = ''
-        if settings.EMAIL_HOST_PASSWORD:
-            masked_password = '*' * min(len(settings.EMAIL_HOST_PASSWORD), 8)
-        print(
-            'Email config debug:',
-            {
-                'EMAIL_HOST': settings.EMAIL_HOST,
-                'EMAIL_PORT': settings.EMAIL_PORT,
-                'EMAIL_USE_TLS': settings.EMAIL_USE_TLS,
-                'EMAIL_HOST_USER': settings.EMAIL_HOST_USER,
-                'DEFAULT_FROM_EMAIL': settings.DEFAULT_FROM_EMAIL,
-                'EMAIL_HOST_PASSWORD_SET': bool(settings.EMAIL_HOST_PASSWORD),
-                'EMAIL_HOST_PASSWORD_MASK': masked_password,
-            }
-        )
-        if (
-            not settings.EMAIL_HOST_USER
-            or not settings.EMAIL_HOST_PASSWORD
-            or not settings.DEFAULT_FROM_EMAIL
-            or self._looks_like_placeholder(settings.EMAIL_HOST_USER)
-            or self._looks_like_placeholder(settings.EMAIL_HOST_PASSWORD)
-            or self._looks_like_placeholder(settings.DEFAULT_FROM_EMAIL)
-        ):
-            return internal_server_error_response(
-                message='Email delivery is not configured on the server. Please contact support.'
-            )
-
-        verification = EmailVerification.objects.filter(email__iexact=email).first()
-        if verification:
-            verification.refresh_code()
-            verification.save()
-        else:
-            verification = EmailVerification.objects.create(
-                email=email,
-                code=EmailVerification.generate_code(),
-                expires_at=timezone.now() + timedelta(minutes=10),
-            )
-
         try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            email = serializer.validated_data['email']
+            masked_password = ''
+            if settings.EMAIL_HOST_PASSWORD:
+                masked_password = '*' * min(len(settings.EMAIL_HOST_PASSWORD), 8)
+            logger.info(
+                'Email config debug: %s',
+                {
+                    'EMAIL_HOST': settings.EMAIL_HOST,
+                    'EMAIL_PORT': settings.EMAIL_PORT,
+                    'EMAIL_USE_TLS': settings.EMAIL_USE_TLS,
+                    'EMAIL_HOST_USER': settings.EMAIL_HOST_USER,
+                    'DEFAULT_FROM_EMAIL': settings.DEFAULT_FROM_EMAIL,
+                    'EMAIL_HOST_PASSWORD_SET': bool(settings.EMAIL_HOST_PASSWORD),
+                    'EMAIL_HOST_PASSWORD_MASK': masked_password,
+                }
+            )
+            if (
+                not settings.EMAIL_HOST_USER
+                or not settings.EMAIL_HOST_PASSWORD
+                or not settings.DEFAULT_FROM_EMAIL
+                or self._looks_like_placeholder(settings.EMAIL_HOST_USER)
+                or self._looks_like_placeholder(settings.EMAIL_HOST_PASSWORD)
+                or self._looks_like_placeholder(settings.DEFAULT_FROM_EMAIL)
+            ):
+                return internal_server_error_response(
+                    message='Email delivery is not configured on the server. Please contact support.'
+                )
+
+            verification = EmailVerification.objects.filter(email__iexact=email).first()
+            if verification:
+                verification.refresh_code()
+                verification.save()
+            else:
+                verification = EmailVerification.objects.create(
+                    email=email,
+                    code=EmailVerification.generate_code(),
+                    expires_at=timezone.now() + timedelta(minutes=10),
+                )
+
             connection = get_connection(timeout=getattr(settings, 'EMAIL_TIMEOUT', 15))
             send_mail(
                 'YMCA Lagos Email Verification Code',
@@ -100,8 +103,8 @@ class SendEmailVerificationCodeView(generics.GenericAPIView):
                 connection=connection,
                 fail_silently=False,
             )
-        except Exception as exc:
-            print(exc)
+        except Exception:
+            logger.exception('Email verification send failed')
             return internal_server_error_response(
                 message='Unable to send verification code right now. Please try again.'
             )
