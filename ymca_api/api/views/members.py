@@ -2,6 +2,7 @@ import csv
 import io
 import openpyxl
 from django.conf import settings
+from django.core.mail import get_connection
 from django.core.mail import send_mail
 from django.http import HttpResponse
 from datetime import date, timedelta
@@ -31,6 +32,21 @@ class SendEmailVerificationCodeView(generics.GenericAPIView):
     permission_classes = []
     serializer_class = EmailVerificationRequestSerializer
 
+    @staticmethod
+    def _looks_like_placeholder(value: str | None) -> bool:
+        if not value:
+            return True
+        normalized = value.strip().lower()
+        placeholder_markers = (
+            'your-email@outlook.com',
+            'your-app-password',
+            'your-secret-key-here',
+            'example.com',
+            'changeme',
+            'replace-me',
+        )
+        return any(marker in normalized for marker in placeholder_markers)
+
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -51,7 +67,14 @@ class SendEmailVerificationCodeView(generics.GenericAPIView):
                 'EMAIL_HOST_PASSWORD_MASK': masked_password,
             }
         )
-        if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD or not settings.DEFAULT_FROM_EMAIL:
+        if (
+            not settings.EMAIL_HOST_USER
+            or not settings.EMAIL_HOST_PASSWORD
+            or not settings.DEFAULT_FROM_EMAIL
+            or self._looks_like_placeholder(settings.EMAIL_HOST_USER)
+            or self._looks_like_placeholder(settings.EMAIL_HOST_PASSWORD)
+            or self._looks_like_placeholder(settings.DEFAULT_FROM_EMAIL)
+        ):
             return internal_server_error_response(
                 message='Email delivery is not configured on the server. Please contact support.'
             )
@@ -68,11 +91,13 @@ class SendEmailVerificationCodeView(generics.GenericAPIView):
             )
 
         try:
+            connection = get_connection(timeout=getattr(settings, 'EMAIL_TIMEOUT', 15))
             send_mail(
                 'YMCA Lagos Email Verification Code',
                 f"Your YMCA Lagos verification code is {verification.code}. This code expires in 10 minutes.",
                 settings.DEFAULT_FROM_EMAIL,
                 [email],
+                connection=connection,
                 fail_silently=False,
             )
         except Exception as exc:

@@ -2,9 +2,9 @@
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { useAuth } from '../context/NewAuthContext.js';
-import SocialMediaBar from '../components/navigation/SocialMediaBar.js';
-import MainNavigation from '../components/navigation/MainNavigation.js';
+import { useAuth } from '../context/NewAuthContext';
+import SocialMediaBar from '../components/navigation/SocialMediaBar';
+import MainNavigation from '../components/navigation/MainNavigation';
 
 interface Attachment {
   name: string;

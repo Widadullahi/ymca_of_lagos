@@ -1010,7 +1010,7 @@ const RequestForm: React.FC = () => {
         codeSent: true,
         helperText: 'A 6-digit verification code has been sent to this email.',
       }));
-      displayNotification('Verification code sent to your email', 'success');
+      displayNotification('success', 'Verification code sent to your email');
     } catch (error: any) {
       setEmailVerification(prev => ({
         ...prev,
@@ -1059,7 +1059,7 @@ const RequestForm: React.FC = () => {
         isVerified: true,
         helperText: 'Email verified successfully. You can continue with the application.',
       }));
-      displayNotification('Email verified successfully', 'success');
+      displayNotification('success', 'Email verified successfully');
     } catch (error: any) {
       setEmailVerification(prev => ({
         ...prev,

@@ -42,6 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [globalLoading, setGlobalLoading] = useState<any>(false);
   const [globalLoadingText, setGlobalLoadingText] = useState<any>('Loading....');
+  const REQUEST_TIMEOUT_MS = 30000;
 
   // Fetch user profile after the token is available or on token update
   const fetchUserProfile = async () => {
@@ -179,6 +180,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const refreshToken = authToken?.refresh_token;
     const REFRESH_TOKEN_URL = `${BACKEND_URL}/auth/token/refresh/`;
 
+    const fetchWithTimeout = async (input: RequestInfo | URL, init?: RequestInit) => {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+      try {
+        return await fetch(input, {
+          ...init,
+          signal: controller.signal,
+        });
+      } catch (error: any) {
+        if (error?.name === 'AbortError') {
+          throw new Error('Request timed out. The server may be unavailable or taking too long to respond.');
+        }
+
+        if (error instanceof TypeError) {
+          throw new Error('Unable to reach the server. Please check your connection and try again.');
+        }
+
+        throw error;
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+    };
+
     // Build the full URL with query parameters if provided
     let url = `${BACKEND_URL}${path}`;
     if (Object.keys(queryParams).length > 0) {
@@ -197,16 +222,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     let response;
     if (isFormData) {
-      response = await fetch(url, { method, headers, body: body });
+      response = await fetchWithTimeout(url, { method, headers, body: body });
     } else {
-      response = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : null });
+      response = await fetchWithTimeout(url, { method, headers, body: body ? JSON.stringify(body) : null });
     }
 
     // Check if the response is a 401 (Unauthorized) error (token might be expired)
     if (response.status === 401 && refreshToken) {
       try {
         // Attempt to refresh the token using the refresh token
-        const refreshResponse = await fetch(REFRESH_TOKEN_URL, {
+        const refreshResponse = await fetchWithTimeout(REFRESH_TOKEN_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -225,7 +250,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setAuthToken(refreshData);
         // Retry the original request with the new access token
         headers['Authorization'] = `Bearer ${refreshData?.access_token}`;
-        response = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : null });
+        response = await fetchWithTimeout(url, { method, headers, body: body ? JSON.stringify(body) : null });
 
         if (!response.ok) {
           await handleErrorResponse(response, true);

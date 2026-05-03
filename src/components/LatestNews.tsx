@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
-import { useAuth } from '../context/NewAuthContext.js';
+import { useAuth } from '../context/NewAuthContext';
 
 interface Attachment {
   name: string;
