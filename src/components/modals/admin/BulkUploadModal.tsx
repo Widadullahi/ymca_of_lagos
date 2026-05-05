@@ -19,15 +19,24 @@ const BulkUploadModal: React.FC<{
         if (e.target.files && e.target.files[0]) {
             const selectedFile = e.target.files[0];
             
-            // Check if file is CSV
-            if (selectedFile.type !== 'text/csv' && !selectedFile.name.endsWith('.csv')) {
-                displayNotification('error','Please upload a CSV file');
+            const isCsvFile = selectedFile.type === 'text/csv' || selectedFile.name.endsWith('.csv');
+            const isExcelFile =
+                selectedFile.name.endsWith('.xlsx') ||
+                selectedFile.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+            if (!isCsvFile && !isExcelFile) {
+                displayNotification('error','Please upload a CSV or Excel (.xlsx) file');
                 setFile(null);
                 setPreviewData([]);
                 return;
             }
             
             setFile(selectedFile);
+
+            if (!isCsvFile) {
+                setPreviewData([]);
+                return;
+            }
             
             // Read file and generate preview
             const reader = new FileReader();
@@ -51,7 +60,7 @@ const BulkUploadModal: React.FC<{
                     });
                     
                     setPreviewData(previewMembers.filter(member => 
-                        member.firstName || member.lastName || member.first_name || member.last_name
+                        member.name || member.firstName || member.lastName || member.first_name || member.last_name
                     ));
                 } catch (err) {
                     displayNotification('error','Error parsing CSV file');
@@ -72,7 +81,7 @@ const BulkUploadModal: React.FC<{
         e.preventDefault();
         
         if (!file) {
-            displayNotification('error','Please select a CSV file');
+            displayNotification('error','Please select a CSV or Excel file');
             return;
         }
         
@@ -111,9 +120,13 @@ const BulkUploadModal: React.FC<{
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
             const droppedFile = e.dataTransfer.files[0];
             
-            // Check if file is CSV
-            if (droppedFile.type !== 'text/csv' && !droppedFile.name.endsWith('.csv')) {
-                displayNotification('error','Please upload a CSV file');
+            const isCsvFile = droppedFile.type === 'text/csv' || droppedFile.name.endsWith('.csv');
+            const isExcelFile =
+                droppedFile.name.endsWith('.xlsx') ||
+                droppedFile.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+            if (!isCsvFile && !isExcelFile) {
+                displayNotification('error','Please upload a CSV or Excel (.xlsx) file');
                 return;
             }
             
@@ -132,30 +145,27 @@ const BulkUploadModal: React.FC<{
         }
     };
     
-    const handleDownloadTemplate = (e: React.MouseEvent) => {
+    const handleDownloadTemplate = async (e: React.MouseEvent) => {
         e.preventDefault();
-        
-        // Create template CSV content aligned with AddUserModal data structure
-        const templateHeaders = 'firstName,lastName,email,phoneNumber,gender,unit,church,youthCouncilGroup,status,category,id_number';
-        const templateData = [
-            'John,Doe,john@example.com,1234567890,Male,Council of Church,Church Name,,Active,Adult Member,ID12345',
-            'Jane,Smith,jane@example.com,0987654321,Female,Youth Council,,Youth Group Name,Active,Youth Member,ID67890'
-        ].join('\n');
-        
-        const templateContent = `${templateHeaders}\n${templateData}`;
-        
-        // Create blob and download link
-        const blob = new Blob([templateContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const downloadLink = document.createElement('a');
-        downloadLink.href = url;
-        downloadLink.download = 'member_template.csv';
-        
-        // Trigger download
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-        window.URL.revokeObjectURL(url);
+
+        try {
+            const blob = await fetchWithAuth({
+                method: 'GET',
+                path: '/admin/members/upload/template/',
+                responseType: 'blob',
+            });
+
+            const url = window.URL.createObjectURL(blob);
+            const downloadLink = document.createElement('a');
+            downloadLink.href = url;
+            downloadLink.download = 'member_bulk_upload_template.xlsx';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            displayNotification('error', error instanceof Error ? error.message : 'Unable to download template');
+        }
     };
     
     return (
@@ -177,7 +187,7 @@ const BulkUploadModal: React.FC<{
                     <form onSubmit={handleSubmit}>
                         <div className="mb-6">
                             <p className="text-gray-600 mb-4">
-                                Upload a CSV file containing member information. The file should include columns for firstName, lastName, email, phoneNumber, gender, unit, church (for Council of Church members), youthCouncilGroup (for Youth Council members), status, category, and id_number.
+                                Upload a CSV or Excel file containing member information. Only name, email, and phone number are compulsory. The Excel template includes the correct membership type, unit, church, and youth council dropdown values from the system.
                             </p>
                             
                             <div 
@@ -193,19 +203,19 @@ const BulkUploadModal: React.FC<{
                                     </div>
                                     <div className="flex text-sm text-gray-600">
                                         <label htmlFor="fileInput" className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none">
-                                            <span>Upload a CSV file</span>
+                                            <span>Upload a CSV or Excel file</span>
                                             <input 
                                                 id="fileInput" 
                                                 name="fileInput" 
                                                 type="file" 
-                                                accept=".csv" 
+                                                accept=".csv,.xlsx" 
                                                 className="sr-only"
                                                 onChange={handleFileChange}
                                             />
                                         </label>
                                         <p className="pl-1">or drag and drop</p>
                                     </div>
-                                    <p className="text-xs text-gray-500">CSV up to 10MB</p>
+                                    <p className="text-xs text-gray-500">CSV or XLSX up to 10MB</p>
                                 </div>
                             </div>
                             
@@ -220,7 +230,7 @@ const BulkUploadModal: React.FC<{
                         
                         {previewData.length > 0 && (
                             <div className="mb-6">
-                                <h3 className="text-lg font-medium mb-2">Preview (first 5 records)</h3>
+                                <h3 className="text-lg font-medium mb-2">Preview (first 5 CSV records)</h3>
                                 <div className="overflow-x-auto border rounded-md">
                                     <table className="min-w-full divide-y divide-gray-200">
                                         <thead className="bg-gray-50">
@@ -261,7 +271,7 @@ const BulkUploadModal: React.FC<{
                                 className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
                                 onClick={handleDownloadTemplate}
                             >
-                                Download template CSV
+                                Download Excel template
                             </a>
                         </div>
                         
@@ -296,16 +306,16 @@ const BulkUploadModal: React.FC<{
 
                       <div className="mt-6 border-t border-gray-200 pt-4">
                         <div className="text-sm text-gray-500">
-                            <h4 className="font-medium text-gray-700 mb-2">CSV Format Information:</h4>
+                            <h4 className="font-medium text-gray-700 mb-2">Upload Format Information:</h4>
                             <ul className="list-disc pl-5 space-y-1">
-                                <li>Required columns: firstName, lastName, email, phoneNumber, gender, unit</li>
-                                <li>For Council of Church members, include the church column</li>
-                                <li>For Youth Council members, include the youthCouncilGroup column</li>
-                                <li>Status options: Active, Inactive, On Leave</li>
-                                <li>Gender options: Male, Female, Other</li>
-                                <li>Category options: Adult Member, Youth Member, Senior Member</li>
+                                <li>Required columns: name, email, phoneNumber</li>
+                                <li>Membership type options: Full Member, Ordinary Member, Honorary Member, Life Member</li>
                                 <li>Unit options: Council of Church, Youth Council, Y's Men, Central Club</li>
-                                <li>Include id_number column for identification purposes</li>
+                                <li>Use the councilChurch column for Council of Church members</li>
+                                <li>Use the youthCouncilGroup column for Youth Council members</li>
+                                <li>validIdType, passportUrl, validIdDocumentUrl, and signatureUrl are optional</li>
+                                <li>ID numbers are assigned automatically by the system during upload</li>
+                                <li>The Excel template is recommended because it includes dropdown lists from the system</li>
                             </ul>
                         </div>
                     </div>

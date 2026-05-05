@@ -1,9 +1,12 @@
+import base64
 import csv
 import io
 import logging
+import uuid
 import openpyxl
 import requests
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.core.mail import get_connection
 from django.core.mail import send_mail
 from django.http import HttpResponse
@@ -28,6 +31,7 @@ from api.utils.response.response_format import success_response, paginate_succes
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
+from openpyxl.worksheet.datavalidation import DataValidation
 
 logger = logging.getLogger(__name__)
 
@@ -278,10 +282,285 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
     serializer_class = RegisterSerializer
     parser_classes = (MultiPartParser, FormParser)
     permission_classes = [IsAdminUser]
+
+    TEMPLATE_HEADERS = [
+        'name',
+        'email',
+        'phoneNumber',
+        'membershipType',
+        'unit',
+        'councilChurch',
+        'youthCouncilGroup',
+        'club',
+        'gender',
+        'validIdType',
+        'validIdNumber',
+        'passportUrl',
+        'validIdDocumentUrl',
+        'signatureUrl',
+        'status',
+    ]
+    MEMBERSHIP_TYPE_MAP = {
+        'full': 'full',
+        'full member': 'full',
+        'ordinary': 'ordinary',
+        'ordinary member': 'ordinary',
+        'honorary': 'honorary',
+        'honorary member': 'honorary',
+        'life': 'life',
+        'life member': 'life',
+    }
+    UNIT_MAP = {
+        'council of church': 'Council of Church',
+        'youth council': 'Youth Council',
+        "y's men": "Y's Men",
+        'ys men': "Y's Men",
+        'central club': 'Central Club',
+    }
+    VALID_ID_TYPE_MAP = {
+        'national_id': 'national_id',
+        'national identity number (nin)': 'national_id',
+        'national identity number': 'national_id',
+        'nin': 'national_id',
+        'drivers_license': 'drivers_license',
+        "driver's license": 'drivers_license',
+        'drivers license': 'drivers_license',
+        'voters_card': 'voters_card',
+        "voter's card": 'voters_card',
+        'voters card': 'voters_card',
+        'international_passport': 'international_passport',
+        'international passport': 'international_passport',
+        'bvn': 'bvn',
+    }
+    GENDER_MAP = {
+        'male': 'Male',
+        'female': 'Female',
+        'other': 'Other',
+    }
+    STATUS_MAP = {
+        'active': True,
+        'inactive': False,
+    }
+    PLACEHOLDER_PASSPORT = base64.b64decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9WnM4xkAAAAASUVORK5CYII='
+    )
+
+    @staticmethod
+    def _normalize_key(value):
+        return ''.join(char.lower() for char in str(value or '') if char.isalnum())
+
+    @classmethod
+    def _normalize_choice(cls, value, mapping, field_name):
+        raw_value = str(value or '').strip()
+        if not raw_value:
+            return None
+
+        normalized = raw_value.lower()
+        if normalized in mapping:
+            return mapping[normalized]
+
+        collapsed = ' '.join(raw_value.split()).lower()
+        if collapsed in mapping:
+            return mapping[collapsed]
+
+        raise ValueError(f'Invalid {field_name}: {raw_value}')
+
+    @classmethod
+    def _get_value(cls, row, *keys):
+        for key in keys:
+            normalized_key = cls._normalize_key(key)
+            if normalized_key in row:
+                return str(row[normalized_key] or '').strip()
+        return ''
+
+    @staticmethod
+    def _split_name(full_name):
+        parts = [part for part in str(full_name or '').strip().split() if part]
+        if not parts:
+            return '', ''
+        if len(parts) == 1:
+            return parts[0], ''
+        return parts[0], ' '.join(parts[1:])
+
+    @classmethod
+    def _parse_rows(cls, file):
+        filename = file.name.lower()
+
+        if filename.endswith('.csv'):
+            csv_data = file.read().decode('utf-8-sig')
+            reader = csv.DictReader(io.StringIO(csv_data))
+            rows = []
+            for row in reader:
+                rows.append({
+                    cls._normalize_key(header): value
+                    for header, value in row.items()
+                    if header
+                })
+            return rows
+
+        if filename.endswith('.xlsx'):
+            workbook = openpyxl.load_workbook(file, data_only=True)
+            worksheet = workbook.active
+            values = list(worksheet.iter_rows(values_only=True))
+            if not values:
+                return []
+
+            headers = [cls._normalize_key(value) for value in values[0]]
+            rows = []
+            for value_row in values[1:]:
+                row = {}
+                for index, header in enumerate(headers):
+                    if header:
+                        row[header] = value_row[index] if index < len(value_row) else ''
+                rows.append(row)
+            return rows
+
+        raise ValueError('Please upload a CSV or Excel (.xlsx) file')
+
+    @staticmethod
+    def _fetch_remote_file(file_url, prefix):
+        if not file_url:
+            return None
+
+        response = requests.get(file_url, timeout=15)
+        response.raise_for_status()
+
+        content_type = response.headers.get('Content-Type', '').lower()
+        extension = 'jpg'
+        if 'png' in content_type:
+            extension = 'png'
+        elif 'webp' in content_type:
+            extension = 'webp'
+        elif 'gif' in content_type:
+            extension = 'gif'
+
+        return ContentFile(
+            response.content,
+            name=f'{prefix}-{uuid.uuid4().hex}.{extension}'
+        )
+
+    @classmethod
+    def _placeholder_passport_file(cls):
+        return ContentFile(
+            cls.PLACEHOLDER_PASSPORT,
+            name=f'bulk-upload-passport-{uuid.uuid4().hex}.png'
+        )
+
+    def get(self, request, *args, **kwargs):
+        workbook = openpyxl.Workbook()
+        template_sheet = workbook.active
+        template_sheet.title = 'Members'
+        lists_sheet = workbook.create_sheet(title='Lists')
+
+        membership_types = [label for _, label in User.MEMBERSHIP_TYPE_CHOICES]
+        units = ['Council of Church', 'Youth Council', "Y's Men", 'Central Club']
+        valid_id_types = [label for _, label in UserRequest._meta.get_field('valid_id_type').choices]
+        genders = ['Male', 'Female', 'Other']
+        statuses = ['Active', 'Inactive']
+        churches = list(Church.objects.order_by('name').values_list('name', flat=True))
+        youth_groups = list(YouthGroup.objects.order_by('name').values_list('name', flat=True))
+
+        template_sheet.append(self.TEMPLATE_HEADERS)
+        template_sheet.append([
+            'John Doe',
+            'john@example.com',
+            '08012345678',
+            'Full Member',
+            'Council of Church',
+            churches[0] if churches else '',
+            '',
+            '',
+            'Male',
+            'National Identity Number (NIN)',
+            '12345678901',
+            'https://example.com/passport.jpg',
+            'https://example.com/valid-id.jpg',
+            'https://example.com/signature.png',
+            'Active',
+        ])
+        template_sheet.append([
+            'Jane Smith',
+            'jane@example.com',
+            '08098765432',
+            'Ordinary Member',
+            'Youth Council',
+            '',
+            youth_groups[0] if youth_groups else '',
+            '',
+            'Female',
+            "Driver's License",
+            'DL-00012345',
+            '',
+            '',
+            '',
+            'Active',
+        ])
+
+        for cell in template_sheet[1]:
+            cell.font = openpyxl.styles.Font(bold=True)
+
+        lists_sheet['A1'] = 'Membership Types'
+        lists_sheet['B1'] = 'Units'
+        lists_sheet['C1'] = 'Council of Church'
+        lists_sheet['D1'] = 'Youth Council Groups'
+        lists_sheet['E1'] = 'Valid ID Types'
+        lists_sheet['F1'] = 'Gender'
+        lists_sheet['G1'] = 'Status'
+
+        for column_index, values in enumerate(
+            [membership_types, units, churches, youth_groups, valid_id_types, genders, statuses],
+            start=1
+        ):
+            for row_index, value in enumerate(values, start=2):
+                lists_sheet.cell(row=row_index, column=column_index, value=value)
+
+        validation_ranges = {
+            'D': ('A', len(membership_types)),
+            'E': ('B', len(units)),
+            'F': ('C', len(churches)),
+            'G': ('D', len(youth_groups)),
+            'J': ('E', len(valid_id_types)),
+            'I': ('F', len(genders)),
+            'O': ('G', len(statuses)),
+        }
+
+        for target_column, (list_column, item_count) in validation_ranges.items():
+            if item_count == 0:
+                continue
+            validation = DataValidation(
+                type='list',
+                formula1=f"'Lists'!${list_column}$2:${list_column}${item_count + 1}",
+                allow_blank=True,
+            )
+            validation.add(f'{target_column}2:{target_column}500')
+            template_sheet.add_data_validation(validation)
+
+        notes_sheet = workbook.create_sheet(title='Notes')
+        notes = [
+            'Required columns: name, email, phoneNumber.',
+            'The system now generates ID numbers automatically. Do not add an id_number column.',
+            'Use "Council of Church", "Youth Council", "Y\'s Men", or "Central Club" for unit.',
+            'For Council of Church members, choose a value in the councilChurch column.',
+            'For Youth Council members, choose a value in the youthCouncilGroup column.',
+            'For Y\'s Men or Central Club, you can optionally use the club column.',
+            'Membership type options: Full Member, Ordinary Member, Honorary Member, Life Member.',
+            'validIdType, passportUrl, validIdDocumentUrl, and signatureUrl are optional.',
+            'passportUrl, validIdDocumentUrl, and signatureUrl should be direct image links when provided.',
+            'Status accepts Active or Inactive.',
+        ]
+        for index, note in enumerate(notes, start=1):
+            notes_sheet.cell(row=index, column=1, value=note)
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="member_bulk_upload_template.xlsx"'
+        workbook.save(response)
+        return response
     
     def post(self, request, *args, **kwargs):
         """
-        Handle CSV file upload for bulk member registration
+        Handle CSV/Excel file upload for bulk member registration
         """
         if 'file' not in request.FILES:
             return bad_request_response(
@@ -290,58 +569,132 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
             
         file = request.FILES['file']
         
-        # Check if file is CSV
-        if not file.name.endswith('.csv'):
+        if not (file.name.endswith('.csv') or file.name.endswith('.xlsx')):
             return bad_request_response(
-                message='Please upload a CSV file'
+                message='Please upload a CSV or Excel (.xlsx) file'
             )
         
-        # Process the CSV file
         try:
-            # Decode and process CSV
-            csv_data = file.read().decode('utf-8')
-            csv_file = io.StringIO(csv_data)
-            reader = csv.DictReader(csv_file)
-            
-            # Track results
+            rows = self._parse_rows(file)
             processed_members = []
             errors = []
             first_error = None
             
-            # Process all rows within a single transaction
             with transaction.atomic():
-                for row_num, row in enumerate(reader, start=2):  # Start from 2 to account for header row
+                for row_num, row in enumerate(rows, start=2):
                     try:
-                        # Map CSV fields to expected model fields (only essential fields for User)
-                        member_data = {
-                            'first_name': row.get('firstName') or row.get('first_name') or '',
-                            'last_name': row.get('lastName') or row.get('last_name') or '',
-                            'email': row.get('email') or '',
-                        }
+                        full_name = self._get_value(row, 'name', 'fullName')
+                        first_name = self._get_value(row, 'firstName', 'first_name')
+                        last_name = self._get_value(row, 'lastName', 'last_name')
+                        if full_name and not first_name and not last_name:
+                            first_name, last_name = self._split_name(full_name)
 
-                        # Create user with only essential authentication fields
-                        user = User.objects.create(
-                            first_name=member_data.get('first_name'),
-                            last_name=member_data.get('last_name'),
-                            email=member_data.get('email') or '',
+                        email = self._get_value(row, 'email').lower()
+                        phone_number = self._get_value(row, 'phoneNumber', 'phone_number')
+
+                        if not first_name and not last_name:
+                            raise ValueError('Name is required')
+                        if not email:
+                            raise ValueError('Email is required')
+                        if not phone_number:
+                            raise ValueError('Phone number is required')
+
+                        if User.objects.filter(email__iexact=email).exists() or UserRequest.objects.filter(email__iexact=email).exists():
+                            raise ValueError(f'Email already exists: {email}')
+
+                        membership_type = self._normalize_choice(
+                            self._get_value(row, 'membershipType', 'membership_type'),
+                            self.MEMBERSHIP_TYPE_MAP,
+                            'membership type'
+                        ) or 'full'
+                        unit = self._normalize_choice(
+                            self._get_value(row, 'unit'),
+                            self.UNIT_MAP,
+                            'unit'
+                        )
+                        gender = self._normalize_choice(
+                            self._get_value(row, 'gender'),
+                            self.GENDER_MAP,
+                            'gender'
+                        )
+                        valid_id_type = self._normalize_choice(
+                            self._get_value(row, 'validIdType', 'valid_id_type'),
+                            self.VALID_ID_TYPE_MAP,
+                            'valid ID type'
+                        )
+                        is_active = self._normalize_choice(
+                            self._get_value(row, 'status'),
+                            {'active': 'active', 'inactive': 'inactive'},
+                            'status'
+                        )
+                        is_active = self.STATUS_MAP.get(is_active, True)
+
+                        club = self._get_value(row, 'club')
+                        council_church = self._get_value(row, 'councilChurch', 'church')
+                        youth_council_group = self._get_value(row, 'youthCouncilGroup')
+
+                        if unit == 'Council of Church':
+                            club = council_church
+                            if not club:
+                                raise ValueError('councilChurch is required when unit is Council of Church')
+                        elif unit == 'Youth Council':
+                            club = youth_council_group
+                            if not club:
+                                raise ValueError('youthCouncilGroup is required when unit is Youth Council')
+
+                        passport_file = self._fetch_remote_file(
+                            self._get_value(row, 'passportUrl', 'passport_photo', 'passport'),
+                            'passport'
+                        ) or self._placeholder_passport_file()
+                        valid_id_file = self._fetch_remote_file(
+                            self._get_value(row, 'validIdDocumentUrl', 'valid_id_file', 'validIdFile', 'validIdDocument'),
+                            'valid-id'
+                        )
+                        signature_file = self._fetch_remote_file(
+                            self._get_value(row, 'signatureUrl', 'signature'),
+                            'signature'
                         )
 
+                        user = User.objects.create(
+                            first_name=first_name,
+                            last_name=last_name,
+                            email=email,
+                            membership_type=membership_type,
+                            is_active=is_active,
+                        )
                         user.set_password('YMCA123456789')
                         user.save()
 
-                        print('First User Created...... : ', user.email)
+                        user_request = UserRequest.objects.create(
+                            user=user,
+                            first_name=first_name,
+                            last_name=last_name or first_name,
+                            email=email,
+                            phone_number=phone_number,
+                            unit=unit,
+                            club=club or '',
+                            gender=gender,
+                            valid_id_type=valid_id_type,
+                            valid_id_number=self._get_value(row, 'validIdNumber', 'valid_id_number'),
+                            passport_photo=passport_file,
+                            valid_id_file=valid_id_file,
+                            signature=signature_file,
+                            status=RequestStatus.APPROVED,
+                        )
 
-                        user_card, created = IDCard.objects.get_or_create(user=user)
-                        if created and member_data.get('id_number'):
-                            user_card.id_number = member_data.get('id_number')
-                            user_card.save()
+                        user.user_request = user_request
+                        if user_request.passport_photo:
+                            user.image = user_request.passport_photo
+                        user.save(update_fields=['user_request', 'image', 'updated_at'])
 
-                        # Add successful member to the list
+                        user_card, _ = IDCard.objects.get_or_create(user=user)
+                        if user_request.signature:
+                            user_card.signature = user_request.signature
+                        user_card.save()
+
                         processed_members.append(user)
 
                     except IntegrityError as e:    
-                        print(f"Error creating user at row {row_num}")
-                        print(e)
                         error_message =  f"Bulk upload failed, error creating user at row {row_num}"
                         raise Exception(error_message)
                     
@@ -357,26 +710,21 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
                         if first_error is None:
                             first_error = error_info
                 
-                # Check if there were any errors
                 if errors and not processed_members:
-                    # If all records failed, raise an exception to roll back the entire transaction
                     if first_error:
                         error_message = f"Error at row {first_error['row']}: {first_error['errors']}"
                         raise Exception(error_message)
                     else:
                         raise Exception('All records failed to process')
             
-            # Return success response with processed members
             return success_response(
                 message=f'Successfully uploaded {len(processed_members)} members' + 
                         (f' with {len(errors)} errors' if errors else ''),
             )
             
         except Exception as e:
-            print(e)
-            # Transaction will be automatically rolled back if we reach here
             return bad_request_response(
-                message=f'Error processing CSV file: {str(e)}'
+                message=f'Error processing upload file: {str(e)}'
             )
 
 

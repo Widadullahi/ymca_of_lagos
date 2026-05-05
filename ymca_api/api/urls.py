@@ -41,6 +41,7 @@ urlpatterns = [
     path('admin/members/', AdminAddMembersView.as_view(), name='YouthGroupListView'),
     path('admin/members/overview', AdminGetMemberOverview.as_view(), name='AdminGetMemberOverview'),
     path('admin/members/export/', AdminMembersExportView.as_view(), name='AdminMembersExportView'),
+    path('admin/members/upload/template/', AdminMembersBulkUploadView.as_view(), name='AdminMembersBulkUploadTemplateView'),
     path('admin/members/upload', AdminMembersBulkUploadView.as_view(), name='AdminMembersBulkUploadView'),
     path('admin/members/<id>', AdminMemberRetrieveUpdateDestroyView.as_view(), name='AdminMemberRetrieveUpdateDestroyView'), 
     path('admin/members/<id>/update', AdminMemberUpdateDestroyView.as_view(), name='AdminMemberUpdateDestroyView'), 
