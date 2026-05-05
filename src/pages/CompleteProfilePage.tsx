@@ -376,7 +376,7 @@ const CompleteProfilePage: React.FC = () => {
             )}
             <Field label="Profession" name="profession" value={formData.profession} onChange={handleInputChange} error={fieldErrors.profession} />
             <Field label="Occupation" name="occupation" value={formData.occupation} onChange={handleInputChange} error={fieldErrors.occupation} />
-            <SelectField label="Religion" name="religion" value={formData.religion} onChange={handleInputChange} error={fieldErrors.religion} options={['Christian', 'Muslim', 'Other']} />
+            <SelectField label="Religion" name="religion" value={formData.religion} onChange={handleInputChange} error={fieldErrors.religion} options={['Christian', 'Other']} />
             {formData.religion === 'Christian' && (
               <Field label="Church Name" name="church_name" value={formData.church_name} onChange={handleInputChange} error={fieldErrors.church_name} />
             )}

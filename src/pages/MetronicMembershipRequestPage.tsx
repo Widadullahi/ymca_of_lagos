@@ -203,7 +203,6 @@ const MetronicMembershipRequestPage = () => {
                 >
                   <option value="">Select Religion</option>
                   <option value="Christian">Christian</option>
-                  <option value="Muslim">Muslim</option>
                   <option value="Other">Other</option>
                 </select>
               </div>

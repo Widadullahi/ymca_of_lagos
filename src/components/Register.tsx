@@ -67,7 +67,6 @@ const RegisterForm: React.FC = () => {
 
   const religionOptions = [
     { value: 'Christian', label: 'Christian' },
-    { value: 'Muslim', label: 'Muslim' },
     { value: 'Other', label: 'Other' }
   ];
 

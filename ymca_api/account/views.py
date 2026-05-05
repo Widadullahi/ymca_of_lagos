@@ -121,6 +121,8 @@ class ProfileView(generics.GenericAPIView):
         first_name = request.data.get("first_name")
         last_name = request.data.get("last_name")
         email = request.data.get("email")
+        phone_number = request.data.get("phone_number")
+        gender = request.data.get("gender")
 
         user: User = request.user
 
@@ -137,6 +139,12 @@ class ProfileView(generics.GenericAPIView):
                     message='Email already exist',
                 )
             user.email = email
+
+        if phone_number is not None:
+            user.phone_number = phone_number
+
+        if gender is not None:
+            user.gender = gender
         
         user.save()
 
