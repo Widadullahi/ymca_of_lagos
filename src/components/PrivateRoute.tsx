@@ -1,14 +1,15 @@
 import React, { JSX } from 'react';
 import Layout from './Layout';
 import { useAuth } from '../context/NewAuthContext';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 
 interface PrivateRouteProps {
   element: JSX.Element;
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ element }) => {
-  const { authToken, globalLoading } = useAuth();
+  const { authToken, globalLoading, user } = useAuth();
+  const location = useLocation();
 
   console.log(authToken)
 
@@ -19,6 +20,17 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ element }) => {
 
   if (!authToken) {
     return <Navigate to="/login" />;
+  }
+
+  const needsProfileCompletion =
+    user?.role === 'Member' && Boolean(user?.profile_completion_required);
+
+  if (needsProfileCompletion && location.pathname !== '/complete-profile') {
+    return <Navigate to="/complete-profile" replace />;
+  }
+
+  if (!needsProfileCompletion && location.pathname === '/complete-profile') {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (

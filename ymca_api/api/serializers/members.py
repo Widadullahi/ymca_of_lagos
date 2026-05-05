@@ -49,7 +49,15 @@ class UserRequestSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Email cannot be empty")
 
         email = value.strip().lower()
-        if UserRequest.objects.filter(email__iexact=email).exists() or User.objects.filter(email__iexact=email).exists():
+        user_request_queryset = UserRequest.objects.filter(email__iexact=email)
+        user_queryset = User.objects.filter(email__iexact=email)
+
+        if self.instance:
+            user_request_queryset = user_request_queryset.exclude(pk=self.instance.pk)
+            if getattr(self.instance, 'user_id', None):
+                user_queryset = user_queryset.exclude(pk=self.instance.user_id)
+
+        if user_request_queryset.exists() or user_queryset.exists():
             raise serializers.ValidationError("Email already exists")
         return email
     

@@ -135,6 +135,12 @@ const MainNavigation: React.FC<MainNavigationProps> = () => {
             >
               YMCA History
             </button>
+            <button 
+              onClick={() => navigate('/vision-2030')}
+              className="text-gray-700 hover:text-red-700 font-medium transition-colors"
+            >
+              Vision 2030
+            </button>
             
             
             {/* Membership Dropdown - COMMENTED OUT */}
@@ -253,6 +259,15 @@ const MainNavigation: React.FC<MainNavigationProps> = () => {
                   className="text-gray-700 hover:text-red-700 font-medium transition-colors text-left"
                 >
                   YMCA History
+                </button>
+                <button 
+                  onClick={() => {
+                    navigate('/vision-2030');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="text-gray-700 hover:text-red-700 font-medium transition-colors text-left"
+                >
+                  Vision 2030
                 </button>
                 
                 {/* Mobile Membership Options - COMMENTED OUT */}

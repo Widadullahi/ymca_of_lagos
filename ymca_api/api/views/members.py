@@ -289,15 +289,7 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
         'phoneNumber',
         'membershipType',
         'unit',
-        'councilChurch',
-        'youthCouncilGroup',
-        'club',
         'gender',
-        'validIdType',
-        'validIdNumber',
-        'passportUrl',
-        'validIdDocumentUrl',
-        'signatureUrl',
         'status',
     ]
     MEMBERSHIP_TYPE_MAP = {
@@ -316,21 +308,6 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
         "y's men": "Y's Men",
         'ys men': "Y's Men",
         'central club': 'Central Club',
-    }
-    VALID_ID_TYPE_MAP = {
-        'national_id': 'national_id',
-        'national identity number (nin)': 'national_id',
-        'national identity number': 'national_id',
-        'nin': 'national_id',
-        'drivers_license': 'drivers_license',
-        "driver's license": 'drivers_license',
-        'drivers license': 'drivers_license',
-        'voters_card': 'voters_card',
-        "voter's card": 'voters_card',
-        'voters card': 'voters_card',
-        'international_passport': 'international_passport',
-        'international passport': 'international_passport',
-        'bvn': 'bvn',
     }
     GENDER_MAP = {
         'male': 'Male',
@@ -373,15 +350,6 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
                 return str(row[normalized_key] or '').strip()
         return ''
 
-    @staticmethod
-    def _split_name(full_name):
-        parts = [part for part in str(full_name or '').strip().split() if part]
-        if not parts:
-            return '', ''
-        if len(parts) == 1:
-            return parts[0], ''
-        return parts[0], ' '.join(parts[1:])
-
     @classmethod
     def _parse_rows(cls, file):
         filename = file.name.lower()
@@ -417,28 +385,6 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
 
         raise ValueError('Please upload a CSV or Excel (.xlsx) file')
 
-    @staticmethod
-    def _fetch_remote_file(file_url, prefix):
-        if not file_url:
-            return None
-
-        response = requests.get(file_url, timeout=15)
-        response.raise_for_status()
-
-        content_type = response.headers.get('Content-Type', '').lower()
-        extension = 'jpg'
-        if 'png' in content_type:
-            extension = 'png'
-        elif 'webp' in content_type:
-            extension = 'webp'
-        elif 'gif' in content_type:
-            extension = 'gif'
-
-        return ContentFile(
-            response.content,
-            name=f'{prefix}-{uuid.uuid4().hex}.{extension}'
-        )
-
     @classmethod
     def _placeholder_passport_file(cls):
         return ContentFile(
@@ -454,11 +400,8 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
 
         membership_types = [label for _, label in User.MEMBERSHIP_TYPE_CHOICES]
         units = ['Council of Church', 'Youth Council', "Y's Men", 'Central Club']
-        valid_id_types = [label for _, label in UserRequest._meta.get_field('valid_id_type').choices]
         genders = ['Male', 'Female', 'Other']
         statuses = ['Active', 'Inactive']
-        churches = list(Church.objects.order_by('name').values_list('name', flat=True))
-        youth_groups = list(YouthGroup.objects.order_by('name').values_list('name', flat=True))
 
         template_sheet.append(self.TEMPLATE_HEADERS)
         template_sheet.append([
@@ -467,15 +410,7 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
             '08012345678',
             'Full Member',
             'Council of Church',
-            churches[0] if churches else '',
-            '',
-            '',
             'Male',
-            'National Identity Number (NIN)',
-            '12345678901',
-            'https://example.com/passport.jpg',
-            'https://example.com/valid-id.jpg',
-            'https://example.com/signature.png',
             'Active',
         ])
         template_sheet.append([
@@ -484,15 +419,7 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
             '08098765432',
             'Ordinary Member',
             'Youth Council',
-            '',
-            youth_groups[0] if youth_groups else '',
-            '',
             'Female',
-            "Driver's License",
-            'DL-00012345',
-            '',
-            '',
-            '',
             'Active',
         ])
 
@@ -501,14 +428,11 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
 
         lists_sheet['A1'] = 'Membership Types'
         lists_sheet['B1'] = 'Units'
-        lists_sheet['C1'] = 'Council of Church'
-        lists_sheet['D1'] = 'Youth Council Groups'
-        lists_sheet['E1'] = 'Valid ID Types'
-        lists_sheet['F1'] = 'Gender'
-        lists_sheet['G1'] = 'Status'
+        lists_sheet['C1'] = 'Gender'
+        lists_sheet['D1'] = 'Status'
 
         for column_index, values in enumerate(
-            [membership_types, units, churches, youth_groups, valid_id_types, genders, statuses],
+            [membership_types, units, genders, statuses],
             start=1
         ):
             for row_index, value in enumerate(values, start=2):
@@ -517,11 +441,8 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
         validation_ranges = {
             'D': ('A', len(membership_types)),
             'E': ('B', len(units)),
-            'F': ('C', len(churches)),
-            'G': ('D', len(youth_groups)),
-            'J': ('E', len(valid_id_types)),
-            'I': ('F', len(genders)),
-            'O': ('G', len(statuses)),
+            'F': ('C', len(genders)),
+            'G': ('D', len(statuses)),
         }
 
         for target_column, (list_column, item_count) in validation_ranges.items():
@@ -537,15 +458,12 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
 
         notes_sheet = workbook.create_sheet(title='Notes')
         notes = [
-            'Required columns: name, email, phoneNumber.',
+            'Only these columns must not be empty: name, email, phoneNumber.',
+            'All other columns in the template are optional.',
             'The system now generates ID numbers automatically. Do not add an id_number column.',
-            'Use "Council of Church", "Youth Council", "Y\'s Men", or "Central Club" for unit.',
-            'For Council of Church members, choose a value in the councilChurch column.',
-            'For Youth Council members, choose a value in the youthCouncilGroup column.',
-            'For Y\'s Men or Central Club, you can optionally use the club column.',
+            'Use only the 4 main units in the unit column: Council of Church, Youth Council, Y\'s Men, Central Club.',
             'Membership type options: Full Member, Ordinary Member, Honorary Member, Life Member.',
-            'validIdType, passportUrl, validIdDocumentUrl, and signatureUrl are optional.',
-            'passportUrl, validIdDocumentUrl, and signatureUrl should be direct image links when provided.',
+            'Bulk-uploaded members will complete date of birth, final unit placement, valid ID, passport photo, and signature on first login.',
             'Status accepts Active or Inactive.',
         ]
         for index, note in enumerate(notes, start=1):
@@ -583,14 +501,13 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
             with transaction.atomic():
                 for row_num, row in enumerate(rows, start=2):
                     try:
-                        full_name = self._get_value(row, 'name', 'fullName')
-                        first_name = self._get_value(row, 'firstName', 'first_name')
-                        last_name = self._get_value(row, 'lastName', 'last_name')
-                        if full_name and not first_name and not last_name:
-                            first_name, last_name = self._split_name(full_name)
-
+                        full_name = self._get_value(row, 'name')
                         email = self._get_value(row, 'email').lower()
-                        phone_number = self._get_value(row, 'phoneNumber', 'phone_number')
+                        phone_number = self._get_value(row, 'phoneNumber')
+
+                        name_parts = [part for part in full_name.split() if part]
+                        first_name = name_parts[0] if name_parts else ''
+                        last_name = ' '.join(name_parts[1:]) if len(name_parts) > 1 else ''
 
                         if not first_name and not last_name:
                             raise ValueError('Name is required')
@@ -603,7 +520,7 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
                             raise ValueError(f'Email already exists: {email}')
 
                         membership_type = self._normalize_choice(
-                            self._get_value(row, 'membershipType', 'membership_type'),
+                            self._get_value(row, 'membershipType'),
                             self.MEMBERSHIP_TYPE_MAP,
                             'membership type'
                         ) or 'full'
@@ -617,43 +534,12 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
                             self.GENDER_MAP,
                             'gender'
                         )
-                        valid_id_type = self._normalize_choice(
-                            self._get_value(row, 'validIdType', 'valid_id_type'),
-                            self.VALID_ID_TYPE_MAP,
-                            'valid ID type'
-                        )
                         is_active = self._normalize_choice(
                             self._get_value(row, 'status'),
                             {'active': 'active', 'inactive': 'inactive'},
                             'status'
                         )
                         is_active = self.STATUS_MAP.get(is_active, True)
-
-                        club = self._get_value(row, 'club')
-                        council_church = self._get_value(row, 'councilChurch', 'church')
-                        youth_council_group = self._get_value(row, 'youthCouncilGroup')
-
-                        if unit == 'Council of Church':
-                            club = council_church
-                            if not club:
-                                raise ValueError('councilChurch is required when unit is Council of Church')
-                        elif unit == 'Youth Council':
-                            club = youth_council_group
-                            if not club:
-                                raise ValueError('youthCouncilGroup is required when unit is Youth Council')
-
-                        passport_file = self._fetch_remote_file(
-                            self._get_value(row, 'passportUrl', 'passport_photo', 'passport'),
-                            'passport'
-                        ) or self._placeholder_passport_file()
-                        valid_id_file = self._fetch_remote_file(
-                            self._get_value(row, 'validIdDocumentUrl', 'valid_id_file', 'validIdFile', 'validIdDocument'),
-                            'valid-id'
-                        )
-                        signature_file = self._fetch_remote_file(
-                            self._get_value(row, 'signatureUrl', 'signature'),
-                            'signature'
-                        )
 
                         user = User.objects.create(
                             first_name=first_name,
@@ -672,13 +558,9 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
                             email=email,
                             phone_number=phone_number,
                             unit=unit,
-                            club=club or '',
+                            club='',
                             gender=gender,
-                            valid_id_type=valid_id_type,
-                            valid_id_number=self._get_value(row, 'validIdNumber', 'valid_id_number'),
-                            passport_photo=passport_file,
-                            valid_id_file=valid_id_file,
-                            signature=signature_file,
+                            passport_photo=self._placeholder_passport_file(),
                             status=RequestStatus.APPROVED,
                         )
 
@@ -688,8 +570,6 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
                         user.save(update_fields=['user_request', 'image', 'updated_at'])
 
                         user_card, _ = IDCard.objects.get_or_create(user=user)
-                        if user_request.signature:
-                            user_card.signature = user_request.signature
                         user_card.save()
 
                         processed_members.append(user)
@@ -863,6 +743,42 @@ class UserRequestDetailView(generics.RetrieveAPIView):
     
     def get_queryset(self):
         return UserRequest.objects.filter(user=self.request.user)
+
+
+class CurrentUserRequestUpdateView(generics.GenericAPIView):
+    serializer_class = UserRequestSerializer
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def put(self, request, *args, **kwargs):
+        user = request.user
+        user_request = user.user_request
+
+        if not user_request:
+            return bad_request_response(message='No membership profile found for this user')
+
+        serializer = self.get_serializer(
+            user_request,
+            data=request.data,
+            partial=True,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        updated_request = serializer.save()
+
+        if updated_request.passport_photo:
+            user.image = updated_request.passport_photo
+        user.save(update_fields=['image', 'updated_at'])
+
+        if updated_request.signature:
+            card, _ = IDCard.objects.get_or_create(user=user)
+            card.signature = updated_request.signature
+            card.save()
+
+        return success_response(
+            message='Profile completed successfully',
+            data=UserRequestSerializer(updated_request, context={'request': request}).data,
+        )
 
 
 

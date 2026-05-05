@@ -8,7 +8,7 @@ from rest_framework.routers import DefaultRouter
 from account import views as account_views
 from api.views.category import CategoryListView, ChurchListView, YouthGroupListView
 from api.views.transaction import ActivateMembershipView, InitiateDonationPamentView, RenewMembershipView, TotalMembersCountView, VerifyDonationPamentView, StartMembershipDemoView, VerifyPaymentView
-from api.views.members import  AdminAddMembersView,AdminGetSingleRequestView, AdminGetMemberOverview, AdminMemberRetrieveUpdateDestroyView, AdminMemberUpdateDestroyView, AdminMembersBulkUploadView, AdminUpdateRequestStatusView, AdminUserRequestListView, CreateUserRequestView, UserRequestDetailView, UserRequestListView, VerifyCardIdNumberView, AdminMembersExportView, SendEmailVerificationCodeView, VerifyEmailVerificationCodeView
+from api.views.members import  AdminAddMembersView,AdminGetSingleRequestView, AdminGetMemberOverview, AdminMemberRetrieveUpdateDestroyView, AdminMemberUpdateDestroyView, AdminMembersBulkUploadView, AdminUpdateRequestStatusView, AdminUserRequestListView, CreateUserRequestView, CurrentUserRequestUpdateView, UserRequestDetailView, UserRequestListView, VerifyCardIdNumberView, AdminMembersExportView, SendEmailVerificationCodeView, VerifyEmailVerificationCodeView
 from api.views.set_password import AdminSetUserPasswordView
 from . import views
 from .views import post as post_view
@@ -48,6 +48,7 @@ urlpatterns = [
     path('admin/members/<user_id>/set_password/', AdminSetUserPasswordView.as_view(), name='admin-set-user-password'),
         # User endpoints
     path('requests/', CreateUserRequestView.as_view(), name='create-request'),
+    path('requests/me/complete/', CurrentUserRequestUpdateView.as_view(), name='current-user-request-update'),
     path('requests/email-verification/send/', SendEmailVerificationCodeView.as_view(), name='send-email-verification-code'),
     path('requests/email-verification/verify/', VerifyEmailVerificationCodeView.as_view(), name='verify-email-verification-code'),
     path('requests/list/', UserRequestListView.as_view(), name='list-requests'),

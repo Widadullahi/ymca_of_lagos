@@ -30,6 +30,7 @@ import Vision2030Page from './components/Vision2030Page';
 import LatestNewsPage from './pages/LatestNewsPage';
 import NewsDetailPage from './pages/NewsDetailPage';
 import AdminSignaturePage from './pages/admin/AdminSignaturePage';
+import CompleteProfilePage from './pages/CompleteProfilePage';
 
 
 
@@ -59,6 +60,7 @@ const App: React.FC = () => {
         <Route path="/news" element={<LatestNewsPage />} />
         <Route path="/news/:id" element={<NewsDetailPage />} />
         <Route path="/dashboard" element={<PrivateRoute element={<MemberDashboardMember />} />} />
+        <Route path="/complete-profile" element={<PrivateRoute element={<CompleteProfilePage />} />} />
         <Route path="/account" element={<PrivateRoute element={<ProfileManagementPage />} />} />
         <Route path="/myid" element={<PrivateRoute element={<DashboardPage />} />} />
         <Route path="/payment" element={<PrivateRoute element={<TransactionValidation />} />} />

@@ -56,6 +56,8 @@ const LoginForm: React.FC= () => {
       setUser(response?.data.user)
       if (response?.data.user.role == 'Admin') {
         navigate('/admin/dashboard');
+      } else if (response?.data.user.profile_completion_required) {
+        navigate('/complete-profile');
       } else {
         navigate('/dashboard');
       }

@@ -187,7 +187,7 @@ const BulkUploadModal: React.FC<{
                     <form onSubmit={handleSubmit}>
                         <div className="mb-6">
                             <p className="text-gray-600 mb-4">
-                                Upload a CSV or Excel file containing member information. Only name, email, and phone number are compulsory. The Excel template includes the correct membership type, unit, church, and youth council dropdown values from the system.
+                                Upload a CSV or Excel file containing member information. Only name, email, and phone number are compulsory. The Excel template keeps the unit column to the 4 main YMCA units, and bulk-uploaded members will complete the rest of their registration on first login.
                             </p>
                             
                             <div 
@@ -306,15 +306,13 @@ const BulkUploadModal: React.FC<{
 
                       <div className="mt-6 border-t border-gray-200 pt-4">
                         <div className="text-sm text-gray-500">
-                            <h4 className="font-medium text-gray-700 mb-2">Upload Format Information:</h4>
+                                <h4 className="font-medium text-gray-700 mb-2">Upload Format Information:</h4>
                             <ul className="list-disc pl-5 space-y-1">
                                 <li>Required columns: name, email, phoneNumber</li>
                                 <li>Membership type options: Full Member, Ordinary Member, Honorary Member, Life Member</li>
                                 <li>Unit options: Council of Church, Youth Council, Y's Men, Central Club</li>
-                                <li>Use the councilChurch column for Council of Church members</li>
-                                <li>Use the youthCouncilGroup column for Youth Council members</li>
-                                <li>validIdType, passportUrl, validIdDocumentUrl, and signatureUrl are optional</li>
                                 <li>ID numbers are assigned automatically by the system during upload</li>
+                                <li>Bulk-uploaded members will complete date of birth, final unit placement, valid ID, passport photo, and signature on first login</li>
                                 <li>The Excel template is recommended because it includes dropdown lists from the system</li>
                             </ul>
                         </div>

@@ -56,19 +56,24 @@ const Vision2030Page: React.FC = () => {
 
   const testimonials = [
     {
-      name: 'Rafika Malunga',
-      role: 'Zambia YMCA',
-      content: 'The capacity-building trainings boosted my skills as a youth leader, helping me apply models like S2C and human-centered design to drive change. I\'m committed to being a Change Agent who uplifts youth voices and advocates for a just world.'
+      name: 'Adeyinka Awe',
+      role: 'YMCA of Lagos Member',
+      content: 'The YMCA of Lagos is more than an organization - it is a community, a place of growth, service, and purpose for me. I have learned, led, and made life changing friendships that go beyond the space. Being part of this community has shaped how I show up in life because once you are in, you are changed!'
     },
     {
-      name: 'Chinedu Okoro',
-      role: 'Lagos YMCA Youth Leader',
-      content: 'Vision 2030 has transformed our approach to community service. The four pillars provide a clear framework for creating sustainable impact in Lagos communities.'
+      name: 'Olanrewaju Lucky',
+      role: 'YMCA of Lagos Member',
+      content: 'My experience at the YMCA of Lagos has been a journey of growth and impact. It stretched me into leadership and refined my passion for service. Through every program and responsibility, I found purpose in empowering others. YMCA has truly shaped the leader I am becoming.'
     },
     {
-      name: 'Amina Yusuf',
-      role: 'YMCA Lagos Volunteer',
-      content: 'Through the Sustainable Planet initiatives, we\'ve engaged over 500 young people in climate action projects across Lagos, creating real environmental change.'
+      name: 'Oyeronke Abati',
+      role: 'YMCA of Lagos Member',
+      content: 'My experience with the YMCA has been amazing. From receiving scholarship support to enjoying unforgettable camp moments, every part has helped me grow. I have built strong networks, gained leadership skills as an executive, and created lifelong memories. YMCA truly creates opportunities and brings out the best in young people.'
+    },
+    {
+      name: 'Olawale Odunaiya',
+      role: 'YMCA of Lagos Member',
+      content: 'I have been privileged to experience a lot at the YMCA. I got to understand and learn the basis of graphics designing, which helped me build my brand, Lammie Print. I also got to work on my social and leadership skills, which helps me relate and connect with people.'
     }
   ];
 
