@@ -771,7 +771,14 @@ class AdminMembersExportView(generics.GenericAPIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        users = User.objects.filter(is_admin=False).select_related('user_request').order_by('-created_at')
+        users = User.objects.filter(is_admin=False).select_related('user_request')
+
+        raw_user_ids = request.GET.get('user_ids', '').strip()
+        if raw_user_ids:
+            user_ids = [user_id.strip() for user_id in raw_user_ids.split(',') if user_id.strip()]
+            users = users.filter(id__in=user_ids)
+
+        users = users.order_by('-created_at')
         
         # Create workbook and worksheet
         wb = openpyxl.Workbook()

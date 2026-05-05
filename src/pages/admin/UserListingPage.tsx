@@ -286,9 +286,11 @@ const UserListingPage: React.FC = () => {
   const handleExport = async () => {
     setIsExporting(true);
     try {
+      const filteredUserIds = filteredMembers.map(member => member.id).filter(Boolean);
       const response = await fetchWithAuth({
         method: 'GET',
         path: '/admin/members/export/',
+        queryParams: filteredUserIds.length > 0 ? { user_ids: filteredUserIds.join(',') } : {},
         responseType: 'blob', // We need this to handle binary data
       });
 
