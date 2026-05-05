@@ -365,15 +365,6 @@ const CompleteProfilePage: React.FC = () => {
             {formData.unit === 'Council of Church' && (
               <SelectField label="Council of Church" name="club" value={formData.club} onChange={handleInputChange} error={fieldErrors.club} options={churches} />
             )}
-            {formData.unit === 'Youth Council' && (
-              <Field
-                label="Youth Council Group"
-                name="club"
-                value={formData.club}
-                disabled
-                error={fieldErrors.club}
-              />
-            )}
             <Field label="Profession" name="profession" value={formData.profession} onChange={handleInputChange} error={fieldErrors.profession} />
             <Field label="Occupation" name="occupation" value={formData.occupation} onChange={handleInputChange} error={fieldErrors.occupation} />
             <SelectField label="Religion" name="religion" value={formData.religion} onChange={handleInputChange} error={fieldErrors.religion} options={['Christian', 'Other']} />
