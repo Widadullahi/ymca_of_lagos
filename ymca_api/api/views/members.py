@@ -2,6 +2,7 @@ import csv
 import io
 import logging
 import openpyxl
+import requests
 from django.conf import settings
 from django.core.mail import get_connection
 from django.core.mail import send_mail
@@ -29,6 +30,52 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 
 logger = logging.getLogger(__name__)
+
+
+def send_verification_email(recipient_email: str, verification_code: str) -> None:
+    subject = 'YMCA Lagos Email Verification Code'
+    text_body = f"Your YMCA Lagos verification code is {verification_code}. This code expires in 10 minutes."
+    html_body = (
+        "<p>Your YMCA Lagos verification code is "
+        f"<strong>{verification_code}</strong>.</p>"
+        "<p>This code expires in 10 minutes.</p>"
+    )
+
+    if settings.RESEND_API_KEY:
+        response = requests.post(
+            settings.RESEND_API_URL,
+            headers={
+                'Authorization': f'Bearer {settings.RESEND_API_KEY}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'from': settings.DEFAULT_FROM_EMAIL,
+                'to': [recipient_email],
+                'subject': subject,
+                'text': text_body,
+                'html': html_body,
+            },
+            timeout=getattr(settings, 'EMAIL_TIMEOUT', 15),
+        )
+
+        if not response.ok:
+            try:
+                error_payload = response.json()
+            except ValueError:
+                error_payload = response.text
+            raise RuntimeError(f'Resend API error: {error_payload}')
+
+        return
+
+    connection = get_connection(timeout=getattr(settings, 'EMAIL_TIMEOUT', 15))
+    send_mail(
+        subject,
+        text_body,
+        settings.DEFAULT_FROM_EMAIL,
+        [recipient_email],
+        connection=connection,
+        fail_silently=False,
+    )
 
 
 class SendEmailVerificationCodeView(generics.GenericAPIView):
@@ -69,18 +116,32 @@ class SendEmailVerificationCodeView(generics.GenericAPIView):
                     'DEFAULT_FROM_EMAIL': settings.DEFAULT_FROM_EMAIL,
                     'EMAIL_HOST_PASSWORD_SET': bool(settings.EMAIL_HOST_PASSWORD),
                     'EMAIL_HOST_PASSWORD_MASK': masked_password,
+                    'RESEND_API_KEY_SET': bool(settings.RESEND_API_KEY),
                 }
             )
+            if settings.RESEND_API_KEY and self._looks_like_placeholder(settings.DEFAULT_FROM_EMAIL):
+                return internal_server_error_response(
+                    message='Email delivery is not configured on the server. Set a valid DEFAULT_FROM_EMAIL for your email provider.'
+                )
+
+            if settings.RESEND_API_KEY:
+                delivery_method = 'resend'
+            else:
+                delivery_method = 'smtp'
+
             if (
-                not settings.EMAIL_HOST_USER
-                or not settings.EMAIL_HOST_PASSWORD
-                or not settings.DEFAULT_FROM_EMAIL
-                or self._looks_like_placeholder(settings.EMAIL_HOST_USER)
-                or self._looks_like_placeholder(settings.EMAIL_HOST_PASSWORD)
-                or self._looks_like_placeholder(settings.DEFAULT_FROM_EMAIL)
+                delivery_method == 'smtp'
+                and (
+                    not settings.EMAIL_HOST_USER
+                    or not settings.EMAIL_HOST_PASSWORD
+                    or not settings.DEFAULT_FROM_EMAIL
+                    or self._looks_like_placeholder(settings.EMAIL_HOST_USER)
+                    or self._looks_like_placeholder(settings.EMAIL_HOST_PASSWORD)
+                    or self._looks_like_placeholder(settings.DEFAULT_FROM_EMAIL)
+                )
             ):
                 return internal_server_error_response(
-                    message='Email delivery is not configured on the server. Please contact support.'
+                    message='SMTP email delivery is not configured on the server. Configure a valid SMTP account or set RESEND_API_KEY to use the Resend email API.'
                 )
 
             verification = EmailVerification.objects.filter(email__iexact=email).first()
@@ -94,15 +155,7 @@ class SendEmailVerificationCodeView(generics.GenericAPIView):
                     expires_at=timezone.now() + timedelta(minutes=10),
                 )
 
-            connection = get_connection(timeout=getattr(settings, 'EMAIL_TIMEOUT', 15))
-            send_mail(
-                'YMCA Lagos Email Verification Code',
-                f"Your YMCA Lagos verification code is {verification.code}. This code expires in 10 minutes.",
-                settings.DEFAULT_FROM_EMAIL,
-                [email],
-                connection=connection,
-                fail_silently=False,
-            )
+            send_verification_email(email, verification.code)
         except Exception:
             logger.exception('Email verification send failed')
             return internal_server_error_response(
