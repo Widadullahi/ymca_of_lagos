@@ -19,12 +19,17 @@ const validIdOptions = [
   { value: 'bvn', label: 'BVN' },
 ];
 
+const getYouthCouncilGroupByAge = (age: number) => {
+  if (age >= 1 && age <= 23) return 'Hi-Y Club';
+  if (age >= 24 && age <= 30) return 'Y-Elite Club';
+  return '';
+};
+
 const CompleteProfilePage: React.FC = () => {
   const { user, fetchWithAuth, fetchUserProfile, displayNotification } = useAuth();
   const navigate = useNavigate();
 
   const [churches, setChurches] = useState<string[]>([]);
-  const [youthGroups, setYouthGroups] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
@@ -111,13 +116,9 @@ const CompleteProfilePage: React.FC = () => {
   useEffect(() => {
     const loadLists = async () => {
       try {
-        const [churchResponse, youthResponse] = await Promise.all([
-          fetchWithAuth({ method: 'GET', path: '/churches', isAthenticated: false }),
-          fetchWithAuth({ method: 'GET', path: '/youth-groups', isAthenticated: false }),
-        ]);
+        const churchResponse = await fetchWithAuth({ method: 'GET', path: '/churches', isAthenticated: false });
 
         setChurches((churchResponse?.data || []).map((item: any) => item.name));
-        setYouthGroups((youthResponse?.data || []).map((item: any) => item.name));
       } catch (error) {
         displayNotification('error', 'Unable to load unit dropdown options');
       }
@@ -160,6 +161,25 @@ const CompleteProfilePage: React.FC = () => {
       }));
     }
   }, [filteredUnits, formData.unit]);
+
+  useEffect(() => {
+    const age = Number(formData.age);
+    if (formData.unit === 'Youth Council') {
+      const derivedGroup = getYouthCouncilGroupByAge(age);
+      setFormData((prev) => ({
+        ...prev,
+        club: derivedGroup,
+      }));
+      return;
+    }
+
+    if (formData.unit !== 'Council of Church' && formData.club && (formData.unit === "Y's Men" || formData.unit === 'Central Club' || !formData.unit)) {
+      setFormData((prev) => ({
+        ...prev,
+        club: '',
+      }));
+    }
+  }, [formData.age, formData.unit]);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
@@ -226,9 +246,17 @@ const CompleteProfilePage: React.FC = () => {
     if (formData.citizen === 'Foreigner' && !formData.country.trim()) errors.country = 'Country is required';
     if (formData.citizen === 'Nigerian' && !formData.state) errors.state = 'State is required';
     if (!formData.address.trim()) errors.address = 'Address is required';
+    const age = Number(formData.age);
+
     if (!formData.unit) errors.unit = 'Unit is required';
+    if (formData.unit === 'Youth Council' && age >= 31) {
+      errors.unit = "Age 31+ cannot join Youth Council. Please select Y's Men, Central Club, or Council of Church.";
+    }
+    if (formData.unit !== 'Youth Council' && age > 0 && age <= 30) {
+      errors.unit = 'Members aged 30 and below must register under Youth Council.';
+    }
     if (formData.unit === 'Council of Church' && !formData.club) errors.club = 'Please select a church';
-    if (formData.unit === 'Youth Council' && !formData.club) errors.club = 'Please select a youth council group';
+    if (formData.unit === 'Youth Council' && !getYouthCouncilGroupByAge(age)) errors.club = 'Youth Council is only available for ages 1-30';
     if (!formData.profession.trim()) errors.profession = 'Profession is required';
     if (!formData.occupation.trim()) errors.occupation = 'Occupation is required';
     if (!formData.religion) errors.religion = 'Religion is required';
@@ -338,10 +366,13 @@ const CompleteProfilePage: React.FC = () => {
               <SelectField label="Council of Church" name="club" value={formData.club} onChange={handleInputChange} error={fieldErrors.club} options={churches} />
             )}
             {formData.unit === 'Youth Council' && (
-              <SelectField label="Youth Council Group" name="club" value={formData.club} onChange={handleInputChange} error={fieldErrors.club} options={youthGroups} />
-            )}
-            {(formData.unit === "Y's Men" || formData.unit === 'Central Club') && (
-              <Field label="Club Name (Optional)" name="club" value={formData.club} onChange={handleInputChange} />
+              <Field
+                label="Youth Council Group"
+                name="club"
+                value={formData.club}
+                disabled
+                error={fieldErrors.club}
+              />
             )}
             <Field label="Profession" name="profession" value={formData.profession} onChange={handleInputChange} error={fieldErrors.profession} />
             <Field label="Occupation" name="occupation" value={formData.occupation} onChange={handleInputChange} error={fieldErrors.occupation} />
@@ -349,6 +380,13 @@ const CompleteProfilePage: React.FC = () => {
             {formData.religion === 'Christian' && (
               <Field label="Church Name" name="church_name" value={formData.church_name} onChange={handleInputChange} error={fieldErrors.church_name} />
             )}
+          </div>
+
+          <div className="rounded-md border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
+            <p className="font-semibold">Age Guidance</p>
+            <p className="mt-1">Ages 1-23: Youth Council with Hi-Y Club.</p>
+            <p className="mt-1">Ages 24-30: Youth Council with Y-Elite Club.</p>
+            <p className="mt-1">Age 31 and above: Council of Church, Y's Men, or Central Club.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
