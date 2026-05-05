@@ -13,10 +13,10 @@ const ViewIDCardModal: React.FC<ViewIDCardModalProps> = ({ isOpen, closeModal, m
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 overflow-y-auto">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl relative my-8">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl relative my-8 max-h-[90vh] overflow-hidden">
                 <button
                     onClick={closeModal}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-20 bg-white rounded-full p-1 shadow-sm"
                     aria-label="Close modal"
                 >
                     <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -24,7 +24,7 @@ const ViewIDCardModal: React.FC<ViewIDCardModalProps> = ({ isOpen, closeModal, m
                     </svg>
                 </button>
 
-                <div className="p-6">
+                <div className="p-6 overflow-y-auto max-h-[90vh]">
                     <h3 className="text-xl font-semibold text-gray-900 mb-4 text-center">
                         Membership Card
                     </h3>
