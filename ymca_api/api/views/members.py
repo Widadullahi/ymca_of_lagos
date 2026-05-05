@@ -291,6 +291,7 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
         'unit',
         'gender',
         'status',
+        'expiryDate',
     ]
     MEMBERSHIP_TYPE_MAP = {
         'full': 'full',
@@ -412,6 +413,7 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
             'Council of Church',
             'Male',
             'Active',
+            '2027-05-31',
         ])
         template_sheet.append([
             'Jane Smith',
@@ -421,6 +423,7 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
             'Youth Council',
             'Female',
             'Active',
+            '',
         ])
 
         for cell in template_sheet[1]:
@@ -463,6 +466,7 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
             'The system now generates ID numbers automatically. Do not add an id_number column.',
             'Use only the 4 main units in the unit column: Council of Church, Youth Council, Y\'s Men, Central Club.',
             'Membership type options: Full Member, Ordinary Member, Honorary Member, Life Member.',
+            'expiryDate is optional. Use YYYY-MM-DD when you want to set a card expiry date during upload.',
             'Bulk-uploaded members will complete date of birth, final unit placement, valid ID, passport photo, and signature on first login.',
             'Status accepts Active or Inactive.',
         ]
@@ -540,6 +544,13 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
                             'status'
                         )
                         is_active = self.STATUS_MAP.get(is_active, True)
+                        expiry_date_value = self._get_value(row, 'expiryDate')
+                        expiry_date = None
+                        if expiry_date_value:
+                            try:
+                                expiry_date = date.fromisoformat(expiry_date_value)
+                            except ValueError:
+                                raise ValueError('expiryDate must use YYYY-MM-DD format')
 
                         user = User.objects.create(
                             first_name=first_name,
@@ -547,8 +558,9 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
                             email=email,
                             membership_type=membership_type,
                             is_active=is_active,
+                            membership_expiry=expiry_date,
                         )
-                        user.set_password('YMCA123456789')
+                        user.set_password('member12345')
                         user.save()
 
                         user_request = UserRequest.objects.create(
@@ -570,6 +582,15 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
                         user.save(update_fields=['user_request', 'image', 'updated_at'])
 
                         user_card, _ = IDCard.objects.get_or_create(user=user)
+                        user_card.is_active = is_active
+                        user_card.first_time = False
+                        user_card.expired_at = expiry_date
+                        if not is_active:
+                            user_card.expired = True
+                        elif expiry_date:
+                            user_card.expired = expiry_date < date.today()
+                        else:
+                            user_card.expired = False
                         user_card.save()
 
                         processed_members.append(user)
@@ -623,7 +644,7 @@ class AdminAddMembersView(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         data = request.data
-        data['password'] = 'YMCA123456789'
+        data['password'] = 'member12345'
         serializer = self.serializer_class(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()

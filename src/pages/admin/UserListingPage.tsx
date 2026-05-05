@@ -263,6 +263,9 @@ const UserListingPage: React.FC = () => {
     if (!member?.card || member?.card?.first_time) {
       return 'N/A';
     }
+    if (member?.card?.expired_at) {
+      return formatDate(member.card.expired_at);
+    }
     const baseDate = member?.card?.created_at
       ? new Date(member.card.created_at)
       : new Date(member?.created_at || Date.now());

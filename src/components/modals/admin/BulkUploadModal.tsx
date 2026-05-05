@@ -309,9 +309,11 @@ const BulkUploadModal: React.FC<{
                                 <h4 className="font-medium text-gray-700 mb-2">Upload Format Information:</h4>
                             <ul className="list-disc pl-5 space-y-1">
                                 <li>Required columns: name, email, phoneNumber</li>
+                                <li>All other columns can be left empty</li>
                                 <li>Membership type options: Full Member, Ordinary Member, Honorary Member, Life Member</li>
                                 <li>Unit options: Council of Church, Youth Council, Y's Men, Central Club</li>
                                 <li>ID numbers are assigned automatically by the system during upload</li>
+                                <li>expiryDate is optional and should use the format YYYY-MM-DD</li>
                                 <li>Bulk-uploaded members will complete date of birth, final unit placement, valid ID, passport photo, and signature on first login</li>
                                 <li>The Excel template is recommended because it includes dropdown lists from the system</li>
                             </ul>
