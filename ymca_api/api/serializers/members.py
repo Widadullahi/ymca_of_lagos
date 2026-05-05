@@ -1,7 +1,7 @@
 
 from rest_framework import serializers
 
-from account.models import EmailVerification, User, UserRequest
+from account.models import User, UserRequest
 
 
 class UserRequestSerializer(serializers.ModelSerializer):
@@ -51,8 +51,6 @@ class UserRequestSerializer(serializers.ModelSerializer):
         email = value.strip().lower()
         if UserRequest.objects.filter(email__iexact=email).exists() or User.objects.filter(email__iexact=email).exists():
             raise serializers.ValidationError("Email already exists")
-        if not EmailVerification.objects.filter(email__iexact=email, is_verified=True).exists():
-            raise serializers.ValidationError("Please verify your email before continuing")
         return email
     
     def validate_full_name(self, value):
