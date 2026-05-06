@@ -819,7 +819,10 @@ const UserListingPage: React.FC = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredMembers.map((member) => (
-                  <tr key={member.id} className="hover:bg-gray-50">
+                  <tr
+                    key={member.id}
+                    className={`${member.is_admin ? 'bg-indigo-50/70 hover:bg-indigo-100/70' : 'hover:bg-gray-50'}`}
+                  >
                     <td className="px-4 py-4">
                       <input
                         type="checkbox"
@@ -834,15 +837,22 @@ const UserListingPage: React.FC = () => {
                           <img className="h-10 w-10 rounded-full" src={member?.image || avatar} alt="" />
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{member.first_name} {member.last_name}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium text-gray-900">{member.first_name} {member.last_name}</div>
+                            {member.is_admin && (
+                              <span className="inline-flex rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700">
+                                Admin
+                              </span>
+                            )}
+                          </div>
                           <div className="text-sm text-gray-500">{member.email}</div>
                           <div className="text-sm text-gray-500 md:hidden">{member.phone_number}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {getMembershipLabel(member)}
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${member.is_admin ? 'bg-indigo-100 text-indigo-800' : 'bg-blue-100 text-blue-800'}`}>
+                        {member.is_admin ? 'Admin User' : getMembershipLabel(member)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
@@ -864,8 +874,8 @@ const UserListingPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${member?.card?.expired || !member.is_active ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
-                        {member?.card?.expired || !member.is_active ? "Expired" : "Active"}
+                        ${member.is_admin ? 'bg-indigo-100 text-indigo-800' : member?.card?.expired || !member.is_active ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                        {member.is_admin ? "Admin Access" : member?.card?.expired || !member.is_active ? "Expired" : "Active"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">

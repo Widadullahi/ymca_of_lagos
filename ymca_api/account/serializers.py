@@ -60,6 +60,7 @@ class UserSerializer(serializers.ModelSerializer):
             'role',
             'user_request',
             'membership_type',
+            'is_admin',
             'profile_completion_required',
             'password',
             'created_at',

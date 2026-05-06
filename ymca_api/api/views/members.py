@@ -224,7 +224,6 @@ class AdminGetMemberOverview(generics.GenericAPIView):
             response = [
                 {"name": 'Male', 'value': gender_count_dict.get('Male', 0)},
                 {"name": 'Female', 'value': gender_count_dict.get('Female', 0)},
-                {'name': 'Other', 'value': gender_count_dict.get('Other', 0)}
             ]
 
         elif overview == 'month':
@@ -624,7 +623,7 @@ class AdminAddMembersView(generics.GenericAPIView):
     """
     Your original view for adding individual members
     """
-    queryset = User.objects.filter(is_admin=False).order_by('-created_at')
+    queryset = User.objects.filter(is_superuser=False).order_by('-created_at')
     serializer_class = RegisterSerializer
 
     def post(self, request, *args, **kwargs):
@@ -646,7 +645,7 @@ class AdminAddMembersView(generics.GenericAPIView):
 
 class AdminMemberRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
-    queryset = User.objects.filter(is_admin=False).order_by('-created_at')
+    queryset = User.objects.filter(is_superuser=False).order_by('-created_at')
     serializer_class = UserSerializer
     lookup_field = 'id'
 
@@ -791,7 +790,7 @@ class CurrentUserRequestUpdateView(generics.GenericAPIView):
 
 class AdminMemberUpdateDestroyView(generics.GenericAPIView):
 
-    queryset = User.objects.filter(is_admin=False).order_by('-created_at')
+    queryset = User.objects.filter(is_superuser=False).order_by('-created_at')
     serializer_class = UserSerializer
     lookup_field = 'id'
 
@@ -1041,7 +1040,7 @@ class AdminMembersExportView(generics.GenericAPIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        users = User.objects.filter(is_admin=False).select_related('user_request')
+        users = User.objects.filter(is_superuser=False).select_related('user_request')
 
         raw_user_ids = request.GET.get('user_ids', '').strip()
         if raw_user_ids:

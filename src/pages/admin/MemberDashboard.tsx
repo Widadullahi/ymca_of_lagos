@@ -134,7 +134,6 @@ const MemberDashboard = () => {
   const GENDER_COLORS = {
     'Male': '#0088FE',
     'Female': '#FF8042',
-    'Other': '#8884d8'
   };
 
   const StatCard = ({ title, value, icon, color }) => (

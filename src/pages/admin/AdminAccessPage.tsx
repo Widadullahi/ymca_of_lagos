@@ -4,6 +4,8 @@ import { Member } from '../../types/types';
 
 type RoleFilter = 'all' | 'admins' | 'members';
 
+const isAdminUser = (user: Member) => Boolean(user.is_admin || user.role === 'Admin');
+
 const AdminAccessPage: React.FC = () => {
   const { fetchWithAuth, displayNotification } = useAuth();
   const [users, setUsers] = useState<Member[]>([]);
@@ -46,7 +48,7 @@ const AdminAccessPage: React.FC = () => {
         email.includes(normalizedSearch) ||
         phone.includes(normalizedSearch);
 
-      const isAdmin = Boolean(user.is_admin);
+      const isAdmin = isAdminUser(user);
       const matchesRoleFilter =
         roleFilter === 'all' ||
         (roleFilter === 'admins' && isAdmin) ||
@@ -97,8 +99,8 @@ const AdminAccessPage: React.FC = () => {
     }
   };
 
-  const adminCount = users.filter((user) => user.is_admin).length;
-  const memberCount = users.filter((user) => !user.is_admin).length;
+  const adminCount = users.filter((user) => isAdminUser(user)).length;
+  const memberCount = users.filter((user) => !isAdminUser(user)).length;
 
   return (
     <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
@@ -107,17 +109,17 @@ const AdminAccessPage: React.FC = () => {
           <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
             <div className="mb-4">
               <h2 className="text-lg font-bold text-gray-900">
-                {selectedUser.is_admin ? 'Suspend Admin Access' : 'Confirm Admin Access'}
+                {isAdminUser(selectedUser) ? 'Suspend Admin Access' : 'Confirm Admin Access'}
               </h2>
               <p className="mt-2 text-sm text-gray-600">
-                {selectedUser.is_admin ? 'Remove' : 'Give'} admin dashboard access for{' '}
+                {isAdminUser(selectedUser) ? 'Remove' : 'Give'} admin dashboard access for{' '}
                 <span className="font-semibold text-gray-900">
                   {`${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() || selectedUser.email}
                 </span>
                 ?
               </p>
               <p className="mt-2 text-xs text-gray-500">
-                {selectedUser.is_admin
+                {isAdminUser(selectedUser)
                   ? 'This user will remain in the system but will no longer have admin access until restored.'
                   : 'This user will be able to log in and use the admin dashboard.'}
               </p>
@@ -136,12 +138,12 @@ const AdminAccessPage: React.FC = () => {
                 onClick={() => handleToggleAdmin(selectedUser)}
                 disabled={isSubmittingId === selectedUser.id}
                 className={`rounded-md px-4 py-2 text-sm font-medium text-white disabled:opacity-50 ${
-                  selectedUser.is_admin ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'
+                  isAdminUser(selectedUser) ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'
                 }`}
               >
                 {isSubmittingId === selectedUser.id
                   ? 'Saving...'
-                  : selectedUser.is_admin
+                  : isAdminUser(selectedUser)
                     ? 'Suspend Admin'
                     : 'Make Admin'}
               </button>
@@ -255,10 +257,10 @@ const AdminAccessPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                          user.is_admin ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-700'
+                          isAdminUser(user) ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-700'
                         }`}
                       >
-                        {user.is_admin ? 'Admin' : 'Member'}
+                        {isAdminUser(user) ? 'Admin' : 'Member'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -266,12 +268,12 @@ const AdminAccessPage: React.FC = () => {
                         onClick={() => setSelectedUser(user)}
                         disabled={isSubmittingId === user.id}
                         className={`rounded-md px-4 py-2 text-white disabled:opacity-50 ${
-                          user.is_admin ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'
+                          isAdminUser(user) ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'
                         }`}
                       >
                         {isSubmittingId === user.id
                           ? 'Saving...'
-                          : user.is_admin
+                          : isAdminUser(user)
                             ? 'Suspend Admin'
                             : 'Make Admin'}
                       </button>
