@@ -174,7 +174,7 @@ const NewIDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }
       }
 
       // 4. Draw QR Code
-      const verificationUrl = `${window.location.origin}/verify/#verify=${user?.card?.id_number}`;
+      const verificationUrl = `${window.location.origin}/verify?verify=${encodeURIComponent(user?.card?.id_number || '')}`;
       const qrDataUrl = await QRCode.toDataURL(verificationUrl, { margin: 1, width: 44 * dpr });
       const qrImg = await loadImage(qrDataUrl);
       // Shifted left (0.88 -> 0.82) to avoid "MEMBER ID" vertical text

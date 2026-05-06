@@ -290,7 +290,6 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
         'membershipType',
         'unit',
         'gender',
-        'status',
         'expiryDate',
     ]
     MEMBERSHIP_TYPE_MAP = {
@@ -314,10 +313,6 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
         'male': 'Male',
         'female': 'Female',
         'other': 'Other',
-    }
-    STATUS_MAP = {
-        'active': True,
-        'inactive': False,
     }
     PLACEHOLDER_PASSPORT = base64.b64decode(
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9WnM4xkAAAAASUVORK5CYII='
@@ -402,7 +397,6 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
         membership_types = [label for _, label in User.MEMBERSHIP_TYPE_CHOICES]
         units = ['Council of Church', 'Youth Council', "Y's Men", 'Central Club']
         genders = ['Male', 'Female', 'Other']
-        statuses = ['Active', 'Inactive']
 
         template_sheet.append(self.TEMPLATE_HEADERS)
         template_sheet.append([
@@ -412,7 +406,6 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
             'Full Member',
             'Council of Church',
             'Male',
-            'Active',
             '2027-05-31',
         ])
         template_sheet.append([
@@ -422,7 +415,6 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
             'Ordinary Member',
             'Youth Council',
             'Female',
-            'Active',
             '',
         ])
 
@@ -432,10 +424,9 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
         lists_sheet['A1'] = 'Membership Types'
         lists_sheet['B1'] = 'Units'
         lists_sheet['C1'] = 'Gender'
-        lists_sheet['D1'] = 'Status'
 
         for column_index, values in enumerate(
-            [membership_types, units, genders, statuses],
+            [membership_types, units, genders],
             start=1
         ):
             for row_index, value in enumerate(values, start=2):
@@ -445,7 +436,6 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
             'D': ('A', len(membership_types)),
             'E': ('B', len(units)),
             'F': ('C', len(genders)),
-            'G': ('D', len(statuses)),
         }
 
         for target_column, (list_column, item_count) in validation_ranges.items():
@@ -467,8 +457,8 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
             'Use only the 4 main units in the unit column: Council of Church, Youth Council, Y\'s Men, Central Club.',
             'Membership type options: Full Member, Ordinary Member, Honorary Member, Life Member.',
             'expiryDate is optional. Use YYYY-MM-DD when you want to set a card expiry date during upload.',
+            'Member status is now derived automatically from expiryDate. Future date = Active, past date = Expired, blank date = Active.',
             'Bulk-uploaded members will complete date of birth, final unit placement, valid ID, passport photo, and signature on first login.',
-            'Status accepts Active or Inactive.',
         ]
         for index, note in enumerate(notes, start=1):
             notes_sheet.cell(row=index, column=1, value=note)
@@ -538,12 +528,6 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
                             self.GENDER_MAP,
                             'gender'
                         )
-                        is_active = self._normalize_choice(
-                            self._get_value(row, 'status'),
-                            {'active': 'active', 'inactive': 'inactive'},
-                            'status'
-                        )
-                        is_active = self.STATUS_MAP.get(is_active, True)
                         expiry_date_value = self._get_value(row, 'expiryDate')
                         expiry_date = None
                         if expiry_date_value:
@@ -551,6 +535,7 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
                                 expiry_date = date.fromisoformat(expiry_date_value)
                             except ValueError:
                                 raise ValueError('expiryDate must use YYYY-MM-DD format')
+                        is_active = not expiry_date or expiry_date >= date.today()
 
                         user = User.objects.create(
                             first_name=first_name,

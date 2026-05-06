@@ -37,7 +37,6 @@ const CompleteProfilePage: React.FC = () => {
     gender: '',
     date_of_birth: '',
     age: '',
-    place_of_birth: '',
     marital_status: '',
     citizen: 'Nigerian',
     country: 'NG',
@@ -51,7 +50,6 @@ const CompleteProfilePage: React.FC = () => {
     religion: '',
     church_name: '',
     valid_id_type: '',
-    valid_id_number: '',
     next_of_kin: '',
     next_of_kin_phone: '',
     referred_by: 'no',
@@ -94,7 +92,6 @@ const CompleteProfilePage: React.FC = () => {
       gender: userRequest?.gender || '',
       date_of_birth: userRequest?.date_of_birth || '',
       age: userRequest?.age || '',
-      place_of_birth: userRequest?.place_of_birth || '',
       marital_status: userRequest?.marital_status || '',
       citizen: userRequest?.citizen || 'Nigerian',
       country: userRequest?.country || 'NG',
@@ -108,7 +105,6 @@ const CompleteProfilePage: React.FC = () => {
       religion: userRequest?.religion || '',
       church_name: userRequest?.church_name || '',
       valid_id_type: userRequest?.valid_id_type || '',
-      valid_id_number: userRequest?.valid_id_number || '',
       next_of_kin: userRequest?.next_of_kin || '',
       next_of_kin_phone: userRequest?.next_of_kin_phone || '',
       referred_by: userRequest?.referred_by || 'no',
@@ -254,7 +250,6 @@ const CompleteProfilePage: React.FC = () => {
     if (!formData.phone_number.trim()) errors.phone_number = 'Phone number is required';
     if (!formData.gender) errors.gender = 'Gender is required';
     if (!formData.date_of_birth) errors.date_of_birth = 'Date of birth is required';
-    if (!formData.place_of_birth.trim()) errors.place_of_birth = 'Place of birth is required';
     if (!formData.marital_status) errors.marital_status = 'Marital status is required';
     if (!formData.citizen) errors.citizen = 'Citizenship is required';
     if (formData.citizen === 'Foreigner' && !formData.country.trim()) errors.country = 'Country is required';
@@ -276,7 +271,6 @@ const CompleteProfilePage: React.FC = () => {
     if (!formData.religion) errors.religion = 'Religion is required';
     if (formData.religion === 'Christian' && !formData.church_name.trim()) errors.church_name = 'Church name is required';
     if (!formData.valid_id_type) errors.valid_id_type = 'Valid ID type is required';
-    if (!formData.valid_id_number.trim()) errors.valid_id_number = 'Valid ID number is required';
     if (!formData.next_of_kin.trim()) errors.next_of_kin = 'Next of kin is required';
     if (!formData.next_of_kin_phone.trim()) errors.next_of_kin_phone = 'Next of kin phone is required';
     if (needsPassportUpload && !files.passport_photo) errors.passport_photo = 'Passport photo is required';
@@ -356,7 +350,6 @@ const CompleteProfilePage: React.FC = () => {
             <SelectField label="Gender" name="gender" value={formData.gender} onChange={handleInputChange} error={fieldErrors.gender} options={['Male', 'Female', 'Other']} />
             <Field label="Date of Birth" name="date_of_birth" type="date" value={formData.date_of_birth} onChange={handleInputChange} error={fieldErrors.date_of_birth} />
             <Field label="Age" name="age" value={formData.age} onChange={handleInputChange} disabled />
-            <Field label="Place of Birth" name="place_of_birth" value={formData.place_of_birth} onChange={handleInputChange} error={fieldErrors.place_of_birth} />
             <SelectField label="Marital Status" name="marital_status" value={formData.marital_status} onChange={handleInputChange} error={fieldErrors.marital_status} options={['Single', 'Married', 'Divorced', 'Widowed']} />
             <SelectField label="Citizenship" name="citizen" value={formData.citizen} onChange={handleInputChange} error={fieldErrors.citizen} options={['Nigerian', 'Foreigner']} />
             {formData.citizen === 'Foreigner' ? (
@@ -413,7 +406,6 @@ const CompleteProfilePage: React.FC = () => {
               options={validIdOptions.map((item) => item.value)}
               optionLabels={Object.fromEntries(validIdOptions.map((item) => [item.value, item.label]))}
             />
-            <Field label="Valid ID Number" name="valid_id_number" value={formData.valid_id_number} onChange={handleInputChange} error={fieldErrors.valid_id_number} />
             <Field label="Next of Kin" name="next_of_kin" value={formData.next_of_kin} onChange={handleInputChange} error={fieldErrors.next_of_kin} />
             <Field label="Next of Kin Phone" name="next_of_kin_phone" value={formData.next_of_kin_phone} onChange={handleInputChange} error={fieldErrors.next_of_kin_phone} />
             <SelectField label="Were You Referred?" name="referred_by" value={formData.referred_by} onChange={handleInputChange} options={['yes', 'no']} />

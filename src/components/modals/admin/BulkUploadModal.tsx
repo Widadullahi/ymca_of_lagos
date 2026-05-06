@@ -314,6 +314,7 @@ const BulkUploadModal: React.FC<{
                                 <li>Unit options: Council of Church, Youth Council, Y's Men, Central Club</li>
                                 <li>ID numbers are assigned automatically by the system during upload</li>
                                 <li>expiryDate is optional and should use the format YYYY-MM-DD</li>
+                                <li>Card status is derived automatically from expiryDate, so the template no longer includes a separate status column</li>
                                 <li>Bulk-uploaded members will complete date of birth, final unit placement, valid ID, passport photo, and signature on first login</li>
                                 <li>The Excel template is recommended because it includes dropdown lists from the system</li>
                             </ul>
