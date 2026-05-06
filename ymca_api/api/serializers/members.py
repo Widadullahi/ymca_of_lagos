@@ -79,14 +79,10 @@ class UserRequestSerializer(serializers.ModelSerializer):
         return value.strip()
     
     def validate_country(self, value):
-        if not value or not value.strip():
-            raise serializers.ValidationError("Country is required")
-        return value.strip()
+        return value.strip() if isinstance(value, str) else value
     
     def validate_state(self, value):
-        if not value or not value.strip():
-            raise serializers.ValidationError("State is required")
-        return value.strip()
+        return value.strip() if isinstance(value, str) else value
     
     def validate_unit(self, value):
         if not value or not value.strip():
@@ -134,6 +130,30 @@ class UserRequestSerializer(serializers.ModelSerializer):
         # Set the user from the request context
         # validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
+
+    def validate(self, attrs):
+        citizen = (attrs.get('citizen') or getattr(self.instance, 'citizen', '') or '').strip().lower()
+        country = attrs.get('country', getattr(self.instance, 'country', ''))
+        state = attrs.get('state', getattr(self.instance, 'state', ''))
+        unit = attrs.get('unit', getattr(self.instance, 'unit', ''))
+        club = attrs.get('club', getattr(self.instance, 'club', ''))
+
+        if citizen == 'foreigner':
+            if not str(country or '').strip():
+                raise serializers.ValidationError({'country': 'Country is required'})
+            if not str(state or '').strip():
+                raise serializers.ValidationError({'state': 'State/Province is required'})
+        else:
+            if not str(state or '').strip():
+                raise serializers.ValidationError({'state': 'State is required'})
+
+        if str(unit or '').strip().lower() == 'council of church' and not str(club or '').strip():
+            raise serializers.ValidationError({'club': 'Church selection is required for Council of Church'})
+
+        if str(unit or '').strip().lower() == 'youth council' and not str(club or '').strip():
+            raise serializers.ValidationError({'club': 'Club selection is required for Youth Council'})
+
+        return attrs
 
 
 class EmailVerificationRequestSerializer(serializers.Serializer):
