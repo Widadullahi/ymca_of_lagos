@@ -1093,8 +1093,15 @@ class AdminMembersExportView(generics.GenericAPIView):
 class AdminPromoteMemberView(generics.GenericAPIView):
     permission_classes = [IsAdminUser]
 
+    def get(self, request, *args, **kwargs):
+        users = User.objects.filter(is_superuser=False).select_related('user_request').order_by('-created_at')
+        serializer = UserSerializer(users, many=True, context={'request': request})
+        return success_response(data=serializer.data)
+
     def post(self, request, *args, **kwargs):
         user_id = request.data.get('user_id')
+        make_admin = request.data.get('make_admin', True)
+
         if not user_id:
             return bad_request_response(message='user_id is required')
 
@@ -1103,16 +1110,27 @@ class AdminPromoteMemberView(generics.GenericAPIView):
         except User.DoesNotExist:
             return bad_request_response(message='Member not found')
 
-        if user.is_admin:
+        if user.is_superuser:
+            return bad_request_response(message='Superuser access cannot be changed here')
+
+        make_admin = str(make_admin).strip().lower() not in ['false', '0', 'no']
+
+        if make_admin and user.is_admin:
             return bad_request_response(message='This user is already an admin')
 
-        user.is_admin = True
-        user.is_staff = True
+        if not make_admin and not user.is_admin:
+            return bad_request_response(message='This user is not currently an admin')
+
+        user.is_admin = make_admin
+        user.is_staff = make_admin
         user.is_active = True
         user.save(update_fields=['is_admin', 'is_staff', 'is_active', 'updated_at'])
 
+        full_name = user.get_full_name() or user.email
+        action_text = 'promoted to admin' if make_admin else 'removed from admin access'
+
         return success_response(
-            message=f'{user.get_full_name() or user.email} has been promoted to admin successfully',
+            message=f'{full_name} has been {action_text} successfully',
             data={
                 'id': str(user.id),
                 'email': user.email,

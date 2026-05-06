@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { PasswordReset } from '../types/types';
 import { useAuth } from '../context/NewAuthContext';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const PasswordChange: React.FC  = () =>{
     
@@ -8,6 +9,11 @@ const PasswordChange: React.FC  = () =>{
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [isProfileUpdating, setIsProfileUpdating] = useState(false);
     const [modalOpen, setModalOpen] = useState<Boolean>(false);
+    const [showPasswords, setShowPasswords] = useState({
+        currentPassword: false,
+        newPassword: false,
+        confirmPassword: false,
+    });
     const [passwordForm, setPasswordForm] = useState<PasswordReset>({
         currentPassword: '',
         newPassword: '',
@@ -42,6 +48,13 @@ const PasswordChange: React.FC  = () =>{
         setPasswordForm(prev => ({
           ...prev,
           [name]: value
+        }));
+      };
+
+      const togglePasswordVisibility = (field: keyof typeof showPasswords) => {
+        setShowPasswords((prev) => ({
+            ...prev,
+            [field]: !prev[field],
         }));
       };
 
@@ -99,15 +112,25 @@ const PasswordChange: React.FC  = () =>{
                     <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-                        <input
-                        type="password"
-                        name="currentPassword"
-                        value={passwordForm.currentPassword}
-                        onChange={handlePasswordChange}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                            formErrors.currentPassword ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                        />
+                        <div className="relative">
+                            <input
+                            type={showPasswords.currentPassword ? 'text' : 'password'}
+                            name="currentPassword"
+                            value={passwordForm.currentPassword}
+                            onChange={handlePasswordChange}
+                            className={`w-full px-3 py-2 pr-12 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                                formErrors.currentPassword ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => togglePasswordVisibility('currentPassword')}
+                                className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 hover:text-gray-700"
+                                aria-label={showPasswords.currentPassword ? 'Hide password' : 'Show password'}
+                            >
+                                {showPasswords.currentPassword ? <FaEyeSlash /> : <FaEye />}
+                            </button>
+                        </div>
                         {formErrors.currentPassword && (
                         <p className="mt-1 text-sm text-red-600">{formErrors.currentPassword}</p>
                         )}
@@ -115,15 +138,25 @@ const PasswordChange: React.FC  = () =>{
                     
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                        <input
-                        type="password"
-                        name="newPassword"
-                        value={passwordForm.newPassword}
-                        onChange={handlePasswordChange}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                            formErrors.newPassword ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                        />
+                        <div className="relative">
+                            <input
+                            type={showPasswords.newPassword ? 'text' : 'password'}
+                            name="newPassword"
+                            value={passwordForm.newPassword}
+                            onChange={handlePasswordChange}
+                            className={`w-full px-3 py-2 pr-12 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                                formErrors.newPassword ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => togglePasswordVisibility('newPassword')}
+                                className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 hover:text-gray-700"
+                                aria-label={showPasswords.newPassword ? 'Hide password' : 'Show password'}
+                            >
+                                {showPasswords.newPassword ? <FaEyeSlash /> : <FaEye />}
+                            </button>
+                        </div>
                         {formErrors.newPassword && (
                         <p className="mt-1 text-sm text-red-600">{formErrors.newPassword}</p>
                         )}
@@ -131,15 +164,25 @@ const PasswordChange: React.FC  = () =>{
                     
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-                        <input
-                        type="password"
-                        name="confirmPassword"
-                        value={passwordForm.confirmPassword}
-                        onChange={handlePasswordChange}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                            formErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                        />
+                        <div className="relative">
+                            <input
+                            type={showPasswords.confirmPassword ? 'text' : 'password'}
+                            name="confirmPassword"
+                            value={passwordForm.confirmPassword}
+                            onChange={handlePasswordChange}
+                            className={`w-full px-3 py-2 pr-12 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                                formErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => togglePasswordVisibility('confirmPassword')}
+                                className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 hover:text-gray-700"
+                                aria-label={showPasswords.confirmPassword ? 'Hide password' : 'Show password'}
+                            >
+                                {showPasswords.confirmPassword ? <FaEyeSlash /> : <FaEye />}
+                            </button>
+                        </div>
                         {formErrors.confirmPassword && (
                         <p className="mt-1 text-sm text-red-600">{formErrors.confirmPassword}</p>
                         )}

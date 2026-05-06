@@ -4,6 +4,7 @@ import { Member } from "../../types/types";
 import avatar from '../../assets/images/thumbnail-im.jpg';
 import { useAuth } from "../../context/NewAuthContext";
 import ConfirmationModal from "../../components/modals/admin/ConfirmationModal";
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 // Modern gradient background wrapper
 const PageWrapper: React.FC<{children: React.ReactNode}> = ({ children }) => (
@@ -34,10 +35,21 @@ const UserDetailPage: React.FC = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordData, setPasswordData] = useState({ newPassword: '', confirmPassword: '' });
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showPasswordFields, setShowPasswordFields] = useState({
+    newPassword: false,
+    confirmPassword: false,
+  });
 
   const handlePasswordInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setPasswordData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const togglePasswordVisibility = (field: 'newPassword' | 'confirmPassword') => {
+    setShowPasswordFields((prev) => ({
+      ...prev,
+      [field]: !prev[field],
+    }));
   };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -605,25 +617,45 @@ const UserDetailPage: React.FC = () => {
                     <form onSubmit={handlePasswordChange} className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium mb-1">New Password</label>
-                        <input
-                          type="password"
-                          name="newPassword"
-                          value={passwordData.newPassword}
-                          onChange={handlePasswordInputChange}
-                          className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                          required
-                        />
+                        <div className="relative">
+                          <input
+                            type={showPasswordFields.newPassword ? 'text' : 'password'}
+                            name="newPassword"
+                            value={passwordData.newPassword}
+                            onChange={handlePasswordInputChange}
+                            className="w-full p-2 pr-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:outline-none"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => togglePasswordVisibility('newPassword')}
+                            className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 hover:text-gray-700"
+                            aria-label={showPasswordFields.newPassword ? 'Hide password' : 'Show password'}
+                          >
+                            {showPasswordFields.newPassword ? <FaEyeSlash /> : <FaEye />}
+                          </button>
+                        </div>
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Confirm Password</label>
-                        <input
-                          type="password"
-                          name="confirmPassword"
-                          value={passwordData.confirmPassword}
-                          onChange={handlePasswordInputChange}
-                          className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                          required
-                        />
+                        <div className="relative">
+                          <input
+                            type={showPasswordFields.confirmPassword ? 'text' : 'password'}
+                            name="confirmPassword"
+                            value={passwordData.confirmPassword}
+                            onChange={handlePasswordInputChange}
+                            className="w-full p-2 pr-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:outline-none"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => togglePasswordVisibility('confirmPassword')}
+                            className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 hover:text-gray-700"
+                            aria-label={showPasswordFields.confirmPassword ? 'Hide password' : 'Show password'}
+                          >
+                            {showPasswordFields.confirmPassword ? <FaEyeSlash /> : <FaEye />}
+                          </button>
+                        </div>
                       </div>
                       <div className="flex justify-end gap-2 mt-6">
                         <button
