@@ -25,7 +25,11 @@ const DesktopSidebar = () => {
       {/* Sidebar Header */}
       <div className="flex items-center px-6 py-6">
         <NavLink to="/" className="text-xl font-bold">
-          <img src={ymca} alt="YMCA of Lagos" className="w-16 h-16" />
+          <img
+            src={ymca}
+            alt="YMCA of Lagos"
+            className="h-20 w-auto max-w-[140px] object-contain"
+          />
         </NavLink>
       </div>
 

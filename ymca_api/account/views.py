@@ -140,13 +140,17 @@ class ProfileView(generics.GenericAPIView):
                 )
             user.email = email
 
-        if phone_number is not None:
-            user.phone_number = phone_number
-
-        if gender is not None:
-            user.gender = gender
-        
         user.save()
+
+        user_request = getattr(user, 'user_request', None)
+        if user_request:
+            if phone_number is not None:
+                user_request.phone_number = phone_number
+
+            if gender is not None:
+                user_request.gender = gender
+
+            user_request.save()
 
         return success_response(
             data=UserSerializer(request.user, context={'request': request}).data,

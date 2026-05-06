@@ -43,6 +43,8 @@ class UserSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
     user_request = serializers.SerializerMethodField(read_only=True)
     profile_completion_required = serializers.SerializerMethodField()
+    phone_number = serializers.SerializerMethodField()
+    gender = serializers.SerializerMethodField()
     
     class Meta:
         model = User 
@@ -130,6 +132,16 @@ class UserSerializer(serializers.ModelSerializer):
             return True
 
         return any(not value for value in required_values)
+
+    def get_phone_number(self, obj: User):
+        if obj.user_request:
+            return obj.user_request.phone_number
+        return None
+
+    def get_gender(self, obj: User):
+        if obj.user_request:
+            return obj.user_request.gender
+        return None
 
 
 class RegisterSerializer(serializers.ModelSerializer):
