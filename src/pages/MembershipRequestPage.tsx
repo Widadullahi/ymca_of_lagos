@@ -837,8 +837,8 @@ const RequestForm: React.FC = () => {
       return;
     }
     
-    if (file.size > 2 * 1024 * 1024) {
-      setFieldErrors(prev => ({ ...prev, [field]: 'File size must be less than 2MB' }));
+    if (file.size > 10 * 1024 * 1024) {
+      setFieldErrors(prev => ({ ...prev, [field]: 'File size must be less than 10MB' }));
       return;
     }
     
@@ -1119,10 +1119,10 @@ const RequestForm: React.FC = () => {
               : 'Drag & drop or click to browse'}
           </p>
           <p className="text-xs text-gray-500 mt-1">
-            Accepted: JPEG, JPG, PNG (Max 2MB)
-          </p>
+            Accepted: JPEG, JPG, PNG (Max 10MB)
+            </p>
+          </div>
         </div>
-      </div>
       {fieldErrors[field] && (
         <p className="text-red-500 text-sm mt-1">{fieldErrors[field]}</p>
       )}

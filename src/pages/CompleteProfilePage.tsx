@@ -25,6 +25,9 @@ const getYouthCouncilGroupByAge = (age: number) => {
   return '';
 };
 
+const MAX_IMAGE_UPLOAD_SIZE = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
+
 const CompleteProfilePage: React.FC = () => {
   const { user, fetchWithAuth, fetchUserProfile, displayNotification } = useAuth();
   const navigate = useNavigate();
@@ -230,6 +233,32 @@ const CompleteProfilePage: React.FC = () => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, files: selectedFiles } = event.target;
     const selectedFile = selectedFiles?.[0] || null;
+
+    if (!selectedFile) {
+      setFiles((prev) => ({
+        ...prev,
+        [name]: null,
+      }));
+      return;
+    }
+
+    if (!ALLOWED_IMAGE_TYPES.includes(selectedFile.type)) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        [name]: 'File must be JPEG, JPG, or PNG',
+      }));
+      event.target.value = '';
+      return;
+    }
+
+    if (selectedFile.size > MAX_IMAGE_UPLOAD_SIZE) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        [name]: 'File size must be less than 10MB',
+      }));
+      event.target.value = '';
+      return;
+    }
 
     setFiles((prev) => ({
       ...prev,
@@ -518,7 +547,7 @@ const FileField: React.FC<{
       onChange={onChange}
       className={`mt-1 w-full rounded-md border px-3 py-2 ${error ? 'border-red-500' : 'border-gray-300'}`}
     />
-    <p className="mt-1 text-xs text-gray-500">{helperText}</p>
+    <p className="mt-1 text-xs text-gray-500">{helperText} JPEG, JPG, or PNG up to 10MB.</p>
     {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
   </div>
 );

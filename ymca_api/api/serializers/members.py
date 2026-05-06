@@ -3,6 +3,9 @@ from rest_framework import serializers
 
 from account.models import User, UserRequest
 
+MAX_IMAGE_UPLOAD_SIZE = 10 * 1024 * 1024
+ALLOWED_IMAGE_CONTENT_TYPES = ['image/jpeg', 'image/jpg', 'image/png']
+
 
 class UserRequestSerializer(serializers.ModelSerializer):
     class Meta:
@@ -100,30 +103,32 @@ class UserRequestSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError("Passport photo is required")
         
-        # Validate file size (max 2MB)
-        max_size = 2 * 1024 * 1024  # 2MB
-        if value.size > max_size:
-            raise serializers.ValidationError("File size must be less than 2MB")
+        if value.size > MAX_IMAGE_UPLOAD_SIZE:
+            raise serializers.ValidationError("File size must be less than 10MB")
         
-        # Validate file type
-        allowed_types = ['image/jpeg', 'image/jpg', 'image/png']
-        if value.content_type not in allowed_types:
+        if value.content_type not in ALLOWED_IMAGE_CONTENT_TYPES:
             raise serializers.ValidationError("Please upload a valid image file (JPEG, JPG, or PNG)")
         
         return value
     
     def validate_valid_id_file(self, value):
         if value:  # Only validate if file is provided
-            # Validate file size (max 2MB)
-            max_size = 2 * 1024 * 1024  # 2MB
-            if value.size > max_size:
-                raise serializers.ValidationError("File size must be less than 2MB")
+            if value.size > MAX_IMAGE_UPLOAD_SIZE:
+                raise serializers.ValidationError("File size must be less than 10MB")
             
-            # Validate file type
-            allowed_types = ['image/jpeg', 'image/jpg', 'image/png']
-            if value.content_type not in allowed_types:
+            if value.content_type not in ALLOWED_IMAGE_CONTENT_TYPES:
                 raise serializers.ValidationError("Please upload a valid image file (JPEG, JPG, or PNG)")
         
+        return value
+
+    def validate_signature(self, value):
+        if value:
+            if value.size > MAX_IMAGE_UPLOAD_SIZE:
+                raise serializers.ValidationError("File size must be less than 10MB")
+
+            if value.content_type not in ALLOWED_IMAGE_CONTENT_TYPES:
+                raise serializers.ValidationError("Please upload a valid image file (JPEG, JPG, or PNG)")
+
         return value
     
     def create(self, validated_data):

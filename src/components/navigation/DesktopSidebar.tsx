@@ -43,8 +43,6 @@ const DesktopSidebar = () => {
           ):(
             <>
             <NavItem to="/admin/dashboard" icon={<GoHome />} label="Home" />
-            <NavItem to="/dashboard" icon={<MdOutlineManageAccounts />} label="My Membership" />
-            <NavItem to="/myid" icon={<MdOutlineManageAccounts />} label="My Card" />
             <NavItem to="/admin/users" icon={<MdOutlinePeopleAlt />} label="Members" />
             <NavItem to="/admin/admin-access" icon={<MdAdminPanelSettings />} label="Add Admin" />
             <NavItem to="/admin/membership-request" icon={<MdOutlinePeopleAlt />} label="Membership Requests" />

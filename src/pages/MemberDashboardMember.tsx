@@ -38,6 +38,11 @@ const MemberDashboardMember: React.FC = () => {
 
     setGreeting(greetingMessage);
 
+    if (user?.role === 'Admin') {
+      navigate('/admin/dashboard');
+      return;
+    }
+
     // Calculate expiry date and status from the saved card expiry
     if (user) {
       const savedExpiryDate = user?.card?.expired_at ? new Date(user.card.expired_at) : null;

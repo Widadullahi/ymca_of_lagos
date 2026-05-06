@@ -129,8 +129,6 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                 icon={<MdOutlinePeopleAlt />} 
                 label="Members A" 
                 subItems={[
-                  { to: "/dashboard", label: "My Membership" },
-                  { to: "/myid", label: "My Card" },
                   { to: "/admin/users", label: "Members List" },
                   { to: "/admin/admin-access", label: "Add Admin" },
                 ]}
