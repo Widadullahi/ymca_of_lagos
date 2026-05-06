@@ -1,7 +1,7 @@
 import datetime
 import requests
 from django.conf import settings
-from account.models import IDCard
+from account.models import IDCard, User
 from api.utils.response.response_format import bad_request_response, success_response
 from transaction.models import Transaction
 
@@ -24,6 +24,77 @@ class Paystack:
         return datetime.date(reference_date.year + 1, 5, 31)
 
     @staticmethod
+    def expiry_after_payment(years: int = 1, reference_date: datetime.date | None = None) -> datetime.date:
+        """Return the May 31st expiry after paying for the given number of years."""
+        if reference_date is None:
+            reference_date = datetime.date.today()
+
+        safe_years = max(1, int(years or 1))
+        return datetime.date(reference_date.year + safe_years, 5, 31)
+
+    @staticmethod
+    def get_member_prefix(user: User) -> str:
+        try:
+            id_number = (user.card.id_number or '').upper()
+        except Exception:
+            id_number = ''
+
+        if id_number.startswith('LYY'):
+            return 'LYY'
+        if id_number.startswith('LYA'):
+            return 'LYA'
+        return ''
+
+    @staticmethod
+    def is_honorary_or_life(user: User) -> bool:
+        membership_type = (getattr(user, 'membership_type', '') or '').lower()
+        return membership_type in ['honorary', 'life']
+
+    @staticmethod
+    def get_membership_amount(user: User, renew: bool) -> int:
+        if Paystack.is_honorary_or_life(user):
+            return 0
+
+        member_prefix = Paystack.get_member_prefix(user)
+        if member_prefix == 'LYY':
+            return 2000 if renew else 2500
+        if member_prefix == 'LYA':
+            return 2500 if renew else 3000
+        return 2500 if renew else 3000
+
+    @staticmethod
+    def calculate_activation_amount(user: User, years: int) -> int:
+        safe_years = max(1, int(years or 1))
+        if Paystack.is_honorary_or_life(user):
+            return 0
+        first_payment = Paystack.get_membership_amount(user, renew=False)
+        renewal_payment = Paystack.get_membership_amount(user, renew=True)
+        return first_payment + (max(0, safe_years - 1) * renewal_payment)
+
+    @staticmethod
+    def calculate_renewal_amount(user: User, years: int) -> int:
+        safe_years = max(1, int(years or 1))
+        if Paystack.is_honorary_or_life(user):
+            return 0
+        return Paystack.get_membership_amount(user, renew=True) * safe_years
+
+    @staticmethod
+    def calculate_arrears_years(user: User, reference_date: datetime.date | None = None) -> int:
+        if reference_date is None:
+            reference_date = datetime.date.today()
+
+        try:
+            card = user.card
+        except Exception:
+            card = None
+
+        expiry_date = getattr(card, 'expired_at', None) or getattr(user, 'membership_expiry', None)
+        if not expiry_date or expiry_date >= reference_date:
+            return 1
+
+        return max(1, reference_date.year - expiry_date.year)
+
+    @staticmethod
     def get_header():
         if not settings.PAYSTACK_SECRET_KEY:
             raise ValueError("Paystack secret key is not configured")
@@ -37,14 +108,23 @@ class Paystack:
     def charge_user(request,user_id, transaction_type, **kwargs):
         transaction=None
         try:
-            requested_amount = request.data.get("amount")
-            if requested_amount in [None, ""]:
-                return bad_request_response(message="Amount is required")
-
+            user = request.user
+            requested_years = request.data.get("years", 1)
             try:
-                amount = int(round(float(requested_amount) * 100))
+                requested_years = max(1, int(requested_years or 1))
             except (TypeError, ValueError):
-                return bad_request_response(message="Invalid amount")
+                return bad_request_response(message="Invalid number of years")
+
+            arrears_years = 0
+            if transaction_type == 'RENEWAL':
+                arrears_years = Paystack.calculate_arrears_years(user)
+                charged_years = max(requested_years, arrears_years)
+                amount_naira = Paystack.calculate_renewal_amount(user, charged_years)
+            else:
+                charged_years = requested_years
+                amount_naira = Paystack.calculate_activation_amount(user, charged_years)
+
+            amount = int(round(float(amount_naira) * 100))
 
             if amount <= 0:
                 return bad_request_response(message="Amount must be greater than zero")
@@ -57,11 +137,22 @@ class Paystack:
                 amount=amount / 100,
                 transaction_type=transaction_type,
                 status="pending",
+                response={
+                    "requested_years": requested_years,
+                    "charged_years": charged_years,
+                    "arrears_years": arrears_years,
+                    "transaction_type": transaction_type,
+                    "enforced_amount": amount / 100,
+                }
             )
             metadata = {
                 "application_id": str(transaction.id),
                 "email": transaction.user.email,
-                "description": "Payment for NIN Enrolment"
+                "description": "YMCA membership payment",
+                "requested_years": requested_years,
+                "charged_years": charged_years,
+                "arrears_years": arrears_years,
+                "transaction_type": transaction_type,
             }
 
             # Prepare request payload for Paystack
@@ -179,14 +270,29 @@ class Paystack:
                             )
                         if transaction.status != "success":
                             transaction.status = "success"
-                            transaction.response = response_data['data']
+                            transaction_metadata = transaction.response or {}
+                            paystack_data = response_data['data']
+                            transaction.response = {
+                                **transaction_metadata,
+                                "paystack": paystack_data,
+                            }
                             id_card, created = IDCard.objects.get_or_create(user=transaction.user)
+                            charged_years = max(1, int(transaction_metadata.get('charged_years') or 1))
+                            arrears_years = max(0, int(transaction_metadata.get('arrears_years') or 0))
+                            payment_date = datetime.date.today()
+
                             id_card.is_active =True
                             id_card.first_time =False
                             id_card.expired = False
-                            # Expire on May 31st of the following year from payment date
-                            id_card.expired_at = Paystack.next_may_31()
+                            if transaction.transaction_type == 'RENEWAL' and arrears_years > 1:
+                                # Arrears clear old missed years and reactivate the card for the current cycle.
+                                id_card.expired_at = Paystack.next_may_31(payment_date)
+                            else:
+                                id_card.expired_at = Paystack.expiry_after_payment(charged_years, payment_date)
                             id_card.save()
+                            transaction.user.membership_expiry = id_card.expired_at
+                            transaction.user.is_active = True
+                            transaction.user.save(update_fields=['membership_expiry', 'is_active', 'updated_at'])
                             transaction.save()
                             return success_response(
                                 message="Payment successful.",
@@ -273,13 +379,26 @@ class Paystack:
                             )
                         if transaction.status != "success":
                             transaction.status = "success"
-                            transaction.response = response_data['data']
+                            transaction_metadata = transaction.response or {}
+                            paystack_data = response_data['data']
+                            transaction.response = {
+                                **transaction_metadata,
+                                "paystack": paystack_data,
+                            }
                             id_card, created = IDCard.objects.get_or_create(user=transaction.user)
                             id_card.is_active =True
                             id_card.expired = False
-                            # Expire on May 31st of the following year from payment date
-                            id_card.expired_at = Paystack.next_may_31()
+                            charged_years = max(1, int(transaction_metadata.get('charged_years') or 1))
+                            arrears_years = max(0, int(transaction_metadata.get('arrears_years') or 0))
+                            payment_date = datetime.date.today()
+                            if transaction.transaction_type == 'RENEWAL' and arrears_years > 1:
+                                id_card.expired_at = Paystack.next_may_31(payment_date)
+                            else:
+                                id_card.expired_at = Paystack.expiry_after_payment(charged_years, payment_date)
                             id_card.save()
+                            transaction.user.membership_expiry = id_card.expired_at
+                            transaction.user.is_active = True
+                            transaction.user.save(update_fields=['membership_expiry', 'is_active', 'updated_at'])
                             transaction.save()
                             return success_response(
                                 message="Payment successful.",

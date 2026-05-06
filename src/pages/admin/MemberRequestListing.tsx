@@ -14,12 +14,15 @@ const MemberRequestListing: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [unitFilter, setUnitFilter] = useState<string>('');
+  const [subUnitFilter, setSubUnitFilter] = useState<string>('');
   const [genderFilter, setGenderFilter] = useState<string>('');
   const [membershipCategoryFilter, setMembershipCategoryFilter] = useState<string>('');
   const [religionFilter, setReligionFilter] = useState<string>('');
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [hasNextPage, setHasNextPage] = useState<boolean>(false);
+  const [churches, setChurches] = useState<{ value: string, label: string }[]>([]);
+  const [youthGroups, setYouthGroups] = useState<{ value: string, label: string }[]>([]);
   
   // Modal states
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
@@ -63,6 +66,42 @@ const MemberRequestListing: React.FC = () => {
       fetchMembers(currentPage + 1, true);
     }
   };
+
+  async function fetchChurches() {
+    try {
+      const data = await fetchWithAuth({
+        method: 'GET',
+        path: `/churches`,
+      });
+
+      const formattedChurches = data?.data?.map((church: any) => ({
+        value: church.id,
+        label: church.name,
+      })) || [];
+
+      setChurches(formattedChurches);
+    } catch (error) {
+      console.error('Error fetching churches:', error);
+    }
+  }
+
+  async function fetchYouthGroups() {
+    try {
+      const data = await fetchWithAuth({
+        method: 'GET',
+        path: `/youth-groups`,
+      });
+
+      const formattedGroups = data?.data?.map((group: any) => ({
+        value: group.id,
+        label: group.name,
+      })) || [];
+
+      setYouthGroups(formattedGroups);
+    } catch (error) {
+      console.error('Error fetching youth groups:', error);
+    }
+  }
 
   // Handle approve request
   const handleApproveRequest = async () => {
@@ -203,10 +242,42 @@ const MemberRequestListing: React.FC = () => {
 
   useEffect(()=>{
     fetchMembers();
+    fetchChurches();
+    fetchYouthGroups();
   },[])
 
   const normalize = (value?: string | null) =>
     (value ?? '').toString().trim().toLowerCase();
+
+  const matchesSubUnitFilter = (member: Member, selectedFilter: string) => {
+    if (!selectedFilter) return true;
+
+    const normalizedFilter = normalize(selectedFilter);
+
+    if (unitFilter === 'Council of Church') {
+      const churchId = normalize((churches.find(church => normalize(church.label) === normalize(member.church_name))?.value) || '');
+      const churchName = normalize(member.church_name);
+      return churchId === normalizedFilter || churchName === normalizedFilter;
+    }
+
+    if (unitFilter === 'Youth Council') {
+      const youthGroupId = normalize((youthGroups.find(group => normalize(group.label) === normalize(member.club))?.value) || '');
+      const youthGroupName = normalize(member.club);
+      return youthGroupId === normalizedFilter || youthGroupName === normalizedFilter;
+    }
+
+    return true;
+  };
+
+  const shouldShowSubUnitFilter =
+    unitFilter === 'Council of Church' || unitFilter === 'Youth Council';
+
+  const subUnitOptions =
+    unitFilter === 'Council of Church'
+      ? churches
+      : unitFilter === 'Youth Council'
+        ? youthGroups
+        : [];
 
   const matchesMembershipCategory = (memberCategory: any, filterValue: string) => {
     const selected = normalize(filterValue);
@@ -261,6 +332,10 @@ const MemberRequestListing: React.FC = () => {
       );
     }
 
+    if (subUnitFilter) {
+      result = result.filter(member => matchesSubUnitFilter(member, subUnitFilter));
+    }
+
     // Apply gender filter
     if (genderFilter) {
       result = result.filter(member => normalize(member.gender) === normalize(genderFilter));
@@ -281,7 +356,13 @@ const MemberRequestListing: React.FC = () => {
     }
 
     setFilteredMembers(result);
-  }, [members, searchTerm, categoryFilter, statusFilter, unitFilter, genderFilter, membershipCategoryFilter, religionFilter]);
+  }, [members, searchTerm, categoryFilter, statusFilter, unitFilter, subUnitFilter, genderFilter, membershipCategoryFilter, religionFilter, churches, youthGroups]);
+
+  useEffect(() => {
+    if (!shouldShowSubUnitFilter && subUnitFilter) {
+      setSubUnitFilter('');
+    }
+  }, [shouldShowSubUnitFilter, subUnitFilter]);
 
   // Format date
   const formatDate = (dateString: string): string => {
@@ -300,6 +381,7 @@ const MemberRequestListing: React.FC = () => {
     setCategoryFilter('');
     setStatusFilter('');
     setUnitFilter('');
+    setSubUnitFilter('');
     setGenderFilter('');
     setMembershipCategoryFilter('');
     setReligionFilter('');
@@ -419,7 +501,10 @@ const MemberRequestListing: React.FC = () => {
             <select
               id="unit"
               value={unitFilter}
-              onChange={(e) => setUnitFilter(e.target.value)}
+              onChange={(e) => {
+                setUnitFilter(e.target.value);
+                setSubUnitFilter('');
+              }}
               className="w-full p-2 border border-gray-300 rounded-md"
             >
               <option value="">All Units</option>
@@ -429,6 +514,29 @@ const MemberRequestListing: React.FC = () => {
               <option value="Central Club">Central Club</option>
             </select>
           </div>
+
+          {shouldShowSubUnitFilter && (
+            <div>
+              <label htmlFor="subUnit" className="block text-sm font-medium text-gray-700 mb-1">
+                {unitFilter === 'Youth Council' ? 'Youth Group' : 'Church'}
+              </label>
+              <select
+                id="subUnit"
+                value={subUnitFilter}
+                onChange={(e) => setSubUnitFilter(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              >
+                <option value="">
+                  {unitFilter === 'Youth Council' ? 'All Youth Groups' : 'All Churches'}
+                </option>
+                {subUnitOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">

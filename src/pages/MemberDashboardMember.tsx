@@ -12,16 +12,9 @@ const MemberDashboardMember: React.FC = () => {
   const [daysRemaining, setDaysRemaining] = useState<number>(0);
   const [isExpired, setIsExpired] = useState<boolean>(false);
   const [paymentYears, setPaymentYears] = useState<number>(1);
+  const [arrearsYears, setArrearsYears] = useState<number>(1);
   const navigate = useNavigate();
 
-  // Function to calculate May 31st of NEXT year (always)
-  const getMay31Expiry = (): Date => {
-    const now = new Date();
-    const expiryYear = now.getFullYear() + 1;
-    return new Date(expiryYear, 4, 31); // May is month 4 (0-indexed)
-  };
-
-  // Function to calculate days remaining until May 31st
   const calculateDaysRemaining = (expiryDate: Date): number => {
     const now = new Date();
     const timeDiff = expiryDate.getTime() - now.getTime();
@@ -50,15 +43,30 @@ const MemberDashboardMember: React.FC = () => {
       navigate('/admin/dashboard');
     }
 
-    // Calculate expiry date and status
+    // Calculate expiry date and status from the saved card expiry
     if (user) {
-      const may31Expiry = getMay31Expiry();
-      const formattedExpiry = formatDate(may31Expiry);
-      const remainingDays = calculateDaysRemaining(may31Expiry);
-      
-      setExpiryDate(formattedExpiry);
-      setDaysRemaining(remainingDays);
-      setIsExpired(remainingDays === 0);
+      const savedExpiryDate = user?.card?.expired_at ? new Date(user.card.expired_at) : null;
+
+      if (savedExpiryDate && !Number.isNaN(savedExpiryDate.getTime())) {
+        const formattedExpiry = formatDate(savedExpiryDate);
+        const remainingDays = calculateDaysRemaining(savedExpiryDate);
+
+        setExpiryDate(formattedExpiry);
+        setDaysRemaining(remainingDays);
+        setIsExpired(savedExpiryDate < new Date());
+
+        const today = new Date();
+        const calculatedArrearsYears = savedExpiryDate < today
+          ? Math.max(1, today.getFullYear() - savedExpiryDate.getFullYear())
+          : 1;
+        setArrearsYears(calculatedArrearsYears);
+      } else {
+        const fallbackExpiry = new Date(new Date().getFullYear() + 1, 4, 31);
+        setExpiryDate(formatDate(fallbackExpiry));
+        setDaysRemaining(calculateDaysRemaining(fallbackExpiry));
+        setIsExpired(false);
+        setArrearsYears(1);
+      }
     }
   }, [user, navigate]);
 
@@ -73,6 +81,7 @@ const MemberDashboardMember: React.FC = () => {
   const isHonoraryOrLife = membershipType === 'honorary' || membershipType === 'life';
   const memberPrefix = getMemberPrefix();
   const isCardActive = Boolean(user?.card?.is_active);
+  const hasExpiredCard = Boolean(user?.card?.expired) || isExpired;
 
   const getDueAmount = (renew: boolean): number => {
     if (isHonoraryOrLife) return 0;
@@ -89,11 +98,12 @@ const MemberDashboardMember: React.FC = () => {
   };
 
   async function handleRenewSubscription(renew: boolean) {
+    const selectedYears = renew && membershipExpired ? arrearsYears : paymentYears;
     const payload = {
       redirect_url: FRONTEND_URL + '/payment',
-      amount: calculateMembershipFee(renew, paymentYears),
+      amount: calculateMembershipFee(renew, selectedYears),
       membership_type: membershipType || 'full',
-      years: Math.max(1, paymentYears),
+      years: Math.max(1, selectedYears),
     };
     
     try {
@@ -124,9 +134,11 @@ const MemberDashboardMember: React.FC = () => {
 
   // Determine membership status
   const membershipActive = isCardActive && !isExpired;
-  const membershipInactive = !isCardActive;
+  const membershipInactive = !isCardActive && !hasExpiredCard;
+  const membershipExpired = hasExpiredCard && !membershipActive;
   const totalFirstPayment = calculateMembershipFee(false, paymentYears);
   const totalRenewalPayment = calculateMembershipFee(true, paymentYears);
+  const totalArrearsPayment = calculateMembershipFee(true, arrearsYears);
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -181,7 +193,7 @@ const MemberDashboardMember: React.FC = () => {
                   ? `Valid until: ${expiryDate}`
                   : membershipInactive
                     ? `Inactive until payment is completed`
-                  : `Expired on: ${expiryDate}`}
+                    : `Expired on: ${expiryDate}`}
               </div>
             </div>
           </div>
@@ -207,10 +219,10 @@ const MemberDashboardMember: React.FC = () => {
         {/* Subscription Status */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className={`px-6 py-4 border-b ${
-            !isCardActive && !isExpired ? "bg-yellow-50" : membershipActive ? "bg-green-50" : "bg-red-50"
+            membershipInactive ? "bg-yellow-50" : membershipActive ? "bg-green-50" : "bg-red-50"
           }`}>
             <div className="flex items-center">
-              {!isCardActive && !isExpired ? (
+              {membershipInactive ? (
                 <BiErrorCircle className="mr-2 text-yellow-500" size={20} />
               ) : membershipActive ? (
                 <FaCheck className="mr-2 text-green-500" size={20} />
@@ -234,7 +246,7 @@ const MemberDashboardMember: React.FC = () => {
                   </div>
                 </div>
               </div>
-            ) : !membershipActive ? (
+            ) : membershipInactive ? (
               <div>
                 <div className="flex items-center mb-4">
                   <div className="w-16 h-16 rounded-full bg-yellow-100 flex items-center justify-center mr-4">
@@ -244,7 +256,7 @@ const MemberDashboardMember: React.FC = () => {
                     <h3 className="font-bold text-lg">Inactive Membership</h3>
                     <p className="text-sm text-gray-600">Your digital ID is currently inactive</p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Membership expires annually on May 31st of next year
+                      Membership expires annually on May 31st
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
                       First payment: NGN {totalFirstPayment.toLocaleString()}
@@ -345,7 +357,7 @@ const MemberDashboardMember: React.FC = () => {
                   )}
                 </div>
               </div>
-            ) : (
+            ) : membershipExpired ? (
               <div>
                 <div className="flex items-center mb-6">
                   <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mr-4">
@@ -355,7 +367,7 @@ const MemberDashboardMember: React.FC = () => {
                     <h3 className="font-bold text-lg">Expired Membership</h3>
                     <p className="text-sm text-gray-600">Your digital ID is currently inactive</p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Membership expired on May 31st
+                      Membership expired on {expiryDate}
                     </p>
                   </div>
                 </div>
@@ -366,7 +378,10 @@ const MemberDashboardMember: React.FC = () => {
                     Renew your subscription to continue accessing all member benefits.
                   </p>
                   <p className="text-sm mt-2 font-medium">
-                    Note: All memberships expire annually on May 31st of next year
+                    Arrears due: {arrearsYears} year{arrearsYears > 1 ? 's' : ''} missed
+                  </p>
+                  <p className="text-xs text-gray-600 mt-2">
+                    Renewal arrears are enforced automatically from your saved expiry date.
                   </p>
                 </div>
                 
@@ -375,13 +390,14 @@ const MemberDashboardMember: React.FC = () => {
                   className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   <FaCreditCard size={16} className="mr-2" />
-                  Renew Membership Now (NGN {totalRenewalPayment.toLocaleString()})
+                  Clear Arrears Now (NGN {totalArrearsPayment.toLocaleString()})
                 </button>
                 <p className="text-[11px] text-gray-500 mt-3">
                   Payment charges and VAT are deducted from the payer, not the organization.
                 </p>
               </div>
-            )}
+            ) : null
+            }
           </div>
         </div>
       </div>

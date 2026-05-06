@@ -19,6 +19,7 @@ const UserListingPage: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [unitFilter, setUnitFilter] = useState<string>('');
+  const [subUnitFilter, setSubUnitFilter] = useState<string>('');
   const [genderFilter, setGenderFilter] = useState<string>('');
   const [stateFilter, setStateFilter] = useState<string>('');
   const [membershipCategoryFilter, setMembershipCategoryFilter] = useState<string>('');
@@ -144,6 +145,44 @@ const UserListingPage: React.FC = () => {
     return cleaned;
   };
 
+  const matchesSubUnitFilter = (member: Member, selectedFilter: string) => {
+    if (!selectedFilter) return true;
+
+    const normalizedFilter = normalize(selectedFilter);
+
+    if (unitFilter === 'Council of Church') {
+      const churchId = normalize(member?.church?.id);
+      const churchName = normalize(
+        member?.church?.name ||
+        member?.user_request?.church_name
+      );
+
+      return churchId === normalizedFilter || churchName === normalizedFilter;
+    }
+
+    if (unitFilter === 'Youth Council') {
+      const youthGroupId = normalize(member?.youth_council_group?.id);
+      const youthGroupName = normalize(
+        member?.youth_council_group?.name ||
+        member?.user_request?.club
+      );
+
+      return youthGroupId === normalizedFilter || youthGroupName === normalizedFilter;
+    }
+
+    return true;
+  };
+
+  const shouldShowSubUnitFilter =
+    unitFilter === 'Council of Church' || unitFilter === 'Youth Council';
+
+  const subUnitOptions =
+    unitFilter === 'Council of Church'
+      ? churches
+      : unitFilter === 'Youth Council'
+        ? youthGroups
+        : [];
+
   const matchesMembershipCategory = (memberCategory: any, filterValue: string) => {
     const selected = normalize(filterValue);
     if (!selected) return true;
@@ -212,6 +251,10 @@ const UserListingPage: React.FC = () => {
       );
     }
 
+    if (subUnitFilter) {
+      result = result.filter(member => matchesSubUnitFilter(member, subUnitFilter));
+    }
+
     // Apply gender filter
     if (genderFilter) {
       result = result.filter(member =>
@@ -242,7 +285,13 @@ const UserListingPage: React.FC = () => {
     }
 
     setFilteredMembers(result);
-  }, [members, searchTerm, categoryFilter, statusFilter, unitFilter, genderFilter, membershipCategoryFilter, stateFilter]);
+  }, [members, searchTerm, categoryFilter, statusFilter, unitFilter, subUnitFilter, genderFilter, membershipCategoryFilter, stateFilter]);
+
+  useEffect(() => {
+    if (!shouldShowSubUnitFilter && subUnitFilter) {
+      setSubUnitFilter('');
+    }
+  }, [shouldShowSubUnitFilter, subUnitFilter]);
 
   // Format date
   const formatDate = (dateString: string): string => {
@@ -279,6 +328,7 @@ const UserListingPage: React.FC = () => {
     setCategoryFilter('');
     setStatusFilter('');
     setUnitFilter('');
+    setSubUnitFilter('');
     setGenderFilter('');
     setMembershipCategoryFilter('');
     setStateFilter('');
@@ -583,7 +633,10 @@ const UserListingPage: React.FC = () => {
             <select
               id="unit"
               value={unitFilter}
-              onChange={(e) => setUnitFilter(e.target.value)}
+              onChange={(e) => {
+                setUnitFilter(e.target.value);
+                setSubUnitFilter('');
+              }}
               className="w-full p-2 border border-gray-300 rounded-md"
             >
               <option value="">All Units</option>
@@ -593,6 +646,29 @@ const UserListingPage: React.FC = () => {
               <option value="Central Club">Central Club</option>
             </select>
           </div>
+
+          {shouldShowSubUnitFilter && (
+            <div>
+              <label htmlFor="subUnit" className="block text-sm font-medium text-gray-700 mb-1">
+                {unitFilter === 'Youth Council' ? 'Youth Group' : 'Church'}
+              </label>
+              <select
+                id="subUnit"
+                value={subUnitFilter}
+                onChange={(e) => setSubUnitFilter(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              >
+                <option value="">
+                  {unitFilter === 'Youth Council' ? 'All Youth Groups' : 'All Churches'}
+                </option>
+                {subUnitOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
