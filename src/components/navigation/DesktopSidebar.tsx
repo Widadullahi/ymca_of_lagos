@@ -2,7 +2,7 @@
 // DesktopSidebar.tsx
 import { NavLink, useNavigate } from 'react-router-dom';
 import { GoHome } from "react-icons/go";
-import { MdOutlinePeopleAlt ,MdOutlineNewspaper,MdOutlineManageAccounts} from "react-icons/md";
+import { MdOutlinePeopleAlt ,MdOutlineNewspaper,MdOutlineManageAccounts, MdAdminPanelSettings } from "react-icons/md";
 import NavItem from './NavItem';
 import { useAuth } from '../../context/NewAuthContext';
 import ymca from '../../assets/images/image.png'
@@ -44,6 +44,7 @@ const DesktopSidebar = () => {
             <>
             <NavItem to="/admin/dashboard" icon={<GoHome />} label="Home" />
             <NavItem to="/admin/users" icon={<MdOutlinePeopleAlt />} label="Members" />
+            <NavItem to="/admin/admin-access" icon={<MdAdminPanelSettings />} label="Add Admin" />
             <NavItem to="/admin/membership-request" icon={<MdOutlinePeopleAlt />} label="Membership Requests" />
             <NavItem to="/admin/staff" icon={<MdOutlinePeopleAlt />} label="Staff List" />
             <NavItem to="/admin/updates" icon={<MdOutlineNewspaper />} label="Updates" />

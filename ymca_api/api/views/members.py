@@ -1088,3 +1088,34 @@ class AdminMembersExportView(generics.GenericAPIView):
         response['Content-Disposition'] = 'attachment; filename="members_list.xlsx"'
         wb.save(response)
         return response
+
+
+class AdminPromoteMemberView(generics.GenericAPIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, *args, **kwargs):
+        user_id = request.data.get('user_id')
+        if not user_id:
+            return bad_request_response(message='user_id is required')
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return bad_request_response(message='Member not found')
+
+        if user.is_admin:
+            return bad_request_response(message='This user is already an admin')
+
+        user.is_admin = True
+        user.is_staff = True
+        user.is_active = True
+        user.save(update_fields=['is_admin', 'is_staff', 'is_active', 'updated_at'])
+
+        return success_response(
+            message=f'{user.get_full_name() or user.email} has been promoted to admin successfully',
+            data={
+                'id': str(user.id),
+                'email': user.email,
+                'is_admin': user.is_admin,
+            }
+        )

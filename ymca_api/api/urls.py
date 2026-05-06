@@ -8,7 +8,7 @@ from rest_framework.routers import DefaultRouter
 from account import views as account_views
 from api.views.category import CategoryListView, ChurchListView, YouthGroupListView
 from api.views.transaction import ActivateMembershipView, InitiateDonationPamentView, RenewMembershipView, TotalMembersCountView, VerifyDonationPamentView, StartMembershipDemoView, VerifyPaymentView
-from api.views.members import  AdminAddMembersView,AdminGetSingleRequestView, AdminGetMemberOverview, AdminMemberRetrieveUpdateDestroyView, AdminMemberUpdateDestroyView, AdminMembersBulkUploadView, AdminUpdateRequestStatusView, AdminUserRequestListView, CreateUserRequestView, CurrentUserRequestUpdateView, UserRequestDetailView, UserRequestListView, VerifyCardIdNumberView, AdminMembersExportView, SendEmailVerificationCodeView, VerifyEmailVerificationCodeView
+from api.views.members import  AdminAddMembersView,AdminGetSingleRequestView, AdminGetMemberOverview, AdminMemberRetrieveUpdateDestroyView, AdminMemberUpdateDestroyView, AdminMembersBulkUploadView, AdminPromoteMemberView, AdminUpdateRequestStatusView, AdminUserRequestListView, CreateUserRequestView, CurrentUserRequestUpdateView, UserRequestDetailView, UserRequestListView, VerifyCardIdNumberView, AdminMembersExportView, SendEmailVerificationCodeView, VerifyEmailVerificationCodeView
 from api.views.set_password import AdminSetUserPasswordView
 from . import views
 from .views import post as post_view
@@ -43,6 +43,7 @@ urlpatterns = [
     path('admin/members/export/', AdminMembersExportView.as_view(), name='AdminMembersExportView'),
     path('admin/members/upload/template/', AdminMembersBulkUploadView.as_view(), name='AdminMembersBulkUploadTemplateView'),
     path('admin/members/upload', AdminMembersBulkUploadView.as_view(), name='AdminMembersBulkUploadView'),
+    path('admin/members/promote-admin/', AdminPromoteMemberView.as_view(), name='AdminPromoteMemberView'),
     path('admin/members/<id>', AdminMemberRetrieveUpdateDestroyView.as_view(), name='AdminMemberRetrieveUpdateDestroyView'), 
     path('admin/members/<id>/update', AdminMemberUpdateDestroyView.as_view(), name='AdminMemberUpdateDestroyView'), 
     path('admin/members/<user_id>/set_password/', AdminSetUserPasswordView.as_view(), name='admin-set-user-password'),

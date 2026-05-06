@@ -130,6 +130,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                 label="Members A" 
                 subItems={[
                   { to: "/admin/users", label: "Members List" },
+                  { to: "/admin/admin-access", label: "Add Admin" },
                 ]}
               />
               <SideNavbarItem 

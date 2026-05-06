@@ -31,6 +31,7 @@ import LatestNewsPage from './pages/LatestNewsPage';
 import NewsDetailPage from './pages/NewsDetailPage';
 import AdminSignaturePage from './pages/admin/AdminSignaturePage';
 import CompleteProfilePage from './pages/CompleteProfilePage';
+import AdminAccessPage from './pages/admin/AdminAccessPage';
 
 
 
@@ -66,6 +67,7 @@ const App: React.FC = () => {
         <Route path="/payment" element={<PrivateRoute element={<TransactionValidation />} />} />
         <Route path="/admin/dashboard" element={<RoleBasedRoute element={<MemberDashboard />} requiredRole="Admin" />} />
         <Route path="/admin/staff" element={<RoleBasedRoute element={<StaffAdminPage />} requiredRole="Admin" />} />
+        <Route path="/admin/admin-access" element={<RoleBasedRoute element={<AdminAccessPage />} requiredRole="Admin" />} />
         <Route path="/admin/users" element={<RoleBasedRoute element={<UserListingPage />}  requiredRole="Admin"/>} />
         <Route path="/admin/users/:userId" element={<RoleBasedRoute element={<UserDetailPage />}  requiredRole="Admin"/>} />
         <Route path="/admin/membership-request" element={<RoleBasedRoute element={<MemberRequestListing />}  requiredRole="Admin"/>} />
