@@ -123,11 +123,11 @@ export default function NewsDetailPage() {
       <article className="min-h-screen bg-[#faf9f6] pb-20">
         <div className="max-w-3xl mx-auto">
           {update.imageUrl && (
-            <div className="w-full h-80 md:h-[28rem] bg-gray-200 rounded-b-lg overflow-hidden flex items-center justify-center mb-8">
+            <div className="w-full bg-gray-100 rounded-b-lg overflow-hidden flex items-center justify-center mb-8 p-3">
               <img
                 src={update.imageUrl}
                 alt={update.title}
-                className="object-cover w-full h-full"
+                className="w-full h-auto max-h-[75vh] object-contain rounded-lg"
                 style={{ objectPosition: 'center' }}
               />
             </div>

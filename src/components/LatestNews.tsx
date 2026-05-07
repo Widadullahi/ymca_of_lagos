@@ -462,15 +462,17 @@ export default function LatestNewsAndUpcomingEvents() {
                   {getUpdateImages(selectedUpdate).length > 0 && (
                     <div className="mb-8">
                       <div className="relative">
-                        <img
-                          src={getUpdateImages(selectedUpdate)[currentImageIndex]}
-                          alt={`${selectedUpdate.title} - Image ${currentImageIndex + 1}`}
-                          className="w-full h-96 object-cover rounded-lg"
-                          onError={(e) => {
-                            e.currentTarget.onerror = null;
-                            e.currentTarget.src = createInlinePlaceholder(800, 400, 'Image Not Available');
-                          }}
-                        />
+                        <div className="w-full rounded-lg bg-gray-100 p-2">
+                          <img
+                            src={getUpdateImages(selectedUpdate)[currentImageIndex]}
+                            alt={`${selectedUpdate.title} - Image ${currentImageIndex + 1}`}
+                            className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = createInlinePlaceholder(800, 400, 'Image Not Available');
+                            }}
+                          />
+                        </div>
                         
                         {getUpdateImages(selectedUpdate).length > 1 && (
                           <>

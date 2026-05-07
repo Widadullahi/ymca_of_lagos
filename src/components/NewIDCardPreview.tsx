@@ -146,32 +146,45 @@ const NewIDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }
           }
         }
 
-        const detailsX = 138;
-        let currentY = 130;
-        ctx.textAlign = 'left';
-        ctx.fillStyle = '#202020';
-        ctx.font = '24px serif';
-        ctx.fillText('Registration No.:', detailsX, currentY);
-        currentY += 30;
-        ctx.fillText('Category:', detailsX, currentY);
-        currentY += 30;
-        ctx.fillText('Reg. Period Ending:', detailsX, currentY);
-        currentY += 30;
-        ctx.fillText('Signature', detailsX, currentY);
+        const detailsX = 132;
+        const valueX = 252;
+        let currentY = 118;
+        const labelFontSize = 11;
+        const valueFontSize = 10;
+        const rowSpacing = 32;
 
-        ctx.font = 'bold 12px sans-serif';
-        ctx.fillStyle = '#000000';
-        ctx.fillText((user?.card?.id_number || '').toUpperCase(), detailsX + 118, 130);
-        ctx.fillText(formatMembershipLabel(user?.membership_type), detailsX + 82, 160);
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#242424';
+        ctx.font = `600 ${labelFontSize}px sans-serif`;
+
+        const drawDetailRow = (label: string, value: string, rowY: number) => {
+          ctx.fillStyle = '#2f2f2f';
+          ctx.font = `600 ${labelFontSize}px sans-serif`;
+          ctx.fillText(label, detailsX, rowY);
+
+          ctx.fillStyle = '#111111';
+          ctx.font = `bold ${valueFontSize}px sans-serif`;
+          ctx.fillText(value || '-', valueX, rowY);
+        };
+
+        drawDetailRow('Registration No.', (user?.card?.id_number || '').toUpperCase(), currentY);
+        currentY += rowSpacing;
+        drawDetailRow('Category', formatMembershipLabel(user?.membership_type), currentY);
+        currentY += rowSpacing;
 
         const expiryDate = formatExpiryDate(user) || 'LIFETIME';
-        ctx.fillText(expiryDate, detailsX + 128, 190);
+        drawDetailRow('Reg. Period Ending', expiryDate, currentY);
+        currentY += rowSpacing;
+
+        ctx.fillStyle = '#2f2f2f';
+        ctx.font = `600 ${labelFontSize}px sans-serif`;
+        ctx.fillText('Signature', detailsX, currentY);
 
         const memberSignature = user?.card?.signature || null;
         if (memberSignature) {
           try {
             const sigImg = await loadImage(memberSignature);
-            ctx.drawImage(sigImg, detailsX + 82, 198, 72, 24);
+            ctx.drawImage(sigImg, valueX, currentY - 12, 72, 20);
           } catch (e) {
             console.error("Failed to load signature", e);
           }
