@@ -1157,8 +1157,7 @@ class AdminMembersExportView(generics.GenericAPIView):
             'Gender',
             'Date of Birth',
             'Age',
-            'Home Address',
-            'Office Address',
+            'Address',
             'Religion',
             'Church Name',
             'Profession',
@@ -1167,10 +1166,8 @@ class AdminMembersExportView(generics.GenericAPIView):
             'Valid ID Type',
             'Next of Kin',
             'Next of Kin Phone',
-            'Referral Source',
             'Referral Name',
             'Referred By',
-            'Request Status',
             'Review Notes',
             'Card Expiry Date',
             'Joined Date',
@@ -1216,6 +1213,16 @@ class AdminMembersExportView(generics.GenericAPIView):
             except:
                 pass
 
+            # Combine home_address and office_address into a single address field
+            address = ''
+            if ur:
+                address_parts = []
+                if ur.home_address:
+                    address_parts.append(ur.home_address)
+                if ur.office_address:
+                    address_parts.append(ur.office_address)
+                address = '; '.join(address_parts)
+
             ws.append([
                 user.first_name or '',
                 user.last_name or '',
@@ -1234,8 +1241,7 @@ class AdminMembersExportView(generics.GenericAPIView):
                 ur.gender if ur else '',
                 ur.date_of_birth.strftime('%Y-%m-%d') if ur and ur.date_of_birth else '',
                 ur.age if ur else '',
-                ur.home_address if ur else '',
-                ur.office_address if ur else '',
+                address,
                 ur.religion if ur else '',
                 ur.church_name if ur else '',
                 ur.profession if ur else '',
@@ -1244,10 +1250,8 @@ class AdminMembersExportView(generics.GenericAPIView):
                 ur.get_valid_id_type_display() if ur and ur.valid_id_type else '',
                 ur.next_of_kin if ur else '',
                 ur.next_of_kin_phone if ur else '',
-                ur.referral_source if ur else '',
                 ur.referral_name if ur else '',
                 ur.referred_by if ur else '',
-                ur.get_status_display() if ur and ur.status else '',
                 ur.review_notes if ur else '',
                 card.expired_at.strftime('%Y-%m-%d') if card and card.expired_at else '',
                 user.created_at.strftime('%Y-%m-%d %H:%M:%S') if user.created_at else '',
