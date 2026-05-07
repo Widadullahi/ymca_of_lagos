@@ -127,6 +127,46 @@ const AdminAccessPage: React.FC = () => {
     fileInput.click();
   };
 
+  const handleSuspendAdmin = async (adminId: string) => {
+    if (!confirm('Are you sure you want to suspend this admin?')) return;
+
+    try {
+      setIsSubmitting(true);
+      const response = await fetchWithAuth({
+        method: 'PATCH',
+        path: `/admin/members/${adminId}/update`,
+        body: { is_active: false },
+      });
+
+      displayNotification('success', response?.message || 'Admin suspended successfully');
+      fetchAdmins();
+    } catch (error: any) {
+      console.error('Error suspending admin:', error);
+      displayNotification('error', error?.message || 'Failed to suspend admin');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleReactivateAdmin = async (adminId: string) => {
+    try {
+      setIsSubmitting(true);
+      const response = await fetchWithAuth({
+        method: 'PATCH',
+        path: `/admin/members/${adminId}/update`,
+        body: { is_active: true },
+      });
+
+      displayNotification('success', response?.message || 'Admin reactivated successfully');
+      fetchAdmins();
+    } catch (error: any) {
+      console.error('Error reactivating admin:', error);
+      displayNotification('error', error?.message || 'Failed to reactivate admin');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -266,7 +306,10 @@ const AdminAccessPage: React.FC = () => {
                     Phone Number
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Role
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -287,9 +330,30 @@ const AdminAccessPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-700">
-                        Admin
+                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        admin.is_active 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-red-100 text-red-700'
+                      }`}>
+                        {admin.is_active ? 'Active' : 'Suspended'}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {admin.is_active ? (
+                        <button
+                          onClick={() => handleSuspendAdmin(admin.id)}
+                          className="text-red-600 hover:text-red-900 font-medium"
+                        >
+                          Suspend
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleReactivateAdmin(admin.id)}
+                          className="text-green-600 hover:text-green-900 font-medium"
+                        >
+                          Reactivate
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
