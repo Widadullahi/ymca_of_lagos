@@ -1228,10 +1228,30 @@ class AdminMembersExportView(generics.GenericAPIView):
                 ur.unit if ur else '',
                 ur.club if ur else '',
                 ur.citizen if ur else '',
-                ur.country if ur
-                user.created_at.strftime('%Y-%m-%d %H:%M:%S') if user.created_at else ''
-                ,
-                user.updated_at.strftime('%Y-%m-%d %H:%M:%S') if user.updated_at else ''
+                ur.country if ur else '',
+                ur.state if ur else '',
+                ur.lga if ur else '',
+                ur.gender if ur else '',
+                ur.date_of_birth.strftime('%Y-%m-%d') if ur and ur.date_of_birth else '',
+                ur.age if ur else '',
+                ur.home_address if ur else '',
+                ur.office_address if ur else '',
+                ur.religion if ur else '',
+                ur.church_name if ur else '',
+                ur.profession if ur else '',
+                ur.occupation if ur else '',
+                ur.marital_status if ur else '',
+                ur.get_valid_id_type_display() if ur and ur.valid_id_type else '',
+                ur.next_of_kin if ur else '',
+                ur.next_of_kin_phone if ur else '',
+                ur.referral_source if ur else '',
+                ur.referral_name if ur else '',
+                ur.referred_by if ur else '',
+                ur.get_status_display() if ur and ur.status else '',
+                ur.review_notes if ur else '',
+                card.expired_at.strftime('%Y-%m-%d') if card and card.expired_at else '',
+                user.created_at.strftime('%Y-%m-%d %H:%M:%S') if user.created_at else '',
+                last_payment_date,
             ])
 
         for column_cells in ws.columns:
