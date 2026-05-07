@@ -69,11 +69,10 @@ const AdminAccessPage: React.FC = () => {
   const handleExportAdmins = async () => {
     try {
       displayNotification('info', 'Preparing admin export...');
-      // Reuse the same export endpoint but filter for admins
-      const adminIds = admins.map(a => a.id).join(',');
+      // Use the dedicated admin export endpoint
       const response = await fetchWithAuth({
         method: 'GET',
-        path: `/admin/members/export/?user_ids=${adminIds}`,
+        path: `/admin/admins/export/`,
         isAthenticated: true,
         responseType: 'blob',
       });
