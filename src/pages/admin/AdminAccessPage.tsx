@@ -66,6 +66,68 @@ const AdminAccessPage: React.FC = () => {
     setErrors({});
   };
 
+  const handleExportAdmins = async () => {
+    try {
+      displayNotification('info', 'Preparing admin export...');
+      // Reuse the same export endpoint but filter for admins
+      const adminIds = admins.map(a => a.id).join(',');
+      const response = await fetchWithAuth({
+        method: 'GET',
+        path: `/admin/members/export/?user_ids=${adminIds}`,
+        isAthenticated: true,
+        responseType: 'blob',
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'admins_list.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      displayNotification('success', 'Admin export downloaded successfully');
+    } catch (error: any) {
+      console.error('Error exporting admins:', error);
+      displayNotification('error', error?.message || 'Failed to export admins');
+    }
+  };
+
+  const handleBulkUpload = () => {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.xlsx,.csv';
+    fileInput.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      try {
+        setIsSubmitting(true);
+        displayNotification('info', 'Uploading admin bulk file...');
+        
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetchWithAuth({
+          method: 'POST',
+          path: '/admin/members/upload',
+          body: formData,
+          isFormData: true,
+        });
+
+        displayNotification('success', response?.message || 'Admins uploaded successfully');
+        fetchAdmins();
+      } catch (error: any) {
+        console.error('Error uploading admins:', error);
+        displayNotification('error', error?.message || 'Failed to upload admins');
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+    fileInput.click();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -145,12 +207,32 @@ const AdminAccessPage: React.FC = () => {
             Create a separate admin account directly. Admins are no longer created from the members list.
           </p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="rounded-md bg-indigo-600 px-5 py-2.5 text-white hover:bg-indigo-700"
-        >
-          Add Admin
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={handleExportAdmins}
+            className="rounded-md bg-emerald-600 px-5 py-2.5 text-white hover:bg-emerald-700 flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export Admins
+          </button>
+          <button
+            onClick={handleBulkUpload}
+            className="rounded-md bg-blue-600 px-5 py-2.5 text-white hover:bg-blue-700 flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            Bulk Upload
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="rounded-md bg-indigo-600 px-5 py-2.5 text-white hover:bg-indigo-700"
+          >
+            Add Admin
+          </button>
+        </div>
       </div>
 
       <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
