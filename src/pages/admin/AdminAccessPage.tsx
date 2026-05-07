@@ -234,14 +234,10 @@ const AdminAccessPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="mb-8">
         <div className="rounded-lg bg-white p-6 shadow-sm">
-          <p className="text-sm font-medium text-gray-600">Current Admins</p>
+          <p className="text-sm font-medium text-gray-600">Total Admins</p>
           <p className="mt-1 text-3xl font-semibold text-indigo-700">{admins.length}</p>
-        </div>
-        <div className="rounded-lg bg-white p-6 shadow-sm">
-          <p className="text-sm font-medium text-gray-600">Default Password</p>
-          <p className="mt-1 text-2xl font-semibold text-gray-900">admin12345</p>
         </div>
       </div>
 
