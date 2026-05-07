@@ -1123,7 +1123,7 @@ class AdminMembersExportView(generics.GenericAPIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        users = User.objects.filter(is_superuser=False, is_admin=False).select_related('user_request')
+        users = User.objects.filter(is_superuser=False, is_admin=False).select_related('user_request', 'idcard')
 
         raw_user_ids = request.GET.get('user_ids', '').strip()
         if raw_user_ids:
@@ -1137,31 +1137,107 @@ class AdminMembersExportView(generics.GenericAPIView):
         ws = wb.active
         ws.title = "Members"
 
-        # Define columns
         columns = [
-            'First Name', 'Last Name', 'Email', 'Phone Number', 
-            'Membership Type', 'Unit', 'Club', 'Gender', 
-            'State', 'Status', 'Joined Date'
+            'First Name',
+            'Last Name',
+            'Email',
+            'Phone Number',
+            'Membership Type',
+            'Member Status',
+            'Card Status',
+            'Registration Number',
+            'Unit',
+            'Sub Unit / Club',
+            'Citizen',
+            'Country',
+            'State',
+            'LGA',
+            'Gender',
+            'Date of Birth',
+            'Age',
+            'Home Address',
+            'Office Address',
+            'Religion',
+            'Church Name',
+            'Profession',
+            'Occupation',
+            'Marital Status',
+            'Valid ID Type',
+            'Valid ID Number',
+            'Next of Kin',
+            'Next of Kin Phone',
+            'Referral Source',
+            'Referral Name',
+            'Referred By',
+            'Request Status',
+            'Review Notes',
+            'Card Expiry Date',
+            'Joined Date',
+            'Updated Date',
         ]
         ws.append(columns)
 
-        # Add data
+        for cell in ws[1]:
+            cell.font = openpyxl.styles.Font(bold=True)
+
         for user in users:
-            # Safely get user_request data
             ur = user.user_request
+            card = getattr(user, 'idcard', None)
+            membership_label = user.get_membership_type_display() if user.membership_type else ''
+
+            card_status = ''
+            if card:
+                if card.expired:
+                    card_status = 'Expired'
+                elif card.is_active:
+                    card_status = 'Active'
+                else:
+                    card_status = 'Inactive'
+
             ws.append([
                 user.first_name or '',
                 user.last_name or '',
                 user.email or '',
                 ur.phone_number if ur else '',
-                user.get_membership_type_display(),
+                membership_label,
+                'Active' if user.is_active else 'Inactive',
+                card_status,
+                card.id_number if card else '',
                 ur.unit if ur else '',
                 ur.club if ur else '',
-                ur.gender if ur else '',
+                ur.citizen if ur else '',
+                ur.country if ur else '',
                 ur.state if ur else '',
-                'Active' if user.is_active else 'Inactive',
+                ur.lga if ur else '',
+                ur.gender if ur else '',
+                ur.date_of_birth.strftime('%Y-%m-%d') if ur and ur.date_of_birth else '',
+                ur.age if ur else '',
+                ur.home_address if ur else '',
+                ur.office_address if ur else '',
+                ur.religion if ur else '',
+                ur.church_name if ur else '',
+                ur.profession if ur else '',
+                ur.occupation if ur else '',
+                ur.marital_status if ur else '',
+                ur.get_valid_id_type_display() if ur and ur.valid_id_type else '',
+                ur.valid_id_number if ur else '',
+                ur.next_of_kin if ur else '',
+                ur.next_of_kin_phone if ur else '',
+                ur.referral_source if ur else '',
+                ur.referral_name if ur else '',
+                ur.referred_by if ur else '',
+                ur.get_status_display() if ur and ur.status else '',
+                ur.review_notes if ur else '',
+                card.expired_at.strftime('%Y-%m-%d') if card and card.expired_at else '',
                 user.created_at.strftime('%Y-%m-%d %H:%M:%S') if user.created_at else ''
+                ,
+                user.updated_at.strftime('%Y-%m-%d %H:%M:%S') if user.updated_at else ''
             ])
+
+        for column_cells in ws.columns:
+            column_letter = column_cells[0].column_letter
+            max_length = max(len(str(cell.value or '')) for cell in column_cells)
+            ws.column_dimensions[column_letter].width = min(max(max_length + 2, 14), 40)
 
         # Prepare response
         response = HttpResponse(

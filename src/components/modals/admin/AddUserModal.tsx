@@ -287,7 +287,6 @@ const AddUserModal: React.FC<{
         <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-6 py-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Add New Member</h2>
-            <p className="mt-1 text-sm text-gray-600">This now follows the registration form fields much more closely.</p>
           </div>
           <button onClick={closeModal} className="text-gray-500 hover:text-gray-700">
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -427,10 +426,6 @@ const AddUserModal: React.FC<{
               error={errors.signature}
               onChange={handleFileChange}
             />
-          </div>
-
-          <div className="mt-8 rounded-md border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
-            Default password for this member will be <span className="font-semibold">member12345</span>.
           </div>
 
           <div className="mt-8 flex justify-end gap-3">
