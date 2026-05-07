@@ -1272,6 +1272,116 @@ class AdminMembersExportView(generics.GenericAPIView):
         return response
 
 
+class AdminsExportView(generics.GenericAPIView):
+    """Export admins to Excel"""
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        # Only export admins
+        users = User.objects.filter(is_superuser=False, is_admin=True).select_related('user_request', 'idcard')
+
+        raw_user_ids = request.GET.get('user_ids', '').strip()
+        if raw_user_ids:
+            user_ids = [user_id.strip() for user_id in raw_user_ids.split(',') if user_id.strip()]
+            users = users.filter(id__in=user_ids)
+
+        users = users.order_by('-created_at')
+        
+        # Create workbook and worksheet
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Admins"
+
+        columns = [
+            'First Name',
+            'Last Name',
+            'Email',
+            'Phone Number',
+            'Unit',
+            'Sub Unit / Club',
+            'Citizen',
+            'Country',
+            'State',
+            'LGA',
+            'Gender',
+            'Date of Birth',
+            'Age',
+            'Address',
+            'Religion',
+            'Church Name',
+            'Profession',
+            'Occupation',
+            'Marital Status',
+            'Valid ID Type',
+            'Next of Kin',
+            'Next of Kin Phone',
+            'Referral Name',
+            'Referred By',
+            'Review Notes',
+            'Joined Date',
+        ]
+        ws.append(columns)
+
+        for cell in ws[1]:
+            cell.font = openpyxl.styles.Font(bold=True)
+
+        for user in users:
+            ur = user.user_request
+            membership_label = user.get_membership_type_display() if user.membership_type else ''
+
+            # Combine home_address and office_address into a single address field
+            address = ''
+            if ur:
+                address_parts = []
+                if ur.home_address:
+                    address_parts.append(ur.home_address)
+                if ur.office_address:
+                    address_parts.append(ur.office_address)
+                address = '; '.join(address_parts)
+
+            ws.append([
+                user.first_name or '',
+                user.last_name or '',
+                user.email or '',
+                ur.phone_number if ur else '',
+                ur.unit if ur else '',
+                ur.club if ur else '',
+                ur.citizen if ur else '',
+                ur.country if ur else '',
+                ur.state if ur else '',
+                ur.lga if ur else '',
+                ur.gender if ur else '',
+                ur.date_of_birth.strftime('%Y-%m-%d') if ur and ur.date_of_birth else '',
+                ur.age if ur else '',
+                address,
+                ur.religion if ur else '',
+                ur.church_name if ur else '',
+                ur.profession if ur else '',
+                ur.occupation if ur else '',
+                ur.marital_status if ur else '',
+                ur.get_valid_id_type_display() if ur and ur.valid_id_type else '',
+                ur.next_of_kin if ur else '',
+                ur.next_of_kin_phone if ur else '',
+                ur.referral_name if ur else '',
+                ur.referred_by if ur else '',
+                ur.review_notes if ur else '',
+                user.created_at.strftime('%Y-%m-%d %H:%M:%S') if user.created_at else '',
+            ])
+
+        for column_cells in ws.columns:
+            column_letter = column_cells[0].column_letter
+            max_length = max(len(str(cell.value or '')) for cell in column_cells)
+            ws.column_dimensions[column_letter].width = min(max(max_length + 2, 14), 40)
+
+        # Prepare response
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        response['Content-Disposition'] = 'attachment; filename="admins_list.xlsx"'
+        wb.save(response)
+        return response
+
+
 class AdminPromoteMemberView(generics.GenericAPIView):
     permission_classes = [IsAdminUser]
 

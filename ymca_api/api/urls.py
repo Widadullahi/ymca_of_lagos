@@ -8,7 +8,7 @@ from rest_framework.routers import DefaultRouter
 from account import views as account_views
 from api.views.category import AdminChurchDetailView, AdminChurchListCreateView, CategoryListView, ChurchListView, YouthGroupListView
 from api.views.transaction import ActivateMembershipView, InitiateDonationPamentView, RenewMembershipView, TotalMembersCountView, VerifyDonationPamentView, StartMembershipDemoView, VerifyPaymentView
-from api.views.members import  AdminAddMembersView,AdminGetSingleRequestView, AdminGetMemberOverview, AdminMemberRetrieveUpdateDestroyView, AdminMemberUpdateDestroyView, AdminMembersBulkUploadView, AdminPromoteMemberView, AdminUpdateRequestStatusView, AdminUserRequestListView, CreateUserRequestView, CurrentUserRequestUpdateView, UserRequestDetailView, UserRequestListView, VerifyCardIdNumberView, AdminMembersExportView, SendEmailVerificationCodeView, VerifyEmailVerificationCodeView
+from api.views.members import  AdminAddMembersView,AdminGetSingleRequestView, AdminGetMemberOverview, AdminMemberRetrieveUpdateDestroyView, AdminMemberUpdateDestroyView, AdminMembersBulkUploadView, AdminPromoteMemberView, AdminUpdateRequestStatusView, AdminUserRequestListView, CreateUserRequestView, CurrentUserRequestUpdateView, UserRequestDetailView, UserRequestListView, VerifyCardIdNumberView, AdminMembersExportView, AdminsExportView, SendEmailVerificationCodeView, VerifyEmailVerificationCodeView
 from api.views.set_password import AdminSetUserPasswordView
 from . import views
 from .views import post as post_view
@@ -43,6 +43,7 @@ urlpatterns = [
     path('admin/members/', AdminAddMembersView.as_view(), name='YouthGroupListView'),
     path('admin/members/overview', AdminGetMemberOverview.as_view(), name='AdminGetMemberOverview'),
     path('admin/members/export/', AdminMembersExportView.as_view(), name='AdminMembersExportView'),
+    path('admin/admins/export/', AdminsExportView.as_view(), name='AdminsExportView'),
     path('admin/members/upload/template/', AdminMembersBulkUploadView.as_view(), name='AdminMembersBulkUploadTemplateView'),
     path('admin/members/upload', AdminMembersBulkUploadView.as_view(), name='AdminMembersBulkUploadView'),
     path('admin/members/promote-admin/', AdminPromoteMemberView.as_view(), name='AdminPromoteMemberView'),
