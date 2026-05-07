@@ -662,7 +662,7 @@ const UserListingPage: React.FC = () => {
           {shouldShowSubUnitFilter && (
             <div>
               <label htmlFor="subUnit" className="block text-sm font-medium text-gray-700 mb-1">
-                {unitFilter === 'Youth Council' ? 'Youth Group' : 'Church'}
+                {unitFilter === 'Youth Council' ? 'Club' : 'Church'}
               </label>
               <select
                 id="subUnit"
@@ -671,7 +671,7 @@ const UserListingPage: React.FC = () => {
                 className="w-full p-2 border border-gray-300 rounded-md"
               >
                 <option value="">
-                  {unitFilter === 'Youth Council' ? 'All Youth Groups' : 'All Churches'}
+                  {unitFilter === 'Youth Council' ? 'All Clubs' : 'All Churches'}
                 </option>
                 {subUnitOptions.map((option) => (
                   <option key={option.value} value={option.value}>
