@@ -16,13 +16,41 @@ const IDCardGenerator: React.FC<IDCardGeneratorProps> = ({ member, isAdminView, 
   const cardRef = useRef<HTMLDivElement>(null);
   const effectiveUser = member || authUser;
   const membershipType = (effectiveUser?.membership_type || '').toString().toLowerCase();
-  const shouldUseTemplate = membershipType === 'ordinary' || membershipType === 'full';
+  const shouldUseTemplate =
+    membershipType === 'ordinary' ||
+    membershipType === 'full' ||
+    membershipType === 'honorary' ||
+    membershipType === 'life';
   const resolvedVariant = variant === 'auto' ? (shouldUseTemplate ? 'image' : 'modern') : variant;
   const CardComponent = resolvedVariant === 'image' ? NewIDCardPreview : IDCardPreview;
 
-  // Instead of using window.print(), create a new window with only the card content
-  const handlePrintCard = () => {
-    if (!cardRef.current) return;
+  const captureCardSides = async () => {
+    if (!cardRef.current) return [];
+
+    const sideElements = Array.from(
+      cardRef.current.querySelectorAll<HTMLElement>('[data-card-side]')
+    );
+
+    const targets = sideElements.length > 0 ? sideElements : [cardRef.current];
+    const captures: string[] = [];
+
+    for (const target of targets) {
+      const canvas = await html2canvas(target, {
+        scale: 3,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      captures.push(canvas.toDataURL('image/png'));
+    }
+
+    return captures;
+  };
+
+  const handlePrintCard = async () => {
+    const images = await captureCardSides();
+    if (images.length === 0) return;
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -30,10 +58,6 @@ const IDCardGenerator: React.FC<IDCardGeneratorProps> = ({ member, isAdminView, 
       return;
     }
 
-    // Get the HTML content of the ID card
-    const cardHTML = cardRef.current.innerHTML;
-
-    // Create a print-friendly document
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -42,33 +66,57 @@ const IDCardGenerator: React.FC<IDCardGeneratorProps> = ({ member, isAdminView, 
           <style>
             body {
               margin: 0;
-              padding: 20px;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              min-height: 100vh;
+              padding: 24px 0;
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+              background: #f5f5f5;
             }
-            .card-container {
-              max-width: 400px;
-              width: 100%;
+            .page {
+              min-height: 100vh;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              page-break-after: always;
+              break-after: page;
+              padding: 16px;
+              box-sizing: border-box;
+            }
+            .page:last-child {
+              page-break-after: auto;
+              break-after: auto;
+            }
+            img {
+              max-width: 100%;
+              width: 400px;
+              height: auto;
+              display: block;
+              box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+              border-radius: 12px;
+              background: white;
             }
             @media print {
               body {
                 padding: 0;
+                background: white;
               }
               .print-button {
                 display: none;
               }
+              .page {
+                padding: 0;
+              }
+              img {
+                box-shadow: none;
+                border-radius: 0;
+              }
             }
           </style>
-          <!-- Include Tailwind styles for proper rendering -->
-          <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
         </head>
         <body>
-          <div class="card-container">
-            ${cardHTML}
-          </div>
+          ${images.map((image, index) => `
+            <div class="page">
+              <img src="${image}" alt="YMCA ID Card ${index + 1}" />
+            </div>
+          `).join('')}
           <div class="print-button" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); margin-top: 20px;">
             <button onclick="window.print(); window.close();" style="background-color: #dc2626; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
               Print ID Card
@@ -82,32 +130,28 @@ const IDCardGenerator: React.FC<IDCardGeneratorProps> = ({ member, isAdminView, 
   };
 
   const handleDownloadAsPDF = async () => {
-    if (!cardRef.current) return;
-
     try {
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 2, // Higher scale for better quality
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        windowHeight: cardRef.current.scrollHeight,
-        windowWidth: cardRef.current.scrollWidth
-      });
+      const images = await captureCardSides();
+      if (images.length === 0) return;
 
-      const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: [210, 297] // A4 size
       });
 
-      // Calculate dimensions to fit the card properly
       const imgWidth = 180; // mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const posX = (210 - imgWidth) / 2; // Center horizontally
+      const imgHeight = 113.4;
+      const posX = (210 - imgWidth) / 2;
       const posY = 20; // Top margin
 
-      pdf.addImage(imgData, 'PNG', posX, posY, imgWidth, imgHeight);
+      images.forEach((image, index) => {
+        if (index > 0) {
+          pdf.addPage();
+        }
+        pdf.addImage(image, 'PNG', posX, posY, imgWidth, imgHeight);
+      });
+
       pdf.save('YMCA_ID_Card.pdf');
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -116,21 +160,16 @@ const IDCardGenerator: React.FC<IDCardGeneratorProps> = ({ member, isAdminView, 
   };
 
   const handleDownloadAsImage = async () => {
-    if (!cardRef.current) return;
-
     try {
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 3, // Higher scale for better quality
-        useCORS: true,
-        allowTaint: true,
-        windowHeight: cardRef.current.scrollHeight,
-        windowWidth: cardRef.current.scrollWidth
-      });
+      const images = await captureCardSides();
+      if (images.length === 0) return;
 
-      const link = document.createElement('a');
-      link.download = 'YMCA_ID_Card.png';
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      images.forEach((image, index) => {
+        const link = document.createElement('a');
+        link.download = `YMCA_ID_Card_${index === 0 ? 'front' : 'back'}.png`;
+        link.href = image;
+        link.click();
+      });
     } catch (error) {
       console.error('Error generating image:', error);
       alert('Failed to download image. Please try again.');

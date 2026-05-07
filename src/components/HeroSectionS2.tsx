@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import item1 from '../assets/hero/item-1.jpg';
 import item2 from '../assets/hero/item-2.jpg';
@@ -28,11 +28,28 @@ export default function HeroSectionS2({
   imageAlt = "Hero Image",
 }: HeroSectionS2Props) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [loadedImages, setLoadedImages] = useState<boolean[]>(
+    HERO_IMAGES.map((_, index) => index === 0)
+  );
+
+  useEffect(() => {
+    HERO_IMAGES.forEach((imageSrc, index) => {
+      const image = new Image();
+      image.src = imageSrc;
+      image.onload = () => {
+        setLoadedImages((prev) => {
+          const next = [...prev];
+          next[index] = true;
+          return next;
+        });
+      };
+    });
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentImageIndex((prevIndex) => (prevIndex + 1) % HERO_IMAGES.length);
-    }, 5000); // Change image every 5 seconds
+    }, 5000);
 
     return () => clearInterval(timer);
   }, []);
@@ -51,21 +68,30 @@ export default function HeroSectionS2({
 
 
   return (
-    <div className="relative h-screen w-full overflow-hidden">
+    <div
+      className="relative h-screen w-full overflow-hidden bg-black"
+      style={{
+        backgroundImage: `url(${HERO_IMAGES[0]})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
       {/* Background Image Carousel */}
       <div className="absolute inset-0 z-0">
-        <AnimatePresence mode="wait">
+        {HERO_IMAGES.map((imageSrc, index) => (
           <motion.img
-            key={currentImageIndex}
-            src={HERO_IMAGES[currentImageIndex]}
-            alt={`${imageAlt} ${currentImageIndex + 1}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.5, ease: "easeInOut" }}
-            className="absolute inset-0 w-full h-full object-cover"
+            key={imageSrc}
+            src={imageSrc}
+            alt={`${imageAlt} ${index + 1}`}
+            initial={false}
+            animate={{
+              opacity: currentImageIndex === index && loadedImages[index] ? 1 : 0,
+              scale: currentImageIndex === index ? 1 : 1.02,
+            }}
+            transition={{ duration: 0.2, ease: "linear" }}
+            className="absolute inset-0 h-full w-full object-cover will-change-transform will-change-opacity"
           />
-        </AnimatePresence>
+        ))}
         {/* Overlay */}
         <div
           className="absolute inset-0"

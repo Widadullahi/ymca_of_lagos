@@ -31,6 +31,11 @@ const UserListingPage: React.FC = () => {
   const [churches, setChurches] = useState<{ value: string, label: string }[]>([]);
   const [youthGroups, setYouthGroups] = useState<{ value: string, label: string }[]>([]);
 
+  const youthCouncilFilterOptions = [
+    { value: 'hi-y', label: 'Hi-Y' },
+    { value: 'y-elite', label: 'Y-Elite' },
+  ];
+
   // New state for modals
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
@@ -161,13 +166,20 @@ const UserListingPage: React.FC = () => {
     }
 
     if (unitFilter === 'Youth Council') {
-      const youthGroupId = normalize(member?.youth_council_group?.id);
       const youthGroupName = normalize(
         member?.youth_council_group?.name ||
         member?.user_request?.club
       );
 
-      return youthGroupId === normalizedFilter || youthGroupName === normalizedFilter;
+      if (normalizedFilter === 'hi-y') {
+        return youthGroupName.includes('hi-y');
+      }
+
+      if (normalizedFilter === 'y-elite') {
+        return youthGroupName.includes('y-elite');
+      }
+
+      return youthGroupName === normalizedFilter;
     }
 
     return true;
@@ -180,7 +192,7 @@ const UserListingPage: React.FC = () => {
     unitFilter === 'Council of Church'
       ? churches
       : unitFilter === 'Youth Council'
-        ? youthGroups
+        ? youthCouncilFilterOptions
         : [];
 
   const matchesMembershipCategory = (memberCategory: any, filterValue: string) => {

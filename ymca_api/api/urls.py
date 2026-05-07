@@ -6,7 +6,7 @@ from api.views.bulk_membership import BulkMembershipTypeUpdateView
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from account import views as account_views
-from api.views.category import CategoryListView, ChurchListView, YouthGroupListView
+from api.views.category import AdminChurchDetailView, AdminChurchListCreateView, CategoryListView, ChurchListView, YouthGroupListView
 from api.views.transaction import ActivateMembershipView, InitiateDonationPamentView, RenewMembershipView, TotalMembersCountView, VerifyDonationPamentView, StartMembershipDemoView, VerifyPaymentView
 from api.views.members import  AdminAddMembersView,AdminGetSingleRequestView, AdminGetMemberOverview, AdminMemberRetrieveUpdateDestroyView, AdminMemberUpdateDestroyView, AdminMembersBulkUploadView, AdminPromoteMemberView, AdminUpdateRequestStatusView, AdminUserRequestListView, CreateUserRequestView, CurrentUserRequestUpdateView, UserRequestDetailView, UserRequestListView, VerifyCardIdNumberView, AdminMembersExportView, SendEmailVerificationCodeView, VerifyEmailVerificationCodeView
 from api.views.set_password import AdminSetUserPasswordView
@@ -37,6 +37,8 @@ urlpatterns = [
     path('categories', CategoryListView.as_view(), name='CategoryListView'),
     path('churches', ChurchListView.as_view(), name='ChurchListView'),
     path('youth-groups', YouthGroupListView.as_view(), name='YouthGroupListView'),
+    path('admin/churches/', AdminChurchListCreateView.as_view(), name='AdminChurchListCreateView'),
+    path('admin/churches/<uuid:id>/', AdminChurchDetailView.as_view(), name='AdminChurchDetailView'),
 
     path('admin/members/', AdminAddMembersView.as_view(), name='YouthGroupListView'),
     path('admin/members/overview', AdminGetMemberOverview.as_view(), name='AdminGetMemberOverview'),

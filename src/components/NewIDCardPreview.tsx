@@ -3,6 +3,7 @@ import { useAuth } from '../context/NewAuthContext';
 import frontCard from '../assets/idcard/front.png';
 import backCard from '../assets/idcard/back-blank.png';
 import defaultSignature from '../assets/idcard/default-signature-1.png';
+import ymcaLogo from '../assets/images/image.png';
 import QRCode from 'qrcode';
 
 // Build fix for missing @types/qrcode
@@ -94,6 +95,91 @@ const NewIDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }
     };
 
     try {
+      const membershipType = (user?.membership_type || '').toString().toLowerCase();
+      const isHonoraryOrLife = membershipType === 'honorary' || membershipType === 'life';
+
+      if (isHonoraryOrLife) {
+        ctx.fillStyle = '#fcfcfc';
+        ctx.fillRect(0, 0, width, height);
+
+        const logo = await loadImage(ymcaLogo);
+        ctx.save();
+        ctx.globalAlpha = 0.1;
+        for (let y = 12; y < height; y += 26) {
+          for (let x = 12; x < width - 44; x += 32) {
+            ctx.drawImage(logo, x, y, 14, 14);
+          }
+        }
+        ctx.restore();
+
+        ctx.drawImage(logo, 18, 18, 150, 58);
+
+        ctx.fillStyle = '#111111';
+        ctx.fillRect(width - 40, 0, 40, height);
+        ctx.fillStyle = '#e31b23';
+        ctx.fillRect(width - 40, 0, 40, 62);
+        ctx.fillRect(width - 40, 156, 40, 56);
+
+        ctx.save();
+        ctx.translate(width - 20, height / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 28px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('MEMBER ID', 0, 0);
+        ctx.restore();
+
+        const photoX = 22;
+        const photoY = 100;
+        const photoW = 86;
+        const photoH = 118;
+        ctx.strokeStyle = '#d71920';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(photoX, photoY, photoW, photoH);
+
+        if (user?.image) {
+          try {
+            const photo = await loadImage(user.image);
+            ctx.drawImage(photo, photoX + 2, photoY + 2, photoW - 4, photoH - 4);
+          } catch (e) {
+            console.error("Failed to load user image", e);
+          }
+        }
+
+        const detailsX = 138;
+        let currentY = 130;
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#202020';
+        ctx.font = '24px serif';
+        ctx.fillText('Registration No.:', detailsX, currentY);
+        currentY += 30;
+        ctx.fillText('Category:', detailsX, currentY);
+        currentY += 30;
+        ctx.fillText('Reg. Period Ending:', detailsX, currentY);
+        currentY += 30;
+        ctx.fillText('Signature', detailsX, currentY);
+
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillStyle = '#000000';
+        ctx.fillText((user?.card?.id_number || '').toUpperCase(), detailsX + 118, 130);
+        ctx.fillText(formatMembershipLabel(user?.membership_type), detailsX + 82, 160);
+
+        const expiryDate = formatExpiryDate(user) || 'LIFETIME';
+        ctx.fillText(expiryDate, detailsX + 128, 190);
+
+        const memberSignature = user?.card?.signature || null;
+        if (memberSignature) {
+          try {
+            const sigImg = await loadImage(memberSignature);
+            ctx.drawImage(sigImg, detailsX + 82, 198, 72, 24);
+          } catch (e) {
+            console.error("Failed to load signature", e);
+          }
+        }
+
+        return;
+      }
+
       const bg = await loadImage(frontCard);
       ctx.drawImage(bg, 0, 0, width, height);
 
@@ -257,10 +343,10 @@ const NewIDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }
     <div className="w-full bg-gray-100 p-4" ref={forwardedRef}>
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col items-center space-y-8">
-          <div className="relative shadow-xl rounded-lg overflow-hidden">
+          <div className="relative shadow-xl rounded-lg overflow-hidden" data-card-side="front">
             <canvas ref={frontCanvasRef} />
           </div>
-          <div className="relative shadow-xl rounded-lg overflow-hidden">
+          <div className="relative shadow-xl rounded-lg overflow-hidden" data-card-side="back">
             <canvas ref={backCanvasRef} />
           </div>
         </div>

@@ -88,7 +88,7 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }) =
         <div className="flex flex-col items-center space-y-8">
 
           {/* Front of ID Card */}
-          <div className="relative">
+          <div className="relative" data-card-side="front">
             <div
               className={`bg-white rounded-lg overflow-hidden shadow-xl border ${theme.border}`}
               style={{
@@ -178,7 +178,7 @@ const IDCardPreview: React.FC<IDCardPreviewProps> = ({ member, forwardedRef }) =
           </div>
 
           {/* Back of ID Card */}
-          <div className="relative">
+          <div className="relative" data-card-side="back">
             <div
               className={`bg-white rounded-lg overflow-hidden shadow-xl border ${theme.border}`}
               style={{

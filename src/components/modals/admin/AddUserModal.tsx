@@ -1,605 +1,529 @@
 //@ts-nocheck
-import { useState, useEffect } from "react";
-import { Member } from "../../../types/types";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../context/NewAuthContext";
+import { nigerianStates } from "../../../constants/utils";
 
-// New User Form Modal Component
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
+
+const validIdOptions = [
+  { value: 'national_id', label: 'National Identity Number (NIN)' },
+  { value: 'drivers_license', label: "Driver's License" },
+  { value: 'voters_card', label: "Voter's Card" },
+  { value: 'international_passport', label: 'International Passport' },
+  { value: 'bvn', label: 'BVN' },
+];
+
+const unitOptions = [
+  { value: 'Council of Church', label: 'Council of Church' },
+  { value: 'Youth Council', label: 'Youth Council' },
+  { value: "Y's Men", label: "Y's Men" },
+  { value: 'Central Club', label: 'Central Club' },
+];
+
+const getYouthCouncilGroupByAge = (age: number) => {
+  if (age >= 1 && age <= 23) return 'Hi-Y Club';
+  if (age >= 24 && age <= 30) return 'Y-Elite Club';
+  return '';
+};
+
 const AddUserModal: React.FC<{
   isOpen: boolean;
   closeModal: () => void;
-  churches:any;
-  youthGroups:any;
+  churches: any;
+  youthGroups: any;
   onAddMember: () => void;
-}> = ({ isOpen, closeModal, onAddMember, churches, youthGroups}) => {
-
+}> = ({ isOpen, closeModal, onAddMember, churches }) => {
   const { fetchWithAuth, displayNotification } = useAuth();
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+
+  const initialFormData = {
+    first_name: '',
+    last_name: '',
     email: '',
-    phoneNumber: '',
-    gender: 'Male' as Member['gender'],
-    unit: '' as Member['unit'],
-    church: '',
-    youthCouncilGroup: '',
-    status: false,
-    category: 'Adult Member' as Member['category'],
-    dateOfBirth: '',
-    location: '',
+    phone_number: '',
+    gender: '',
+    date_of_birth: '',
+    age: '',
+    marital_status: '',
+    citizen: 'Nigerian',
+    country: 'NG',
+    state: '',
+    lga: '',
+    address: '',
+    unit: '',
+    club: '',
+    church_name: '',
     profession: '',
-    expiryDate: ''
+    occupation: '',
+    religion: '',
+    valid_id_type: '',
+    next_of_kin: '',
+    next_of_kin_phone: '',
+    referred_by: 'no',
+    referral_name: '',
+    referral_source: '',
+    card_expiry_date: '',
+  };
+
+  const [formData, setFormData] = useState(initialFormData);
+  const [files, setFiles] = useState<{
+    passport_photo: File | null;
+    valid_id_file: File | null;
+    signature: File | null;
+  }>({
+    passport_photo: null,
+    valid_id_file: null,
+    signature: null,
   });
-
-  const [filePreviews, setFilePreviews] = useState<{
-    passportPhoto?: string;
-    signature?: string;
-  }>({});
-
-  const [uploadedFiles, setUploadedFiles] = useState<{
-    passportPhoto?: File;
-    signature?: File;
-  }>({});
-
-  // Local UI state
-  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [previews, setPreviews] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const unitOptions = [
-    { value: 'Council of Church', label: 'Council of Church' },
-    { value: 'Youth Council', label: 'Youth Council' },
-    { value: 'Y\'s Men', label: 'Y\'s Men' },
-    { value: 'Central Club', label: 'Central Club' }
-  ];
-  
-  const genderOptions = [
-    { value: 'Male', label: 'Male' },
-    { value: 'Female', label: 'Female' },
-    { value: 'Other', label: 'Other' }
-  ];
-
-  const categoryOptions = [
-    { value: 'Adult Member', label: 'Adult Member' },
-    { value: 'Youth Member', label: 'Youth Member' },
-    { value: 'Senior Member', label: 'Senior Member' }
-  ];
-
-  const statusOptions = [
-    { value: 'Active', label: 'Active' },
-    { value: 'Inactive', label: 'Inactive' },
-    { value: 'On Leave', label: 'On Leave' }
-  ];
-
-
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Clear error for this field if it exists
-    if (errors[name]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
+  useEffect(() => {
+    if (!formData.date_of_birth) return;
+    const today = new Date();
+    const birthDate = new Date(formData.date_of_birth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age -= 1;
     }
 
-    // Reset dependent fields when unit changes
-    if (name === 'unit') {
+    setFormData(prev => ({
+      ...prev,
+      age: age > 0 ? String(age) : '',
+    }));
+  }, [formData.date_of_birth]);
+
+  const filteredUnits = useMemo(() => {
+    const age = Number(formData.age);
+    if (!age) return unitOptions;
+    if (age <= 30) return unitOptions.filter(unit => unit.value === 'Youth Council');
+    return unitOptions.filter(unit => unit.value !== 'Youth Council');
+  }, [formData.age]);
+
+  useEffect(() => {
+    if (formData.unit && !filteredUnits.some(unit => unit.value === formData.unit)) {
       setFormData(prev => ({
         ...prev,
-        church: '',
-        youthCouncilGroup: ''
+        unit: '',
+        club: '',
       }));
     }
-  };
+  }, [filteredUnits, formData.unit]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const maxSize = 10 * 1024 * 1024; // 10MB
-
-      // Validate file type
-      if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
-        setErrors(prev => ({
-          ...prev,
-          [field]: 'Only JPEG, JPG, or PNG files are allowed'
-        }));
-        return;
-      }
-
-      // Validate file size
-      if (file.size > maxSize) {
-        setErrors(prev => ({
-          ...prev,
-          [field]: 'File size must be less than 10MB'
-        }));
-        return;
-      }
-
-      // Store file and preview
-      setUploadedFiles(prev => ({
+  useEffect(() => {
+    const age = Number(formData.age);
+    if (formData.unit === 'Youth Council') {
+      setFormData(prev => ({
         ...prev,
-        [field]: file
+        club: getYouthCouncilGroupByAge(age),
       }));
+      return;
+    }
 
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setFilePreviews(prev => ({
-          ...prev,
-          [field]: e.target?.result as string
-        }));
-      };
-      reader.readAsDataURL(file);
+    if (formData.unit !== 'Council of Church' && formData.club) {
+      setFormData(prev => ({
+        ...prev,
+        club: '',
+      }));
+    }
+  }, [formData.age, formData.unit]);
 
-      // Clear error
-      if (errors[field]) {
-        setErrors(prev => {
-          const newErrors = { ...prev };
-          delete newErrors[field];
-          return newErrors;
-        });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+
+    setFormData(prev => {
+      const next = { ...prev, [name]: value };
+
+      if (name === 'unit') {
+        next.club = '';
       }
+
+      if (name === 'citizen' && value === 'Nigerian') {
+        next.country = 'NG';
+      }
+
+      if (name === 'citizen' && value === 'Foreigner') {
+        next.state = '';
+        next.lga = '';
+        if (next.country === 'NG') {
+          next.country = '';
+        }
+      }
+
+      if (name === 'religion' && value !== 'Christian') {
+        next.church_name = '';
+      }
+
+      if (name === 'referred_by' && value !== 'yes') {
+        next.referral_name = '';
+        next.referral_source = '';
+      }
+
+      return next;
+    });
+
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'passport_photo' | 'valid_id_file' | 'signature') => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      setFiles(prev => ({ ...prev, [field]: null }));
+      return;
+    }
+
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      setErrors(prev => ({ ...prev, [field]: 'Only JPEG, JPG, or PNG files are allowed' }));
+      e.target.value = '';
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      setErrors(prev => ({ ...prev, [field]: 'File size must be less than 10MB' }));
+      e.target.value = '';
+      return;
+    }
+
+    setFiles(prev => ({ ...prev, [field]: file }));
+    setErrors(prev => ({ ...prev, [field]: '' }));
+
+    const reader = new FileReader();
+    reader.onload = event => {
+      setPreviews(prev => ({ ...prev, [field]: event.target?.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
-    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
-    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
+    const age = Number(formData.age);
+
+    if (!formData.first_name.trim()) newErrors.first_name = 'First name is required';
+    if (!formData.last_name.trim()) newErrors.last_name = 'Last name is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
-    if (!formData.phoneNumber.trim()) newErrors.phoneNumber = 'Phone number is required';
+    if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
+    if (!formData.phone_number.trim()) newErrors.phone_number = 'Phone number is required';
     if (!formData.gender) newErrors.gender = 'Gender is required';
+    if (!formData.date_of_birth) newErrors.date_of_birth = 'Date of birth is required';
+    if (!formData.marital_status) newErrors.marital_status = 'Marital status is required';
+    if (!formData.citizen) newErrors.citizen = 'Citizenship is required';
+    if (formData.citizen === 'Foreigner' && !formData.country.trim()) newErrors.country = 'Country is required';
+    if (!formData.state.trim()) newErrors.state = formData.citizen === 'Foreigner' ? 'State/Province is required' : 'State is required';
+    if (!formData.address.trim()) newErrors.address = 'Address is required';
     if (!formData.unit) newErrors.unit = 'Unit is required';
-    
-    if (formData.unit === 'Council of Church' && !formData.church) {
-      newErrors.church = 'Please select a church';
-    }
-    
-    if (formData.unit === 'Youth Council' && !formData.youthCouncilGroup) {
-      newErrors.youthCouncilGroup = 'Please select a youth council group';
-    }
-    
-    
+    if (formData.unit === 'Youth Council' && age >= 31) newErrors.unit = "Age 31+ cannot join Youth Council";
+    if (formData.unit !== 'Youth Council' && age > 0 && age <= 30) newErrors.unit = 'Members aged 30 and below must register under Youth Council';
+    if (formData.unit === 'Council of Church' && !formData.club) newErrors.club = 'Church selection is required';
+    if (formData.unit === 'Youth Council' && !getYouthCouncilGroupByAge(age)) newErrors.club = 'Youth Council is only available for ages 1-30';
+    if (!formData.profession.trim()) newErrors.profession = 'Profession is required';
+    if (!formData.occupation.trim()) newErrors.occupation = 'Occupation is required';
+    if (!formData.religion) newErrors.religion = 'Religion is required';
+    if (formData.religion === 'Christian' && !formData.church_name.trim()) newErrors.church_name = 'Church name is required';
+    if (!formData.valid_id_type) newErrors.valid_id_type = 'Valid ID type is required';
+    if (!formData.next_of_kin.trim()) newErrors.next_of_kin = 'Next of kin is required';
+    if (!formData.next_of_kin_phone.trim()) newErrors.next_of_kin_phone = 'Next of kin phone is required';
+    if (!files.valid_id_file) newErrors.valid_id_file = 'Valid ID document is required';
+    if (!files.passport_photo) newErrors.passport_photo = 'Passport photo is required';
+    if (formData.referred_by === 'yes' && !formData.referral_name.trim()) newErrors.referral_name = 'Referral name is required';
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const resetForm = () => {
+    setFormData(initialFormData);
+    setFiles({
+      passport_photo: null,
+      valid_id_file: null,
+      signature: null,
+    });
+    setPreviews({});
+    setErrors({});
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    
+
     try {
-      setIsUploading(true);
-      
-      // Prepare user data
-      let userData: any = {
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        email: formData.email,
-        phone_number: formData.phoneNumber,
-        gender: formData.gender,
-        unit: formData.unit,
-        church: formData.unit === 'Council of Church' ? formData.church : null,
-        youth_council_group: formData.unit === 'Youth Council' ? formData.youthCouncilGroup : null,
-        status: formData.status,
-        category: formData.category,
-        join_date: new Date().toISOString(),
-        date_of_birth: formData.dateOfBirth || null,
-        location: formData.location || null,
-        profession: formData.profession || null,
-      };
+      setIsSubmitting(true);
+      const payload = new FormData();
 
-      // If expiry date is provided, include it
-      if (formData.expiryDate) {
-        userData.card_expiry_date = formData.expiryDate;
-      }
-
-      // Create FormData for file uploads
-      const submitFormData = new FormData();
-      
-      // Add all user data as JSON
-      Object.keys(userData).forEach(key => {
-        submitFormData.append(key, userData[key] || '');
+      Object.entries(formData).forEach(([key, value]) => {
+        payload.append(key, value || '');
       });
 
-      // Add file uploads if present
-      if (uploadedFiles.passportPhoto) {
-        submitFormData.append('image', uploadedFiles.passportPhoto);
-      }
+      if (files.passport_photo) payload.append('passport_photo', files.passport_photo);
+      if (files.valid_id_file) payload.append('valid_id_file', files.valid_id_file);
+      if (files.signature) payload.append('signature', files.signature);
 
-      if (uploadedFiles.signature) {
-        submitFormData.append('signature', uploadedFiles.signature);
-      }
+      const response = await fetchWithAuth({
+        method: 'POST',
+        path: '/admin/members/',
+        body: payload,
+        isFormData: true,
+      });
 
-      // Send to API
-      if (fetchWithAuth) {
-        const response = await fetchWithAuth({
-          method: 'POST',
-          path: '/admin/members/',
-          body: uploadedFiles.passportPhoto || uploadedFiles.signature ? submitFormData : userData,
-          isFormData: uploadedFiles.passportPhoto || uploadedFiles.signature ? true : false,
-        });
-
-        displayNotification("success", response?.message || "Member created successfully");
-      }
+      displayNotification('success', response?.message || 'Member created successfully');
       onAddMember();
+      resetForm();
       closeModal();
-    } catch (error) {
-      console.error('Error adding new member:', error);
+    } catch (error: any) {
+      displayNotification('error', error?.message || 'Unable to create member');
     } finally {
-      setIsUploading(false);
+      setIsSubmitting(false);
     }
   };
-
 
   if (!isOpen) return null;
 
   return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg max-w-3xl w-full max-h-[95vh] overflow-y-auto">
-          <div className="p-6 sticky top-0 bg-white border-b">
-            <div className="flex justify-between items-start mb-6">
-              <h2 className="text-2xl font-bold">Add New Member</h2>
-              <button
-                onClick={closeModal}
-                className="text-gray-500 hover:text-gray-700 focus:outline-none"
-              >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="max-h-[95vh] w-full max-w-5xl overflow-y-auto rounded-xl bg-white shadow-xl">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-6 py-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Add New Member</h2>
+            <p className="mt-1 text-sm text-gray-600">This now follows the registration form fields much more closely.</p>
           </div>
-
-            <div className="p-6">
-              <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Basic Information */}
-                <div className="md:col-span-2">
-                  <h3 className="text-lg font-medium border-b pb-2 mb-4">Basic Information</h3>
-                </div>
-                
-                <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                    First Name *
-                  </label>
-                  <input
-                    type="text"
-                    id="firstName"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    className={`w-full p-2 border rounded-md ${errors.firstName ? 'border-red-500' : 'border-gray-300'}`}
-                  />
-                  {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
-                </div>
-                
-                <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                    Last Name *
-                  </label>
-                  <input
-                    type="text"
-                    id="lastName"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    className={`w-full p-2 border rounded-md ${errors.lastName ? 'border-red-500' : 'border-gray-300'}`}
-                  />
-                  {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
-                </div>
-                
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className={`w-full p-2 border rounded-md ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
-                  />
-                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-                </div>
-                
-                <div>
-                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number *
-                  </label>
-                  <input
-                    type="tel"
-                    id="phoneNumber"
-                    name="phoneNumber"
-                    value={formData.phoneNumber}
-                    onChange={handleChange}
-                    className={`w-full p-2 border rounded-md ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'}`}
-                  />
-                  {errors.phoneNumber && <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>}
-                </div>
-                
-                <div>
-                  <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
-                    Gender *
-                  </label>
-                  <select
-                    id="gender"
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleChange}
-                    className={`w-full p-2 border rounded-md ${errors.gender ? 'border-red-500' : 'border-gray-300'}`}
-                  >
-                    <option value="">Select Gender</option>
-                    {genderOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.gender && <p className="text-red-500 text-xs mt-1">{errors.gender}</p>}
-                </div>
-                
-                <div>
-                  <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-1">
-                    Date of Birth
-                  </label>
-                  <input
-                    type="date"
-                    id="dateOfBirth"
-                    name="dateOfBirth"
-                    value={formData.dateOfBirth}
-                    onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="profession" className="block text-sm font-medium text-gray-700 mb-1">
-                    Profession
-                  </label>
-                  <input
-                    type="text"
-                    id="profession"
-                    name="profession"
-                    value={formData.profession}
-                    onChange={handleChange}
-                    placeholder="e.g., Engineer, Teacher"
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                    Location/State/LGA
-                  </label>
-                  <input
-                    type="text"
-                    id="location"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleChange}
-                    placeholder="e.g., Lagos, Ikoyi"
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-                    Category
-                  </label>
-                  <select
-                    id="category"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                  >
-                    {categoryOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-    
-                {/* Unit Information */}
-                <div className="md:col-span-2">
-                  <h3 className="text-lg font-medium border-b pb-2 mb-4 mt-4">Unit Information</h3>
-                </div>
-                
-                <div>
-                  <label htmlFor="unit" className="block text-sm font-medium text-gray-700 mb-1">
-                    Unit *
-                  </label>
-                  <select
-                    id="unit"
-                    name="unit"
-                    value={formData.unit}
-                    onChange={handleChange}
-                    className={`w-full p-2 border rounded-md ${errors.unit ? 'border-red-500' : 'border-gray-300'}`}
-                  >
-                    <option value="">Select Unit</option>
-                    {unitOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.unit && <p className="text-red-500 text-xs mt-1">{errors.unit}</p>}
-                </div>
-                
-                {formData.unit === 'Council of Church' && (
-                  <div>
-                    <label htmlFor="church" className="block text-sm font-medium text-gray-700 mb-1">
-                      Church *
-                    </label>
-                    <select
-                      id="church"
-                      name="church"
-                      value={formData.church}
-                      onChange={handleChange}
-                      className={`w-full p-2 border rounded-md ${errors.church ? 'border-red-500' : 'border-gray-300'}`}
-                    >
-                      <option value="">Select Church</option>
-                      {churches?.map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.church && <p className="text-red-500 text-xs mt-1">{errors.church}</p>}
-                  </div>
-                )}
-                
-                {formData.unit === 'Youth Council' && (
-                  <div>
-                    <label htmlFor="youthCouncilGroup" className="block text-sm font-medium text-gray-700 mb-1">
-                      Youth Council Group *
-                    </label>
-                    <select
-                      id="youthCouncilGroup"
-                      name="youthCouncilGroup"
-                      value={formData.youthCouncilGroup}
-                      onChange={handleChange}
-                      className={`w-full p-2 border rounded-md ${errors.youthCouncilGroup ? 'border-red-500' : 'border-gray-300'}`}
-                    >
-                      <option value="">Select Youth Group</option>
-                      {youthGroups.map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.youthCouncilGroup && <p className="text-red-500 text-xs mt-1">{errors.youthCouncilGroup}</p>}
-                  </div>
-                )}
-                
-                <div>
-                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-                    Status
-                  </label>
-                  <select
-                    id="status"
-                    name="status"
-                    value={formData.status}
-                    onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                  >
-                    {statusOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {/* Card & Documents */}
-                <div className="md:col-span-2">
-                  <h3 className="text-lg font-medium border-b pb-2 mb-4 mt-4">Card Information</h3>
-                </div>
-
-                <div>
-                  <label htmlFor="expiryDate" className="block text-sm font-medium text-gray-700 mb-1">
-                    Card Expiry Date (Optional)
-                  </label>
-                  <input
-                    type="date"
-                    id="expiryDate"
-                    name="expiryDate"
-                    value={formData.expiryDate}
-                    onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                  />
-                  <p className="text-gray-500 text-xs mt-1">Leave empty for default (May 31st of next year)</p>
-                </div>
-
-                {/* File Uploads */}
-                <div className="md:col-span-2">
-                  <h3 className="text-lg font-medium border-b pb-2 mb-4 mt-4">Documents (Optional)</h3>
-                </div>
-
-                <div>
-                  <label htmlFor="passportPhoto" className="block text-sm font-medium text-gray-700 mb-1">
-                    Passport Photo
-                  </label>
-                  <input
-                    type="file"
-                    id="passportPhoto"
-                    accept="image/jpeg,image/jpg,image/png"
-                    onChange={(e) => handleFileChange(e, 'passportPhoto')}
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                  />
-                  <p className="text-gray-500 text-xs mt-1">JPEG, JPG, or PNG (max 10MB)</p>
-                  {errors.passportPhoto && <p className="text-red-500 text-xs mt-1">{errors.passportPhoto}</p>}
-                  {filePreviews.passportPhoto && (
-                    <img src={filePreviews.passportPhoto} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded" />
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="signature" className="block text-sm font-medium text-gray-700 mb-1">
-                    Signature
-                  </label>
-                  <input
-                    type="file"
-                    id="signature"
-                    accept="image/jpeg,image/jpg,image/png"
-                    onChange={(e) => handleFileChange(e, 'signature')}
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                  />
-                  <p className="text-gray-500 text-xs mt-1">JPEG, JPG, or PNG (max 10MB)</p>
-                  {errors.signature && <p className="text-red-500 text-xs mt-1">{errors.signature}</p>}
-                  {filePreviews.signature && (
-                    <img src={filePreviews.signature} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded" />
-                  )}
-                </div>
-
-                {/* Password Info */}
-                <div className="md:col-span-2">
-                  <h3 className="text-lg font-medium border-b pb-2 mb-4 mt-4">Account Credentials</h3>
-                  <p className="text-gray-600 text-sm">Default Account Password: <span className="font-mono font-bold">YMCA123456789</span></p>
-                </div>
-              </div>
-    
-              <div className="mt-8 flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-                  disabled={isUploading}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                  disabled={isUploading}
-                >
-                  {isUploading ? (
-                    <span className="flex items-center">
-                      {/* <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg> */}
-                      Saving...
-                    </span>
-                  ) : (
-                    'Save Member'
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
+          <button onClick={closeModal} className="text-gray-500 hover:text-gray-700">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
+
+        <form onSubmit={handleSubmit} className="p-6">
+          <SectionTitle title="Personal Information" />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <InputField label="First Name *" name="first_name" value={formData.first_name} onChange={handleChange} error={errors.first_name} />
+            <InputField label="Last Name *" name="last_name" value={formData.last_name} onChange={handleChange} error={errors.last_name} />
+            <InputField label="Email *" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} />
+            <InputField label="Phone Number *" name="phone_number" value={formData.phone_number} onChange={handleChange} error={errors.phone_number} />
+            <SelectField label="Gender *" name="gender" value={formData.gender} onChange={handleChange} error={errors.gender} options={['Male', 'Female']} />
+            <InputField label="Date of Birth *" name="date_of_birth" type="date" value={formData.date_of_birth} onChange={handleChange} error={errors.date_of_birth} />
+            <InputField label="Age" name="age" value={formData.age} onChange={handleChange} disabled />
+            <SelectField label="Marital Status *" name="marital_status" value={formData.marital_status} onChange={handleChange} error={errors.marital_status} options={['Single', 'Married', 'Divorced', 'Widowed']} />
+            <SelectField label="Citizenship *" name="citizen" value={formData.citizen} onChange={handleChange} error={errors.citizen} options={['Nigerian', 'Foreigner']} />
+            {formData.citizen === 'Foreigner' ? (
+              <InputField label="Country *" name="country" value={formData.country} onChange={handleChange} error={errors.country} />
+            ) : (
+              <SelectField label="State *" name="state" value={formData.state} onChange={handleChange} error={errors.state} options={nigerianStates.map(item => item.value)} />
+            )}
+            {formData.citizen === 'Foreigner' ? (
+              <InputField label="State/Province *" name="state" value={formData.state} onChange={handleChange} error={errors.state} />
+            ) : (
+              <InputField label="LGA" name="lga" value={formData.lga} onChange={handleChange} error={errors.lga} />
+            )}
+            <SelectField label="Religion *" name="religion" value={formData.religion} onChange={handleChange} error={errors.religion} options={['Christian', 'Other']} />
+            {formData.religion === 'Christian' && (
+              <InputField label="Church Name *" name="church_name" value={formData.church_name} onChange={handleChange} error={errors.church_name} />
+            )}
+            <InputField label="Profession *" name="profession" value={formData.profession} onChange={handleChange} error={errors.profession} />
+            <InputField label="Occupation *" name="occupation" value={formData.occupation} onChange={handleChange} error={errors.occupation} />
+          </div>
+
+          <div className="mt-4">
+            <TextAreaField label="Address *" name="address" value={formData.address} onChange={handleChange} error={errors.address} />
+          </div>
+
+          <SectionTitle title="YMCA Unit Selection" />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <SelectField
+              label="Unit *"
+              name="unit"
+              value={formData.unit}
+              onChange={handleChange}
+              error={errors.unit}
+              options={filteredUnits.map(option => option.value)}
+            />
+
+            {formData.unit === 'Council of Church' && (
+              <SelectField
+                label="Council of Church *"
+                name="club"
+                value={formData.club}
+                onChange={handleChange}
+                error={errors.club}
+                options={churches.map((item: any) => item.label)}
+              />
+            )}
+
+            {formData.unit === 'Youth Council' && (
+              <InputField
+                label="Youth Council Group"
+                name="club"
+                value={formData.club}
+                onChange={handleChange}
+                error={errors.club}
+                disabled
+              />
+            )}
+          </div>
+
+          <div className="mt-4 rounded-md border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+            <p className="font-semibold">Age Guidance</p>
+            <p className="mt-1">Ages 1-23: Youth Council with Hi-Y Club.</p>
+            <p className="mt-1">Ages 24-30: Youth Council with Y-Elite Club.</p>
+            <p className="mt-1">Age 31 and above: Council of Church, Y's Men, or Central Club.</p>
+          </div>
+
+          <SectionTitle title="Next of Kin & Referral" />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <InputField label="Next of Kin Name *" name="next_of_kin" value={formData.next_of_kin} onChange={handleChange} error={errors.next_of_kin} />
+            <InputField label="Next of Kin Phone *" name="next_of_kin_phone" value={formData.next_of_kin_phone} onChange={handleChange} error={errors.next_of_kin_phone} />
+            <SelectField label="Were You Referred?" name="referred_by" value={formData.referred_by} onChange={handleChange} error={errors.referred_by} options={['yes', 'no']} />
+            {formData.referred_by === 'yes' && (
+              <>
+                <InputField label="Referral Name *" name="referral_name" value={formData.referral_name} onChange={handleChange} error={errors.referral_name} />
+                <InputField label="Referral Source" name="referral_source" value={formData.referral_source} onChange={handleChange} error={errors.referral_source} />
+              </>
+            )}
+          </div>
+
+          <SectionTitle title="Identification" />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <SelectField
+              label="Valid ID Type *"
+              name="valid_id_type"
+              value={formData.valid_id_type}
+              onChange={handleChange}
+              error={errors.valid_id_type}
+              options={validIdOptions.map(option => option.value)}
+              optionLabels={Object.fromEntries(validIdOptions.map(option => [option.value, option.label]))}
+            />
+            <InputField
+              label="Card Expiry Date (Optional)"
+              name="card_expiry_date"
+              type="date"
+              value={formData.card_expiry_date}
+              onChange={handleChange}
+              error={errors.card_expiry_date}
+            />
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+            <FileField
+              label="Valid ID Document *"
+              field="valid_id_file"
+              preview={previews.valid_id_file}
+              error={errors.valid_id_file}
+              onChange={handleFileChange}
+            />
+            <FileField
+              label="Passport Photo *"
+              field="passport_photo"
+              preview={previews.passport_photo}
+              error={errors.passport_photo}
+              onChange={handleFileChange}
+            />
+            <FileField
+              label="Signature"
+              field="signature"
+              preview={previews.signature}
+              error={errors.signature}
+              onChange={handleFileChange}
+            />
+          </div>
+
+          <div className="mt-8 rounded-md border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+            Default password for this member will be <span className="font-semibold">member12345</span>.
+          </div>
+
+          <div className="mt-8 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="rounded-md bg-indigo-600 px-5 py-2 text-white hover:bg-indigo-700 disabled:opacity-60"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Saving...' : 'Save Member'}
+            </button>
+          </div>
+        </form>
       </div>
-    );
+    </div>
+  );
 };
 
+const SectionTitle: React.FC<{ title: string }> = ({ title }) => (
+  <div className="mt-8 mb-4 border-b pb-2">
+    <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
+  </div>
+);
 
+const InputField = ({ label, name, value, onChange, error, type = 'text', disabled = false }) => (
+  <div>
+    <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
+    <input
+      type={type}
+      name={name}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      className={`w-full rounded-md border px-3 py-2 ${disabled ? 'bg-gray-100' : 'bg-white'} ${error ? 'border-red-500' : 'border-gray-300'}`}
+    />
+    {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+  </div>
+);
 
-export default AddUserModal;  
+const TextAreaField = ({ label, name, value, onChange, error }) => (
+  <div>
+    <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
+    <textarea
+      name={name}
+      value={value}
+      onChange={onChange}
+      rows={3}
+      className={`w-full rounded-md border px-3 py-2 ${error ? 'border-red-500' : 'border-gray-300'}`}
+    />
+    {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+  </div>
+);
+
+const SelectField = ({ label, name, value, onChange, error, options, optionLabels = {} }) => (
+  <div>
+    <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
+    <select
+      name={name}
+      value={value}
+      onChange={onChange}
+      className={`w-full rounded-md border px-3 py-2 ${error ? 'border-red-500' : 'border-gray-300'}`}
+    >
+      <option value="">Select {label.replace('*', '').trim()}</option>
+      {options.map(option => (
+        <option key={option} value={option}>
+          {optionLabels[option] || option}
+        </option>
+      ))}
+    </select>
+    {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+  </div>
+);
+
+const FileField = ({ label, field, preview, error, onChange }) => (
+  <div>
+    <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
+    <input
+      type="file"
+      accept="image/jpeg,image/jpg,image/png"
+      onChange={(e) => onChange(e, field)}
+      className={`w-full rounded-md border px-3 py-2 ${error ? 'border-red-500' : 'border-gray-300'}`}
+    />
+    <p className="mt-1 text-xs text-gray-500">JPEG, JPG, or PNG up to 10MB</p>
+    {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+    {preview && <img src={preview} alt={`${field} preview`} className="mt-2 h-20 w-20 rounded object-cover" />}
+  </div>
+);
+
+export default AddUserModal;

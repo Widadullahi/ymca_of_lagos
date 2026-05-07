@@ -623,16 +623,99 @@ class AdminAddMembersView(generics.GenericAPIView):
     """
     Your original view for adding individual members
     """
-    queryset = User.objects.filter(is_superuser=False).order_by('-created_at')
+    queryset = User.objects.filter(is_superuser=False, is_admin=False).order_by('-created_at')
     serializer_class = RegisterSerializer
+    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [IsAdminUser]
 
     def post(self, request, *args, **kwargs):
-        data = request.data
-        data['password'] = 'member12345'
-        serializer = self.serializer_class(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return success_response(data={})
+        try:
+            with transaction.atomic():
+                email = str(request.data.get('email', '')).strip().lower()
+                first_name = str(request.data.get('first_name', '')).strip()
+                last_name = str(request.data.get('last_name', '')).strip()
+
+                if not email:
+                    return bad_request_response(message='Email is required')
+
+                if User.objects.filter(email__iexact=email).exists():
+                    return bad_request_response(message='Email already exists')
+
+                if UserRequest.objects.filter(email__iexact=email).exists():
+                    return bad_request_response(message='A request with this email already exists')
+
+                user = User.objects.create_user(
+                    email=email,
+                    password='member12345',
+                    first_name=first_name,
+                    last_name=last_name,
+                    is_admin=False,
+                    is_active=True,
+                )
+
+                mapped_payload = {
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'email': email,
+                    'phone_number': request.data.get('phone_number', ''),
+                    'citizen': request.data.get('citizen', 'Nigerian'),
+                    'country': request.data.get('country', ''),
+                    'state': request.data.get('state', ''),
+                    'lga': request.data.get('lga', ''),
+                    'unit': request.data.get('unit', ''),
+                    'club': request.data.get('club', ''),
+                    'age': request.data.get('age', ''),
+                    'gender': request.data.get('gender', ''),
+                    'date_of_birth': request.data.get('date_of_birth', ''),
+                    'address': request.data.get('address', ''),
+                    'profession': request.data.get('profession', ''),
+                    'religion': request.data.get('religion', ''),
+                    'church_name': request.data.get('church_name', ''),
+                    'occupation': request.data.get('occupation', ''),
+                    'marital_status': request.data.get('marital_status', ''),
+                    'valid_id_type': request.data.get('valid_id_type', ''),
+                    'next_of_kin': request.data.get('next_of_kin', ''),
+                    'next_of_kin_phone': request.data.get('next_of_kin_phone', ''),
+                    'referral_source': request.data.get('referral_source', ''),
+                    'referral_name': request.data.get('referral_name', ''),
+                    'referred_by': request.data.get('referred_by', 'no'),
+                    'passport_photo': request.data.get('passport_photo'),
+                    'valid_id_file': request.data.get('valid_id_file'),
+                    'signature': request.data.get('signature'),
+                }
+
+                user_request_serializer = UserRequestSerializer(data=mapped_payload, context={'request': request})
+                user_request_serializer.is_valid(raise_exception=True)
+                user_request = user_request_serializer.save(
+                    user=user,
+                    status=RequestStatus.APPROVED,
+                )
+
+                user.user_request = user_request
+                if user_request.passport_photo:
+                    user.image = user_request.passport_photo
+                user.save(update_fields=['user_request', 'image', 'updated_at'])
+
+                card, _ = IDCard.objects.get_or_create(user=user)
+                if user_request.signature:
+                    card.signature = user_request.signature
+
+                expiry_date = request.data.get('card_expiry_date')
+                if expiry_date:
+                    parsed_expiry = date.fromisoformat(str(expiry_date))
+                    card.expired_at = parsed_expiry
+                    card.first_time = False
+                    card.expired = parsed_expiry < date.today()
+                    card.is_active = not card.expired
+
+                card.save()
+
+                return success_response(
+                    data=UserSerializer(user, context={'request': request}).data,
+                    message='Member created successfully'
+                )
+        except Exception as error:
+            return bad_request_response(message=str(error))
 
     def get(self, request):
         members = self.get_queryset().order_by('-created_at')
@@ -645,7 +728,7 @@ class AdminAddMembersView(generics.GenericAPIView):
 
 class AdminMemberRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
-    queryset = User.objects.filter(is_superuser=False).order_by('-created_at')
+    queryset = User.objects.filter(is_superuser=False, is_admin=False).order_by('-created_at')
     serializer_class = UserSerializer
     lookup_field = 'id'
 
@@ -790,7 +873,7 @@ class CurrentUserRequestUpdateView(generics.GenericAPIView):
 
 class AdminMemberUpdateDestroyView(generics.GenericAPIView):
 
-    queryset = User.objects.filter(is_superuser=False).order_by('-created_at')
+    queryset = User.objects.filter(is_superuser=False, is_admin=False).order_by('-created_at')
     serializer_class = UserSerializer
     lookup_field = 'id'
 
@@ -1040,7 +1123,7 @@ class AdminMembersExportView(generics.GenericAPIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        users = User.objects.filter(is_superuser=False).select_related('user_request')
+        users = User.objects.filter(is_superuser=False, is_admin=False).select_related('user_request')
 
         raw_user_ids = request.GET.get('user_ids', '').strip()
         if raw_user_ids:
@@ -1093,46 +1176,56 @@ class AdminPromoteMemberView(generics.GenericAPIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request, *args, **kwargs):
-        users = User.objects.filter(is_superuser=False).select_related('user_request').order_by('-created_at')
+        users = User.objects.filter(is_superuser=False, is_admin=True).select_related('user_request').order_by('-created_at')
         serializer = UserSerializer(users, many=True, context={'request': request})
         return success_response(data=serializer.data)
 
     def post(self, request, *args, **kwargs):
-        user_id = request.data.get('user_id')
-        make_admin = request.data.get('make_admin', True)
+        first_name = str(request.data.get('first_name', '')).strip()
+        last_name = str(request.data.get('last_name', '')).strip()
+        email = str(request.data.get('email', '')).strip().lower()
+        phone_number = str(request.data.get('phone_number', '')).strip()
 
-        if not user_id:
-            return bad_request_response(message='user_id is required')
+        if not first_name:
+            return bad_request_response(message='First name is required')
+        if not last_name:
+            return bad_request_response(message='Last name is required')
+        if not email:
+            return bad_request_response(message='Email is required')
+        if not phone_number:
+            return bad_request_response(message='Phone number is required')
 
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return bad_request_response(message='Member not found')
+        if User.objects.filter(email__iexact=email).exists():
+            return bad_request_response(message='Email already exists')
 
-        if user.is_superuser:
-            return bad_request_response(message='Superuser access cannot be changed here')
+        if UserRequest.objects.filter(email__iexact=email).exists():
+            return bad_request_response(message='A profile with this email already exists')
 
-        make_admin = str(make_admin).strip().lower() not in ['false', '0', 'no']
+        with transaction.atomic():
+            user = User.objects.create_user(
+                email=email,
+                password='admin12345',
+                first_name=first_name,
+                last_name=last_name,
+                is_admin=True,
+                is_staff=True,
+                is_active=True,
+            )
 
-        if make_admin and user.is_admin:
-            return bad_request_response(message='This user is already an admin')
+            admin_profile = UserRequest.objects.create(
+                user=user,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                phone_number=phone_number,
+                passport_photo=AdminMembersBulkUploadView._placeholder_passport_file(),
+                status=RequestStatus.APPROVED,
+            )
 
-        if not make_admin and not user.is_admin:
-            return bad_request_response(message='This user is not currently an admin')
-
-        user.is_admin = make_admin
-        user.is_staff = make_admin
-        user.is_active = True
-        user.save(update_fields=['is_admin', 'is_staff', 'is_active', 'updated_at'])
-
-        full_name = user.get_full_name() or user.email
-        action_text = 'promoted to admin' if make_admin else 'removed from admin access'
+            user.user_request = admin_profile
+            user.save(update_fields=['user_request', 'updated_at'])
 
         return success_response(
-            message=f'{full_name} has been {action_text} successfully',
-            data={
-                'id': str(user.id),
-                'email': user.email,
-                'is_admin': user.is_admin,
-            }
+            message=f'{first_name} {last_name} has been added as an admin successfully',
+            data=UserSerializer(user, context={'request': request}).data
         )
