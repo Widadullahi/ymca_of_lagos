@@ -1,3 +1,4 @@
+import threading
 import base64
 import csv
 import io
@@ -81,6 +82,67 @@ def send_verification_email(recipient_email: str, verification_code: str) -> Non
         connection=connection,
         fail_silently=False,
     )
+
+def send_status_update_email(recipient_email: str, status: str, review_notes: str, user_name: str) -> None:
+    if status == 'approved':
+        subject = 'Your YMCA Lagos Membership Request has been Approved!'
+        text_body = f"Hello {user_name},\n\nYour membership application has been approved. Welcome to YMCA Lagos!\n\nYour default password is: member12345"
+        html_body = (
+            f"<p>Hello <strong>{user_name}</strong>,</p>"
+            "<p>Your membership application has been approved. Welcome to YMCA Lagos!</p>"
+            "<p>Your default password is: <strong>member12345</strong></p>"
+            "<p>Please log in and change your password as soon as possible.</p>"
+        )
+    elif status == 'rejected':
+        subject = 'Update on your YMCA Lagos Membership Request'
+        text_body = f"Hello {user_name},\n\nUnfortunately, your membership application has been rejected.\n\nNotes from admin: {review_notes}"
+        html_body = (
+            f"<p>Hello <strong>{user_name}</strong>,</p>"
+            "<p>Unfortunately, your membership application has been rejected.</p>"
+        )
+        if review_notes:
+            html_body += f"<p><strong>Notes from admin:</strong> {review_notes}</p>"
+    else:
+        return
+
+    try:
+        if settings.RESEND_API_KEY:
+            response = requests.post(
+                settings.RESEND_API_URL,
+                headers={
+                    'Authorization': f'Bearer {settings.RESEND_API_KEY}',
+                    'Content-Type': 'application/json',
+                },
+                json={
+                    'from': settings.DEFAULT_FROM_EMAIL,
+                    'to': [recipient_email],
+                    'subject': subject,
+                    'text': text_body,
+                    'html': html_body,
+                },
+                timeout=getattr(settings, 'EMAIL_TIMEOUT', 15),
+            )
+
+            if not response.ok:
+                try:
+                    error_payload = response.json()
+                except ValueError:
+                    error_payload = response.text
+                logger.error(f'Resend API error: {error_payload}')
+            return
+
+        connection = get_connection(timeout=getattr(settings, 'EMAIL_TIMEOUT', 15))
+        send_mail(
+            subject,
+            text_body,
+            settings.DEFAULT_FROM_EMAIL,
+            [recipient_email],
+            fail_silently=False,
+            connection=connection,
+            html_message=html_body,
+        )
+    except Exception as e:
+        logger.error(f'Failed to send status update email: {e}')
 
 
 class SendEmailVerificationCodeView(generics.GenericAPIView):
@@ -233,6 +295,7 @@ class AdminGetMemberOverview(generics.GenericAPIView):
         elif overview == 'month':
             from datetime import datetime
             import calendar
+            # pyrefly: ignore [missing-import]
             from django.db.models import Q
 
             # Get current year
@@ -1038,14 +1101,27 @@ class AdminUpdateRequestStatusView(generics.UpdateAPIView):
                         user.image = user_request.passport_photo
                         user.save()
                     except:pass
-                    
+
+                    if user_request.email:
+                        user_name = f"{user_request.first_name} {user_request.last_name}"
+                        thread = threading.Thread(
+                            target=send_status_update_email,
+                            kwargs={
+                                "recipient_email": user_request.email,
+                                "status": "approved",
+                                "review_notes": review_notes,
+                                "user_name": user_name,
+                            }
+                        )
+
+                        thread.start()
+                                        
                     return success_response(
                         data={
                             'id': str(user_request.id),
                             'status': user_request.status,
                             'reviewed_by': request.user.email,
                             'reviewed_at': user_request.reviewed_at,
-                            'user_created': True,
                             'user_id': str(user.id),
                             'user_email': user.email,
                         },
@@ -1070,6 +1146,24 @@ class AdminUpdateRequestStatusView(generics.UpdateAPIView):
         user_request.reviewed_at = timezone.now()
         user_request.save()
         
+        # Send email notification
+        if new_status in ['approved', 'rejected'] and user_request.email:
+            # We run it in a background thread or directly. Direct is fine for now, or thread to not block.
+            # We already have a try/except in send_status_update_email so it won't crash the request.
+            user_name = f"{user_request.first_name} {user_request.last_name}"
+
+            thread = threading.Thread(
+                target=send_status_update_email,
+                kwargs={
+                    "recipient_email": user_request.email,
+                    "status": new_status,
+                    "review_notes": review_notes,
+                    "user_name": user_name,
+                }
+            )
+
+            thread.start()
+
         return success_response(
             data={
                 'id': str(user_request.id),
