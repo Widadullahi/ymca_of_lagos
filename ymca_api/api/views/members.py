@@ -17,6 +17,7 @@ from django.db import transaction,IntegrityError
 from django.utils import timezone
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
+from rest_framework import serializers
 from account.models import Category, Church, EmailVerification, IDCard, User, UserRequest, YouthGroup, RequestStatus
 from account.serializers import IDCardSerializer, RegisterSerializer
 from account.serializers import UserSerializer
@@ -160,8 +161,11 @@ class SendEmailVerificationCodeView(generics.GenericAPIView):
                 )
 
             send_verification_email(email, verification.code)
-        except Exception:
-            logger.exception('Email verification send failed')
+        except serializers.ValidationError as e:
+            # Let DRF handle validation errors
+            raise e
+        except Exception as e:
+            logger.exception(f'Email verification send failed: {str(e)}')
             return internal_server_error_response(
                 message='Unable to send verification code right now. Please try again.'
             )

@@ -40,29 +40,29 @@ interface FormData {
   age: string;
   marital_status: string;
   citizen: string;
-  
+
   // Location
   country: string;
   state: string;
   lga: string;
   address: string;
-  
+
   // YMCA Info
   unit: string;
   club: string;
   churchName: string;
-  
+
   // Professional & Religious
   profession: string;
   occupation: string;
   religion: string;
-  
+
   // Identification
   validIdType: string;
   validIdFile: File | null;
   passport_photo: File | null;
   signature: File | null;
-  
+
   // Next of Kin & Referral
   nextOfKinName: string;
   nextOfKinNumber: string;
@@ -450,18 +450,18 @@ const validIdOptions = [
 // Mobile-friendly Select component wrapper
 const MobileFriendlySelect = (props: any) => {
   const [isMobile, setIsMobile] = useState(false);
-  
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-  
+
   return (
     <Select
       {...props}
@@ -470,8 +470,8 @@ const MobileFriendlySelect = (props: any) => {
       classNamePrefix="react-select"
       styles={{
         menuPortal: base => ({ ...base, zIndex: 9999 }),
-        menu: base => ({ 
-          ...base, 
+        menu: base => ({
+          ...base,
           zIndex: 9999,
           position: isMobile ? 'fixed' : 'absolute',
         }),
@@ -492,7 +492,7 @@ const MobileFriendlySelect = (props: any) => {
 const RequestForm: React.FC = () => {
   const navigate = useNavigate();
   const { fetchWithAuth, displayNotification } = useAuth();
-  
+
   // Form state
   const [formData, setFormData] = useState<FormData>({
     first_name: '',
@@ -523,7 +523,7 @@ const RequestForm: React.FC = () => {
     referredBy: 'no',
     referralName: '',
   });
-  
+
   // UI state
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -531,10 +531,10 @@ const RequestForm: React.FC = () => {
   const [idPreview, setIdPreview] = useState<string | null>(null);
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [dragActive, setDragActive] = useState({ 
-    passport_photo: false, 
-    validIdFile: false, 
-    signature: false 
+  const [dragActive, setDragActive] = useState({
+    passport_photo: false,
+    validIdFile: false,
+    signature: false
   });
   const [availableClubs, setAvailableClubs] = useState<ClubOption[]>([]);
   const [availableChurches, setAvailableChurches] = useState<ClubOption[]>([]);
@@ -543,6 +543,13 @@ const RequestForm: React.FC = () => {
   const [ageValidationMessage, setAgeValidationMessage] = useState<string>('');
   const [isMobile, setIsMobile] = useState(false);
   const [filteredUnits, setFilteredUnits] = useState<UnitOption[]>(units);
+
+  // Email Verification State
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [showVerificationInput, setShowVerificationInput] = useState(false);
+  const [verifyingEmail, setVerifyingEmail] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
 
   // Refs - FIXED: Changed type to RefObject<HTMLInputElement>
   const passportPhotoRef = useRef<HTMLInputElement>(null!);
@@ -555,10 +562,10 @@ const RequestForm: React.FC = () => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
@@ -567,21 +574,21 @@ const RequestForm: React.FC = () => {
     if (isMobile) {
       const metaViewport = document.querySelector('meta[name="viewport"]');
       const originalContent = metaViewport?.getAttribute('content') || '';
-      
+
       const preventZoom = () => {
         if (metaViewport) {
           metaViewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
         }
       };
-      
+
       const restoreZoom = () => {
         if (metaViewport) {
           metaViewport.setAttribute('content', originalContent);
         }
       };
-      
+
       preventZoom();
-      
+
       return () => {
         restoreZoom();
       };
@@ -603,17 +610,17 @@ const RequestForm: React.FC = () => {
   // Filter units based on age
   const filterUnitsByAge = useCallback((age: number): UnitOption[] => {
     if (!age) return units;
-    
+
     // If age is 1-30, only show Youth Council
     if (age >= 1 && age <= 30) {
       return units.filter(unit => unit.label === 'Youth Council');
     }
-    
+
     // If age is 31+, show all units except Youth Council
     if (age >= 31) {
       return units.filter(unit => unit.label !== 'Youth Council');
     }
-    
+
     return units;
   }, []);
 
@@ -623,25 +630,25 @@ const RequestForm: React.FC = () => {
     if (!unit?.dropDown) return [];
     const unitName = unit.label.toLowerCase();
     if (unitName.includes("y's men") || unitName.includes('central club')) return [];
-    
+
     const allClubs: ClubOption[] = unit.dropDown.map((club: any) => {
       const key = Object.keys(club)[0];
       return { value: club[key], label: club[key] };
     });
-    
+
     // YOUTH COUNCIL - STRICT AGE RULES
     if (unitName.includes('youth')) {
       // Age 1-23: Only Hi-Y clubs
       if (age >= 1 && age <= 23) {
-        return allClubs.filter(club => 
-          club.label.toLowerCase().includes('hi-y') || 
+        return allClubs.filter(club =>
+          club.label.toLowerCase().includes('hi-y') ||
           club.label.toLowerCase().includes('hi y')
         );
       }
       // Age 24-30: Only Y-Elite clubs
       else if (age >= 24 && age <= 30) {
-        return allClubs.filter(club => 
-          club.label.toLowerCase().includes('y-elite') || 
+        return allClubs.filter(club =>
+          club.label.toLowerCase().includes('y-elite') ||
           club.label.toLowerCase().includes('yelite')
         );
       }
@@ -650,14 +657,14 @@ const RequestForm: React.FC = () => {
         return [];
       }
     }
-    
+
     // ADULT UNITS (31+ ONLY) - STRICT RULE
     // Y's Men, Central Club, Council of Church require age 31+
-    if (unitName.includes("y's men") || unitName.includes('central') || 
-        (unitName.includes('council') && unitName.includes('church'))) {
+    if (unitName.includes("y's men") || unitName.includes('central') ||
+      (unitName.includes('council') && unitName.includes('church'))) {
       return age >= 31 ? allClubs : [];
     }
-    
+
     return allClubs;
   }, []);
 
@@ -665,7 +672,7 @@ const RequestForm: React.FC = () => {
   const getAvailableChurches = useCallback((unitValue: string): ClubOption[] => {
     const unit = units.find(u => u.value === unitValue);
     if (!unit?.churchDropDown) return [];
-    
+
     return unit.churchDropDown.map((church: any) => {
       const key = Object.keys(church)[0];
       return { value: church[key], label: church[key] };
@@ -677,11 +684,11 @@ const RequestForm: React.FC = () => {
     if (formData.date_of_birth) {
       const age = calculateAge(formData.date_of_birth);
       setFormData(prev => ({ ...prev, age: age.toString() }));
-      
+
       // Filter units based on age
       const filtered = filterUnitsByAge(age);
       setFilteredUnits(filtered);
-      
+
       // If current unit is not available for this age, reset it
       if (formData.unit && !filtered.some(u => u.value === formData.unit)) {
         setFormData(prev => ({ ...prev, unit: '', club: '' }));
@@ -706,7 +713,7 @@ const RequestForm: React.FC = () => {
       const ageNum = parseInt(formData.age);
       const clubs = getAvailableClubs(ageNum, formData.unit);
       setAvailableClubs(clubs);
-      
+
       // Reset club if no longer valid
       if (formData.club && !clubs.some(c => c.value === formData.club)) {
         setFormData(prev => ({ ...prev, club: '' }));
@@ -721,7 +728,7 @@ const RequestForm: React.FC = () => {
     if (formData.unit && formData.unit.toLowerCase().includes('council of church')) {
       const churches = getAvailableChurches(formData.unit);
       setAvailableChurches(churches);
-      
+
       // Reset church selection if no longer valid
       if (formData.club && !churches.some(c => c.value === formData.club)) {
         setFormData(prev => ({ ...prev, club: '' }));
@@ -736,14 +743,14 @@ const RequestForm: React.FC = () => {
     if (formData.age && formData.unit) {
       const ageNum = parseInt(formData.age);
       const unit = units.find(u => u.value === formData.unit);
-      
+
       if (!unit) {
         setAgeValidationMessage('');
         return;
       }
-      
+
       const unitName = unit.label;
-      
+
       // Youth Council validation
       if (unitName.includes('Youth Council')) {
         // Age validation message already handled in form validation
@@ -760,15 +767,78 @@ const RequestForm: React.FC = () => {
     }
   }, [formData.age, formData.unit]);
 
+  // Email Verification Logic
+  const handleSendVerificationCode = async () => {
+    if (!formData.email.trim()) {
+      displayNotification("error", "Please enter your email address first");
+      return;
+    }
+
+    if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(formData.email)) {
+      displayNotification("error", "Please enter a valid email address");
+      return;
+    }
+    setSendingCode(true);
+    try {
+      const response = await fetchWithAuth({
+        method: 'POST',
+        path: '/requests/email-verification/send/',
+        body: { email: formData.email.toLowerCase() },
+      });
+      if (response.status) {
+        displayNotification("success", "Verification code sent to your email");
+        setShowVerificationInput(true);
+      } else {
+        displayNotification("error", response.message || "Failed to send verification code");
+      }
+    } catch (error) {
+      console.error('Send code error:', error);
+      // Let fetchWithAuth's handleErrorResponse display the specific error message
+      // displayNotification("error", "An error occurred while sending the code");
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!verificationCode.trim()) {
+      displayNotification("error", "Please enter the verification code");
+      return;
+    }
+
+    setVerifyingEmail(true);
+    try {
+      const response = await fetchWithAuth({
+        method: 'POST',
+        path: '/requests/email-verification/verify/',
+        body: { email: formData.email.toLowerCase(), code: verificationCode.trim() },
+      });
+
+      if (response.status) {
+        displayNotification("success", "Email verified successfully");
+        setIsEmailVerified(true);
+        setShowVerificationInput(false);
+      } else {
+        displayNotification("error", response.message || "Invalid or expired verification code");
+      }
+    } catch (error) {
+      console.error('Verify code error:', error);
+      // Let fetchWithAuth's handleErrorResponse display the specific error message
+      // displayNotification("error", "An error occurred during verification");
+    } finally {
+      setVerifyingEmail(false);
+    }
+  };
+
   // Handle date change
   const handleDateChange = (date: Date | null) => {
     setDateOfBirth(date);
     setTouchedFields(prev => ({ ...prev, date_of_birth: true }));
-    
+
     if (date) {
       const isoDate = format(date, 'yyyy-MM-dd');
       const age = calculateAge(isoDate);
-      
+
       setFormData(prev => ({
         ...prev,
         date_of_birth: isoDate,
@@ -786,7 +856,7 @@ const RequestForm: React.FC = () => {
   // Handle input change
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    
+
     startTransition(() => {
       setTouchedFields(prev => ({ ...prev, [name]: true }));
       setFieldErrors(prev => {
@@ -796,7 +866,7 @@ const RequestForm: React.FC = () => {
         return nextErrors;
       });
     });
-    
+
     const nextValue = name === 'email' ? value.toLowerCase() : value;
     if (name === 'religion' && value !== 'Christian') {
       setFormData(prev => ({ ...prev, [name]: nextValue, churchName: '' }));
@@ -817,9 +887,9 @@ const RequestForm: React.FC = () => {
         return nextErrors;
       });
     });
-    
+
     setFormData(prev => ({ ...prev, [name]: value || '' }));
-    
+
     // Cascade resets
     if (name === 'unit') {
       setFormData(prev => ({ ...prev, club: '' }));
@@ -836,14 +906,14 @@ const RequestForm: React.FC = () => {
       setFieldErrors(prev => ({ ...prev, [field]: 'File must be JPEG, JPG, or PNG' }));
       return;
     }
-    
+
     if (file.size > 10 * 1024 * 1024) {
       setFieldErrors(prev => ({ ...prev, [field]: 'File size must be less than 10MB' }));
       return;
     }
-    
+
     setFormData(prev => ({ ...prev, [field]: file }));
-    
+
     // Create preview for images only
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
@@ -855,7 +925,7 @@ const RequestForm: React.FC = () => {
       };
       reader.readAsDataURL(file);
     }
-    
+
     // Clear error
     startTransition(() => {
       setFieldErrors(prev => {
@@ -871,7 +941,7 @@ const RequestForm: React.FC = () => {
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
     const ageNum = parseInt(formData.age);
-    
+
     // Basic required fields
     if (!formData.email.trim()) errors.email = 'Email is required';
     if (!formData.first_name.trim()) errors.first_name = 'First name is required';
@@ -886,7 +956,7 @@ const RequestForm: React.FC = () => {
     if (formData.religion === 'Christian' && !formData.churchName.trim()) {
       errors.churchName = 'Church name is required for Christians';
     }
-    
+
     // Email validation
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.email = 'Invalid email format';
@@ -895,46 +965,46 @@ const RequestForm: React.FC = () => {
     if (formData.phone_number && !/^[\+]?[0-9\s\-\(\)]{10,}$/.test(formData.phone_number)) {
       errors.phone_number = 'Invalid phone number';
     }
-    
+
     // Age-based unit validation - STRICT RULES
     if (formData.unit && formData.age) {
       const unitName = formData.unit.toLowerCase();
-      
+
       // Youth Council rules
       if (unitName.includes('youth')) {
         if (ageNum >= 31) {
           errors.unit = 'Age 31+ cannot join Youth Council. Please select Y\'s Men, Central Club, or Council of Church.';
-        } else if (ageNum >= 1 && ageNum <= 23 && formData.club && 
-                   !formData.club.toLowerCase().includes('hi-y') && 
-                   !formData.club.toLowerCase().includes('hi y')) {
+        } else if (ageNum >= 1 && ageNum <= 23 && formData.club &&
+          !formData.club.toLowerCase().includes('hi-y') &&
+          !formData.club.toLowerCase().includes('hi y')) {
           errors.club = 'Ages 1-23 can only select Hi-Y clubs in Youth Council';
-        } else if (ageNum >= 24 && ageNum <= 30 && formData.club && 
-                   !formData.club.toLowerCase().includes('y-elite') && 
-                   !formData.club.toLowerCase().includes('yelite')) {
+        } else if (ageNum >= 24 && ageNum <= 30 && formData.club &&
+          !formData.club.toLowerCase().includes('y-elite') &&
+          !formData.club.toLowerCase().includes('yelite')) {
           errors.club = 'Ages 24-30 can only select Y-Elite clubs in Youth Council';
         }
       }
       // Adult units rules (31+ only) - This includes Council of Church
-      else if ((unitName.includes("y's men") || unitName.includes('central') || 
-                (unitName.includes('council') && unitName.includes('church'))) && 
-                ageNum < 31) {
+      else if ((unitName.includes("y's men") || unitName.includes('central') ||
+        (unitName.includes('council') && unitName.includes('church'))) &&
+        ageNum < 31) {
         const unitDisplay = formData.unit;
         errors.unit = `Age ${ageNum} cannot join ${unitDisplay}. Minimum age is 31.`;
       }
     }
-    
+
     const clubValue = (formData.club ?? '').toString().trim();
 
     // Club validation
     if (availableClubs.length > 0 && !clubValue) {
       errors.club = 'Club selection is required';
     }
-    
+
     // Church validation for Council of Church
     if (formData.unit.toLowerCase().includes('council of church') && availableChurches.length > 0 && !clubValue) {
       errors.club = 'Church selection is required for Council of Church';
     }
-    
+
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -942,7 +1012,7 @@ const RequestForm: React.FC = () => {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       // Scroll to first error
       const firstError = Object.keys(fieldErrors)[0];
@@ -950,15 +1020,15 @@ const RequestForm: React.FC = () => {
       element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
-    
+
     setLoading(true);
-    
+
     try {
       if (formData.email) {
         setFormData(prev => ({ ...prev, email: prev.email.toLowerCase() }));
       }
       const formDataToSend = new FormData();
-      
+
       const keyMap: Record<string, string> = {
         validIdType: 'valid_id_type',
         validIdFile: 'valid_id_file',
@@ -981,14 +1051,14 @@ const RequestForm: React.FC = () => {
           }
         }
       });
-      
+
       await fetchWithAuth({
         method: 'POST',
         path: '/requests/',
         body: formDataToSend,
         isFormData: true,
       });
-      
+
       // Show success
       setShowSuccess(true);
       setTimeout(() => {
@@ -1032,13 +1102,13 @@ const RequestForm: React.FC = () => {
         setAvailableChurches([]);
         setAgeValidationMessage('');
         setFilteredUnits(units);
-        
+
         // Clear file inputs
         if (passportPhotoRef.current) passportPhotoRef.current.value = '';
         if (validIdFileRef.current) validIdFileRef.current.value = '';
         if (signatureRef.current) signatureRef.current.value = '';
       }, 3000);
-      
+
     } catch (error: any) {
       console.error('Submission error:', error);
       displayNotification(
@@ -1073,13 +1143,12 @@ const RequestForm: React.FC = () => {
         {label} {required && '*'}
       </label>
       <div
-        className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
-          dragActive[dragActiveKey] 
-            ? 'border-blue-500 bg-blue-50' 
-            : fieldErrors[field] 
-              ? 'border-red-500 bg-red-50' 
+        className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${dragActive[dragActiveKey]
+            ? 'border-blue-500 bg-blue-50'
+            : fieldErrors[field]
+              ? 'border-red-500 bg-red-50'
               : 'border-gray-300 hover:border-gray-400'
-        }`}
+          }`}
         onDragOver={(e) => {
           e.preventDefault();
           setDragActive(prev => ({ ...prev, [dragActiveKey]: true }));
@@ -1114,15 +1183,15 @@ const RequestForm: React.FC = () => {
             Choose File
           </button>
           <p className="text-sm text-gray-600">
-            {formData[field] 
-              ? `Selected: ${(formData[field] as File).name}` 
+            {formData[field]
+              ? `Selected: ${(formData[field] as File).name}`
               : 'Drag & drop or click to browse'}
           </p>
           <p className="text-xs text-gray-500 mt-1">
             Accepted: JPEG, JPG, PNG (Max 10MB)
-            </p>
-          </div>
+          </p>
         </div>
+      </div>
       {fieldErrors[field] && (
         <p className="text-red-500 text-sm mt-1">{fieldErrors[field]}</p>
       )}
@@ -1210,7 +1279,7 @@ const RequestForm: React.FC = () => {
             <img src={ymca} alt="YMCA Lagos Logo" className="h-12 w-auto object-contain drop-shadow-lg" />
           </Link>
         </div>
-        <motion.h1 
+        <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
@@ -1230,7 +1299,7 @@ const RequestForm: React.FC = () => {
 
       {showSuccess && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <motion.div 
+          <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.4 }}
@@ -1245,11 +1314,11 @@ const RequestForm: React.FC = () => {
         </div>
       )}
 
-      <form 
+      <form
         ref={formRef}
-        onSubmit={handleSubmit} 
+        onSubmit={handleSubmit}
         className="w-full max-w-2xl mx-auto bg-white/80 backdrop-blur-md shadow-2xl rounded-2xl px-4 md:px-8 pt-8 pb-10 mb-8 border border-gray-100 form-container"
-        style={{ 
+        style={{
           position: 'relative',
           zIndex: 1,
           overflow: 'visible'
@@ -1286,19 +1355,63 @@ const RequestForm: React.FC = () => {
               className={getInputBorderColor('last_name', formData.last_name)}
             />
 
-            <FormInput
-              label="Email Address *"
-              name="email"
-              type="email"
-              placeholder="Enter your email address"
-              value={formData.email}
-              onChange={handleInputChange}
-              error={fieldErrors.email}
-              className={getInputBorderColor('email', formData.email)}
-            />
+            <div className="md:col-span-2">
+              <div className="flex flex-col sm:flex-row gap-3 items-start">
+                <div className="flex-1 w-full">
+                  <FormInput
+                    label="Email Address *"
+                    name="email"
+                    type="email"
+                    placeholder="Enter your email address"
+                    value={formData.email}
+                    onChange={(e) => {
+                      handleInputChange(e as any);
+                      setIsEmailVerified(false);
+                      setShowVerificationInput(false);
+                    }}
+                    error={fieldErrors.email}
+                    className={getInputBorderColor('email', formData.email)}
+                  />
+                </div>
+                <div className="mt-[28px] w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={handleSendVerificationCode}
+                    disabled={sendingCode || isEmailVerified || !formData.email}
+                    className={`h-[42px] w-full sm:w-auto px-6 rounded-lg font-medium transition-colors ${isEmailVerified
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed'
+                      }`}
+                  >
+                    {sendingCode ? 'Sending...' : isEmailVerified ? '✓ Verified' : 'Get Code'}
+                  </button>
+                </div>
+              </div>
 
-            <div className="md:col-span-2 -mt-2 mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-              Email verification is temporarily disabled. You can continue registration without sending a code.
+              {showVerificationInput && !isEmailVerified && (
+                <div className="flex flex-col sm:flex-row gap-3 items-start mt-3 animate-fade-in">
+                  <div className="flex-1 w-full">
+                    <input
+                      type="text"
+                      placeholder="Enter 6-digit verification code"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all h-[42px]"
+                      maxLength={6}
+                    />
+                  </div>
+                  <div className="w-full sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={handleVerifyCode}
+                      disabled={verifyingEmail || verificationCode.length !== 6}
+                      className="h-[42px] w-full sm:w-auto px-8 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors"
+                    >
+                      {verifyingEmail ? 'Verifying...' : 'Verify'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <FormInput
@@ -1346,7 +1459,7 @@ const RequestForm: React.FC = () => {
                 isClearable
                 onBlur={() => setTouchedFields(prev => ({ ...prev, date_of_birth: true }))}
               />
-              
+
               {fieldErrors.date_of_birth && (
                 <p className="text-red-500 text-xs italic mt-1">{fieldErrors.date_of_birth}</p>
               )}
@@ -1380,7 +1493,7 @@ const RequestForm: React.FC = () => {
               error={fieldErrors.marital_status}
               className={getInputBorderColor('marital_status', formData.marital_status)}
             />
-          
+
             <div className="mb-4">
               <label className="block text-sm font-bold mb-2">Citizenship Status</label>
               <div className="flex space-x-4">
@@ -1434,7 +1547,7 @@ const RequestForm: React.FC = () => {
                 {fieldErrors.country && <p className="mt-1 text-sm text-red-600">{fieldErrors.country}</p>}
               </div>
             )}
-            
+
             {formData.citizen === 'Nigerian' ? (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
@@ -1477,7 +1590,7 @@ const RequestForm: React.FC = () => {
                 className={getInputBorderColor('lga', formData.lga)}
               />
             )}
-          
+
             <FormSelect
               label="Religion"
               name="religion"
@@ -1490,7 +1603,7 @@ const RequestForm: React.FC = () => {
               error={fieldErrors.religion}
               className={getInputBorderColor('religion', formData.religion)}
             />
-            
+
             {formData.religion === 'Christian' && (
               <FormInput
                 label="Church Name"
@@ -1503,7 +1616,7 @@ const RequestForm: React.FC = () => {
                 className={getInputBorderColor('churchName', formData.churchName)}
               />
             )}
-            
+
             <FormInput
               label="Profession"
               name="profession"
@@ -1551,7 +1664,7 @@ const RequestForm: React.FC = () => {
         {/* Section Divider: YMCA Unit Selection */}
         <div className="mb-8">
           <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b-2 border-gray-200 pb-2">YMCA Unit Selection</h3>
-          
+
           {/* Unit Selection */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1620,29 +1733,29 @@ const RequestForm: React.FC = () => {
           {formData.age && formData.unit && availableClubs.length === 0 &&
             !formData.unit.toLowerCase().includes("y's men") &&
             !formData.unit.toLowerCase().includes('central club') && (
-            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-              <p className="text-sm text-yellow-700">
-                {(() => {
-                  const ageNum = parseInt(formData.age);
-                  const unit = units.find(u => u.value === formData.unit);
-                  
-                  if (unit?.label.includes('Youth Council')) {
-                    if (ageNum >= 31) {
-                      return 'Youth Council is only for ages 1-30. Please select a different unit.';
-                    } else {
-                      return 'No clubs available for your age group. Please contact administration.';
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <p className="text-sm text-yellow-700">
+                  {(() => {
+                    const ageNum = parseInt(formData.age);
+                    const unit = units.find(u => u.value === formData.unit);
+
+                    if (unit?.label.includes('Youth Council')) {
+                      if (ageNum >= 31) {
+                        return 'Youth Council is only for ages 1-30. Please select a different unit.';
+                      } else {
+                        return 'No clubs available for your age group. Please contact administration.';
+                      }
+                    } else if (unit && (unit.label.includes("Y's Men") || unit.label.includes('Central Club') || unit.label.includes('Council of Church'))) {
+                      if (ageNum < 31) {
+                        return 'This unit requires age 31 or older. Please select Youth Council or contact administration.';
+                      }
                     }
-                  } else if (unit && (unit.label.includes("Y's Men") || unit.label.includes('Central Club') || unit.label.includes('Council of Church'))) {
-                    if (ageNum < 31) {
-                      return 'This unit requires age 31 or older. Please select Youth Council or contact administration.';
-                    }
-                  }
-                  
-                  return '';
-                })()}
-              </p>
-            </div>
-          )}
+
+                    return '';
+                  })()}
+                </p>
+              </div>
+            )}
 
           {/* Age Guidance Info */}
           <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-md">
@@ -1661,7 +1774,7 @@ const RequestForm: React.FC = () => {
         {/* Section Divider: Next of Kin & Referral */}
         <div className="mb-8">
           <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b-2 border-gray-200 pb-2">Next of Kin & Referral</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormInput
               label="Next of Kin Name"
@@ -1720,7 +1833,7 @@ const RequestForm: React.FC = () => {
         {/* Section Divider: Identification */}
         <div className="mb-8">
           <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b-2 border-gray-200 pb-2">Identification</h3>
-          
+
           <FormSelect
             label="Valid ID Type *"
             name="validIdType"
@@ -1745,7 +1858,7 @@ const RequestForm: React.FC = () => {
         {/* Section Divider: Photo Upload */}
         <div className="mb-8">
           <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b-2 border-gray-200 pb-2">Photo Upload</h3>
-          
+
           <FileUploadField
             field="passport_photo"
             label="Passport Photo *"
@@ -1759,7 +1872,7 @@ const RequestForm: React.FC = () => {
         {/* Section Divider: Signature Upload */}
         <div className="mb-8">
           <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b-2 border-gray-200 pb-2">Signature Upload</h3>
-          
+
           <FileUploadField
             field="signature"
             label="Signature"
@@ -1774,8 +1887,8 @@ const RequestForm: React.FC = () => {
         <div className="mb-6">
           <button
             type="submit"
-            disabled={loading}
-            className={`w-full bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white font-bold py-4 px-4 rounded-lg focus:outline-none focus:shadow-outline transform transition-all duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02]'}`}
+            disabled={loading || !isEmailVerified}
+            className={`w-full bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white font-bold py-4 px-4 rounded-lg focus:outline-none focus:shadow-outline transform transition-all duration-200 ${loading || !isEmailVerified ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02]'}`}
           >
             {loading ? (
               <span className="flex items-center justify-center">
@@ -1789,6 +1902,11 @@ const RequestForm: React.FC = () => {
               'Submit Application'
             )}
           </button>
+          {!isEmailVerified && (
+            <p className="text-red-500 text-sm mt-3 text-center font-medium">
+              You must verify your email address before you can submit the application.
+            </p>
+          )}
         </div>
 
         {/* Information Note */}
@@ -1809,9 +1927,9 @@ const RequestForm: React.FC = () => {
             <li className="ml-4">- Y's Men, Central Club, Council of Church: Age 31+ only</li>
           </ul>
         </div>
-        
+
         <div className="mt-6 text-center">
-          <a 
+          <a
             className="inline-block align-baseline font-bold text-sm text-red-600 hover:text-red-800 transition-colors"
             href="/login"
             onClick={(e) => {

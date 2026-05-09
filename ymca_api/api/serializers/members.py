@@ -158,6 +158,16 @@ class UserRequestSerializer(serializers.ModelSerializer):
         if str(unit or '').strip().lower() == 'youth council' and not str(club or '').strip():
             raise serializers.ValidationError({'club': 'Club selection is required for Youth Council'})
 
+        # Email verification check
+        email = attrs.get('email')
+        if email:
+            from account.models import EmailVerification
+            verification = EmailVerification.objects.filter(email__iexact=email, is_verified=True).first()
+            if not verification:
+                raise serializers.ValidationError({
+                    'email': 'Please verify your email address before submitting your application.'
+                })
+
         return attrs
 
 
