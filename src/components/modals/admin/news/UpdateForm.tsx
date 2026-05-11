@@ -40,6 +40,9 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
   const [otherImageFiles, setOtherImageFiles] = useState<File[]>([]);
   const [otherImagePreviews, setOtherImagePreviews] = useState<string[]>([]);
   const [otherImageBase64s, setOtherImageBase64s] = useState<string[]>([]);
+  const [selectedVideoFiles, setSelectedVideoFiles] = useState<File[]>([]);
+  const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
+  const [videoBase64s, setVideoBase64s] = useState<string[]>([]);
 
   const convertToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -124,6 +127,32 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
     }
   };
 
+  const handleVideoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    try {
+      const nextFiles = [...selectedVideoFiles];
+      const nextPreviews = [...videoPreviews];
+      const nextBase64s = [...videoBase64s];
+
+      for (const file of files) {
+        nextFiles.push(file);
+        nextPreviews.push(URL.createObjectURL(file));
+        nextBase64s.push(await convertToBase64(file));
+      }
+
+      setSelectedVideoFiles(nextFiles);
+      setVideoPreviews(nextPreviews);
+      setVideoBase64s(nextBase64s);
+      const input = document.getElementById('video-files') as HTMLInputElement | null;
+      if (input) input.value = '';
+    } catch (error) {
+      console.error('Error processing video files:', error);
+      alert('Error processing video files');
+    }
+  };
+
   const handleRemovePrimaryImage = () => {
     setPrimaryImageFile(null);
     setPrimaryImagePreview('');
@@ -134,6 +163,12 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
     setOtherImageFiles(prev => prev.filter((_, i) => i !== index));
     setOtherImagePreviews(prev => prev.filter((_, i) => i !== index));
     setOtherImageBase64s(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveVideo = (index: number) => {
+    setSelectedVideoFiles(prev => prev.filter((_, i) => i !== index));
+    setVideoPreviews(prev => prev.filter((_, i) => i !== index));
+    setVideoBase64s(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -152,7 +187,10 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
       primaryImageUrl: primaryImagePreview || '',
       otherImageBase64s: otherImageBase64s.length > 0 ? otherImageBase64s : undefined,
       otherImageFiles: otherImageFiles.length > 0 ? otherImageFiles : undefined,
-      otherImageUrls: otherImagePreviews
+      otherImageUrls: otherImagePreviews,
+      videoBase64s: videoBase64s.length > 0 ? videoBase64s : undefined,
+      videoFiles: selectedVideoFiles.length > 0 ? selectedVideoFiles : undefined,
+      videoUrls: videoPreviews
     });
   };
 
@@ -320,6 +358,46 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
                         ×
                       </button>
                       <div className="mt-1 text-xs text-gray-500">Preview {index + 1}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium">Video</label>
+            <div className="space-y-4">
+              <input
+                id="video-files"
+                type="file"
+                accept="video/*"
+                multiple
+                onChange={handleVideoChange}
+                className="w-full rounded border p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+
+              <p className="text-xs text-gray-500">
+                Upload video files to accompany the news or event. Supported formats include MP4, WebM, and MOV.
+              </p>
+
+              {videoPreviews.length > 0 && (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {videoPreviews.map((preview, index) => (
+                    <div key={index} className="group relative rounded border bg-gray-100 p-2">
+                      <video
+                        src={preview}
+                        controls
+                        className="h-40 w-full rounded object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveVideo(index)}
+                        className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-sm text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-600"
+                      >
+                        ×
+                      </button>
+                      <div className="mt-1 text-xs text-gray-500">Video {index + 1}</div>
                     </div>
                   ))}
                 </div>

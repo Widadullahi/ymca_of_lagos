@@ -202,18 +202,25 @@ const AdminUpdatesPage = () => {
         apiData.image_name = imageName || 'image.jpg';
       }
 
-      // Handle gallery images as attachments
-      const galleryImages = (formData.otherImageBase64s && Array.isArray(formData.otherImageBase64s))
-        ? formData.otherImageBase64s.map((base64: string, index: number) => ({
-            file_base64: base64,
-            file_name: formData.otherImageFiles?.[index]?.name || `image_${index + 2}.png`,
-            type: 'image'
-          }))
-        : [];
+      // Handle gallery images and video files as attachments
+      const galleryAttachments = [
+        ...(formData.otherImageBase64s && Array.isArray(formData.otherImageBase64s)
+          ? formData.otherImageBase64s.map((base64: string, index: number) => ({
+              file_base64: base64,
+              file_name: formData.otherImageFiles?.[index]?.name || `image_${index + 2}.png`
+            }))
+          : []),
+        ...(formData.videoBase64s && Array.isArray(formData.videoBase64s)
+          ? formData.videoBase64s.map((base64: string, index: number) => ({
+              file_base64: base64,
+              file_name: formData.videoFiles?.[index]?.name || `video_${index + 1}.mp4`
+            }))
+          : [])
+      ];
 
-      if (galleryImages.length > 0) {
-        apiData.attachments = galleryImages;
-        apiData.new_attachments = galleryImages;
+      if (galleryAttachments.length > 0) {
+        apiData.attachments = galleryAttachments;
+        apiData.new_attachments = galleryAttachments;
       }
 
       console.log('Form data received:', formData);

@@ -88,20 +88,26 @@ def send_status_update_email(recipient_email: str, status: str, review_notes: st
         subject = 'Your YMCA Lagos Membership Request has been Approved!'
         text_body = f"Hello {user_name},\n\nYour membership application has been approved. Welcome to YMCA Lagos!\n\nYour default password is: member12345"
         html_body = (
-            f"<p>Hello <strong>{user_name}</strong>,</p>"
+            f"<p>Hello {user_name},</p>"
             "<p>Your membership application has been approved. Welcome to YMCA Lagos!</p>"
             "<p>Your default password is: <strong>member12345</strong></p>"
             "<p>Please log in and change your password as soon as possible.</p>"
         )
     elif status == 'rejected':
         subject = 'Update on your YMCA Lagos Membership Request'
-        text_body = f"Hello {user_name},\n\nUnfortunately, your membership application has been rejected.\n\nNotes from admin: {review_notes}"
-        html_body = (
-            f"<p>Hello <strong>{user_name}</strong>,</p>"
-            "<p>Unfortunately, your membership application has been rejected.</p>"
-        )
         if review_notes:
-            html_body += f"<p><strong>Notes from admin:</strong> {review_notes}</p>"
+            text_body = f"Hello {user_name},\n\nWe are sorry to inform you that your membership application has been rejected.\n\n{review_notes}"
+            html_body = (
+                f"<p>Hello {user_name},</p>"
+                "<p>We are sorry to inform you that your membership application has been rejected.</p>"
+                f"<p>{review_notes}</p>"
+            )
+        else:
+            text_body = f"Hello {user_name},\n\nWe are sorry to inform you that your membership application has been rejected."
+            html_body = (
+                f"<p>Hello {user_name},</p>"
+                "<p>We are sorry to inform you that your membership application has been rejected.</p>"
+            )
     else:
         return
 
