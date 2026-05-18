@@ -609,7 +609,7 @@ const ProfileManagementPage: React.FC = () => {
                         <p className="mt-1">{profile.user_request.country}</p>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">State</h4>
+                        <h4 className="text-sm font-medium text-gray-500">State of Residence</h4>
                         <p className="mt-1">{profile.user_request.state}</p>
                       </div>
                       <div>

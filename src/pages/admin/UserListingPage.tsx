@@ -716,7 +716,7 @@ const UserListingPage: React.FC = () => {
 
           <div>
             <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
-              State
+              State of Residence
             </label>
             <select
               id="state"
@@ -724,7 +724,7 @@ const UserListingPage: React.FC = () => {
               onChange={(e) => setStateFilter(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md"
             >
-              <option value="">All States</option>
+              <option value="">All States of Residence</option>
               <option value="Abia">Abia</option>
               <option value="Adamawa">Adamawa</option>
               <option value="Akwa Ibom">Akwa Ibom</option>
@@ -807,7 +807,7 @@ const UserListingPage: React.FC = () => {
                     Membership Type
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                    State
+                    State of Residence
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                     Category/Unit

@@ -500,6 +500,7 @@ const AboutMeV2: React.FC = () => {
             <a href="#" className="text-2xl text-gray-600 hover:text-blue-500 transition-colors duration-300"><FaBehance /></a>
             <a href="#" className="text-2xl text-gray-600 hover:text-red-600 transition-colors duration-300"><FaPinterest /></a>
             <a href="#" className="text-2xl text-gray-600 hover:text-blue-400 transition-colors duration-300"><FaTwitter /></a>
+            <a href="#" className="text-2xl text-gray-600 hover:text-gray-900 transition-colors duration-300"><FaTiktok /></a>
             <a href="#" className="text-2xl text-gray-600 hover:text-pink-500 transition-colors duration-300"><FaDribbble /></a>
           </div> */}
         </div>

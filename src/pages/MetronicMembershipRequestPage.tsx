@@ -160,7 +160,7 @@ const MetronicMembershipRequestPage = () => {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-bold mb-2">State *</label>
+                <label className="block text-sm font-bold mb-2">State of Residence *</label>
                 <input 
                   type="text" 
                   name="state"

@@ -458,7 +458,7 @@ const UserDetailPage: React.FC = () => {
                 </div>
                 
                 <div>
-                  <p className="text-xs text-gray-500">State</p>
+                  <p className="text-xs text-gray-500">State of Residence</p>
                   {isEditing ? (
                     <input
                       type="text"
@@ -842,7 +842,7 @@ const UserDetailPage: React.FC = () => {
                       <p className="text-sm">{member.user_request.country || 'N/A'}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">State</p>
+                      <p className="text-xs text-gray-500">State of Residence</p>
                       <p className="text-sm">{member.user_request.state || 'N/A'}</p>
                     </div>
                     <div>

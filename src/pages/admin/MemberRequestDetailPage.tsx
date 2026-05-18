@@ -377,7 +377,7 @@ const MemberRequestDetailPage: React.FC = () => {
                 </div>
                 
                 <div>
-                  <p className="text-xs text-gray-500">State</p>
+                  <p className="text-xs text-gray-500">State of Residence</p>
                   <p className="text-sm">{memberRequest.state || 'Not Provided'}</p>
                 </div>
                 

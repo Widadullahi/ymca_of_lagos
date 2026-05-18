@@ -282,7 +282,7 @@ const CompleteProfilePage: React.FC = () => {
     if (!formData.marital_status) errors.marital_status = 'Marital status is required';
     if (!formData.citizen) errors.citizen = 'Citizenship is required';
     if (formData.citizen === 'Foreigner' && !formData.country.trim()) errors.country = 'Country is required';
-    if (!formData.state.trim()) errors.state = formData.citizen === 'Foreigner' ? 'State/Province is required' : 'State is required';
+    if (!formData.state.trim()) errors.state = formData.citizen === 'Foreigner' ? 'State/Province of residence is required' : 'State of residence is required';
     if (!formData.address.trim()) errors.address = 'Address is required';
     const age = Number(formData.age);
 
@@ -385,7 +385,7 @@ const CompleteProfilePage: React.FC = () => {
               <Field label="Country" name="country" value={formData.country} onChange={handleInputChange} error={fieldErrors.country} />
             ) : (
               <SelectField
-                label="State"
+                label="State of Residence"
                 name="state"
                 value={formData.state}
                 onChange={handleInputChange}
@@ -394,7 +394,7 @@ const CompleteProfilePage: React.FC = () => {
               />
             )}
             {formData.citizen === 'Foreigner' ? (
-              <Field label="State/Province" name="state" value={formData.state} onChange={handleInputChange} error={fieldErrors.state} />
+              <Field label="State/Province of Residence" name="state" value={formData.state} onChange={handleInputChange} error={fieldErrors.state} />
             ) : (
               <Field label="LGA" name="lga" value={formData.lga} onChange={handleInputChange} />
             )}

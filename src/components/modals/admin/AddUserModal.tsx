@@ -212,7 +212,7 @@ const AddUserModal: React.FC<{
     if (!formData.marital_status) newErrors.marital_status = 'Marital status is required';
     if (!formData.citizen) newErrors.citizen = 'Citizenship is required';
     if (formData.citizen === 'Foreigner' && !formData.country.trim()) newErrors.country = 'Country is required';
-    if (!formData.state.trim()) newErrors.state = formData.citizen === 'Foreigner' ? 'State/Province is required' : 'State is required';
+    if (!formData.state.trim()) newErrors.state = formData.citizen === 'Foreigner' ? 'State/Province of residence is required' : 'State of residence is required';
     if (!formData.address.trim()) newErrors.address = 'Address is required';
     if (!formData.unit) newErrors.unit = 'Unit is required';
     if (formData.unit === 'Youth Council' && age >= 31) newErrors.unit = "Age 31+ cannot join Youth Council";
@@ -310,10 +310,10 @@ const AddUserModal: React.FC<{
             {formData.citizen === 'Foreigner' ? (
               <InputField label="Country *" name="country" value={formData.country} onChange={handleChange} error={errors.country} />
             ) : (
-              <SelectField label="State *" name="state" value={formData.state} onChange={handleChange} error={errors.state} options={nigerianStates.map(item => item.value)} />
+              <SelectField label="State of Residence *" name="state" value={formData.state} onChange={handleChange} error={errors.state} options={nigerianStates.map(item => item.value)} />
             )}
             {formData.citizen === 'Foreigner' ? (
-              <InputField label="State/Province *" name="state" value={formData.state} onChange={handleChange} error={errors.state} />
+              <InputField label="State/Province of Residence *" name="state" value={formData.state} onChange={handleChange} error={errors.state} />
             ) : (
               <InputField label="LGA" name="lga" value={formData.lga} onChange={handleChange} error={errors.lga} />
             )}

@@ -1550,7 +1550,7 @@ const RequestForm: React.FC = () => {
 
             {formData.citizen === 'Nigerian' ? (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">State of Residence</label>
                 <MobileFriendlySelect
                   options={nigerianStates}
                   value={nigerianStates.find(option => option.value === formData.state) || null}
@@ -1558,19 +1558,19 @@ const RequestForm: React.FC = () => {
                     setTouchedFields(prev => ({ ...prev, state: true }));
                     setFormData({ ...formData, state: selectedOption ? selectedOption.value : '' });
                   }}
-                  placeholder="Select State"
+                  placeholder="Select State of Residence"
                   isSearchable
-                  noOptionsMessage={() => "No state found"}
+                  noOptionsMessage={() => "No state of residence found"}
                   className={getInputBorderColor('state', formData.state)}
                 />
                 {fieldErrors.state && <p className="mt-1 text-sm text-red-600">{fieldErrors.state}</p>}
               </div>
             ) : (
               <FormInput
-                label="State/Province"
+                label="State/Province of Residence"
                 name="state"
                 type="text"
-                placeholder="Enter your state or province"
+                placeholder="Enter your state or province of residence"
                 value={formData.state}
                 onChange={handleInputChange}
                 error={fieldErrors.state}

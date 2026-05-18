@@ -153,7 +153,7 @@ const MemberViewModal: React.FC<{
                   </div>
                   
                   <div>
-                    <p className="text-sm text-gray-500">State</p>
+                    <p className="text-sm text-gray-500">State of Residence</p>
                     <p className="font-medium">{member.state || 'N/A'}</p>
                   </div>
                   

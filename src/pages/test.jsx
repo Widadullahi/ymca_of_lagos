@@ -846,7 +846,7 @@ const RequestForm: React.FC = () => {
     }
     
     if (!formData.state) {
-      errors.state = 'State is required';
+      errors.state = 'State of residence is required';
     }
     
     if (!formData.unit) {
@@ -1146,7 +1146,7 @@ const RequestForm: React.FC = () => {
             lastName: 'Last Name',
             phoneNumber: 'Phone Number',
             country: 'Country',
-            state: 'State',
+            state: 'State of Residence',
             lga: 'LGA',
             unit: 'Unit',
             club: 'Club',
@@ -1211,7 +1211,7 @@ const RequestForm: React.FC = () => {
                   lastName: 'Last Name',
                   phoneNumber: 'Phone Number',
                   country: 'Country',
-                  state: 'State',
+                  state: 'State of Residence',
                   lga: 'LGA',
                   unit: 'Unit',
                   club: 'Club',
@@ -1400,7 +1400,7 @@ const RequestForm: React.FC = () => {
             
             {formData.citizen === 'Nigerian' ? (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">State of Residence</label>
                 <Select
                   options={nigerianStates}
                   value={nigerianStates.find(option => option.value === formData.state) || null}
@@ -1408,9 +1408,9 @@ const RequestForm: React.FC = () => {
                     setTouchedFields(prev => ({ ...prev, state: true }));
                     setFormData({ ...formData, state: selectedOption ? selectedOption.value : '' });
                   }}
-                  placeholder="Select State"
+                  placeholder="Select State of Residence"
                   isSearchable
-                  noOptionsMessage={() => "No state found"}
+                  noOptionsMessage={() => "No state of residence found"}
                   data-field="state"
                   className={getInputBorderColor('state', formData.state)}
                 />
@@ -1418,10 +1418,10 @@ const RequestForm: React.FC = () => {
               </div>
             ) : (
               <FormInput
-                label="State/Province"
+                label="State/Province of Residence"
                 name="state"
                 type="text"
-                placeholder="Enter your state or province"
+                placeholder="Enter your state or province of residence"
                 value={formData.state}
                 onChange={handleInputChange}
                 error={fieldErrors.state}
