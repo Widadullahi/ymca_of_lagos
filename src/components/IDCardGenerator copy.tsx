@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useAuth } from '../context/NewAuthContext';
 import IDCardPreview from './IDCardPreview';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -21,6 +22,8 @@ const IDCardGenerator: React.FC = () => {
   const handlePrintCard = () => {
     window.print();
   };
+
+  const { displayNotification } = useAuth();
 
   const handleDownloadAsPDF = async () => {
     if (!cardRef.current) return;
@@ -50,7 +53,7 @@ const IDCardGenerator: React.FC = () => {
       pdf.save('YMCA_ID_Card.pdf');
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Failed to generate PDF. Please try again.');
+      displayNotification('error', 'Failed to generate PDF. Please try again.');
     }
   };
 
@@ -70,7 +73,7 @@ const IDCardGenerator: React.FC = () => {
       link.click();
     } catch (error) {
       console.error('Error generating image:', error);
-      alert('Failed to download image. Please try again.');
+      displayNotification('error', 'Failed to download image. Please try again.');
     }
   };
 

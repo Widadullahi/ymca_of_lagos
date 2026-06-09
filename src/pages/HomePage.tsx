@@ -271,7 +271,7 @@ const HomePage: React.FC = () => {
         </div>
       </section> */}
 
-      <LatestNews />
+      <LatestNews showStats={false} showFilters={false} />
 
       {/* Quick Links Section */}
       <section className="py-16 bg-gray-50">

@@ -167,6 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isFormData = false,
     isAthenticated = true,
     responseType = 'json',
+    timeoutMS,
   }: {
     method?: string;
     path: string;
@@ -175,6 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isFormData?: boolean;
     isAthenticated?: boolean;
     responseType?: 'json' | 'blob';
+    timeoutMS?: number;
   }) {
     const accessToken = authToken?.access_token;
     const refreshToken = authToken?.refresh_token;
@@ -182,7 +184,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const fetchWithTimeout = async (input: RequestInfo | URL, init?: RequestInit) => {
       const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+      const timeoutMs = timeoutMS ?? REQUEST_TIMEOUT_MS;
+      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
 
       try {
         return await fetch(input, {

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/NewAuthContext';
+import ConfirmationModal from '../../components/modals/admin/ConfirmationModal';
 
 type Church = {
   id: string;
@@ -14,6 +15,8 @@ const ChurchManagementPage: React.FC = () => {
   const [newChurchName, setNewChurchName] = useState('');
   const [editingChurchId, setEditingChurchId] = useState<string | null>(null);
   const [editingChurchName, setEditingChurchName] = useState('');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [churchToDelete, setChurchToDelete] = useState<Church | null>(null);
 
   const fetchChurches = async () => {
     try {
@@ -84,15 +87,14 @@ const ChurchManagementPage: React.FC = () => {
     }
   };
 
-  const handleDeleteChurch = async (churchId: string, churchName: string) => {
-    const shouldDelete = window.confirm(`Delete ${churchName}?`);
-    if (!shouldDelete) return;
+  const handleDeleteChurch = async () => {
+    if (!churchToDelete) return;
 
     try {
       setSubmitting(true);
       await fetchWithAuth({
         method: 'DELETE',
-        path: `/admin/churches/${churchId}/`,
+        path: `/admin/churches/${churchToDelete.id}/`,
       });
       displayNotification('success', 'Church deleted successfully');
       fetchChurches();
@@ -100,7 +102,19 @@ const ChurchManagementPage: React.FC = () => {
       displayNotification('error', error?.message || 'Failed to delete church');
     } finally {
       setSubmitting(false);
+      setIsDeleteModalOpen(false);
+      setChurchToDelete(null);
     }
+  };
+
+  const confirmDeleteChurch = (church: Church) => {
+    setChurchToDelete(church);
+    setIsDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setChurchToDelete(null);
   };
 
   return (
@@ -192,7 +206,7 @@ const ChurchManagementPage: React.FC = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDeleteChurch(church.id, church.name)}
+                        onClick={() => confirmDeleteChurch(church)}
                         disabled={submitting}
                         className="rounded-md border border-red-300 px-4 py-2 text-sm text-red-700 hover:bg-red-50 disabled:opacity-60"
                       >
@@ -206,6 +220,16 @@ const ChurchManagementPage: React.FC = () => {
           </div>
         )}
       </div>
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        title="Delete church"
+        message={`Delete ${churchToDelete?.name}? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmButtonClass="bg-red-600 hover:bg-red-700"
+        onConfirm={handleDeleteChurch}
+        onCancel={closeDeleteModal}
+      />
     </div>
   );
 };

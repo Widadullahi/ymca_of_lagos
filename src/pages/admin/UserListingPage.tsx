@@ -11,7 +11,7 @@ import ViewIDCardModal from '../../components/modals/admin/ViewIDCardModal';
 const UserListingPage: React.FC = () => {
   // State
   const navigate = useNavigate();
-  const { fetchWithAuth } = useAuth();
+  const { fetchWithAuth, displayNotification } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [filteredMembers, setFilteredMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -371,7 +371,7 @@ const UserListingPage: React.FC = () => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Export failed:', error);
-      alert('Failed to export members list. Please try again.');
+      displayNotification('error', 'Failed to export members list. Please try again.');
     } finally {
       setIsExporting(false);
     }

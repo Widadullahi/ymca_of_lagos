@@ -12,7 +12,7 @@ interface IDCardGeneratorProps {
 }
 
 const IDCardGenerator: React.FC<IDCardGeneratorProps> = ({ member, isAdminView, variant = 'auto' }) => {
-  const { user: authUser } = useAuth();
+  const { user: authUser, displayNotification } = useAuth();
   const cardRef = useRef<HTMLDivElement>(null);
   const effectiveUser = member || authUser;
   const membershipType = (effectiveUser?.membership_type || '').toString().toLowerCase();
@@ -54,7 +54,7 @@ const IDCardGenerator: React.FC<IDCardGeneratorProps> = ({ member, isAdminView, 
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      alert('Please allow pop-ups to print the ID card.');
+      displayNotification('error', 'Please allow pop-ups to print the ID card.');
       return;
     }
 
@@ -155,7 +155,7 @@ const IDCardGenerator: React.FC<IDCardGeneratorProps> = ({ member, isAdminView, 
       pdf.save('YMCA_ID_Card.pdf');
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Failed to generate PDF. Please try again.');
+      displayNotification('error', 'Failed to generate PDF. Please try again.');
     }
   };
 
@@ -172,7 +172,7 @@ const IDCardGenerator: React.FC<IDCardGeneratorProps> = ({ member, isAdminView, 
       });
     } catch (error) {
       console.error('Error generating image:', error);
-      alert('Failed to download image. Please try again.');
+      displayNotification('error', 'Failed to download image. Please try again.');
     }
   };
 

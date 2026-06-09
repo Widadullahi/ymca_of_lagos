@@ -129,6 +129,7 @@ export const createPostsApi = (fetchWithAuth: any) => ({
       method: 'POST',
       path: '/posts/',
       body: postData,
+      timeoutMS: 120000,
     });
 
     return data?.data ?? data;
@@ -174,6 +175,7 @@ export const createPostsApi = (fetchWithAuth: any) => ({
       method: 'PATCH',
       path: `/posts/${id}/`,
       body: requestBody,
+      timeoutMS: 120000,
     });
 
     return data?.data ?? data;
@@ -209,6 +211,7 @@ export const createPostsApi = (fetchWithAuth: any) => ({
       method: 'POST',
       path: '/attachments/',
       body: requestBody,
+      timeoutMS: 120000,
     });
   },
 
@@ -234,6 +237,7 @@ export const createPostsApi = (fetchWithAuth: any) => ({
       method: 'POST',
       path: '/attachments/bulk/',
       body: { attachments },
+      timeoutMS: 120000,
     });
   }
 });

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/NewAuthContext';
+import ConfirmationModal from '../../components/modals/admin/ConfirmationModal';
 import { createStaffApi, StaffMember } from '../../api/staffApi';
 
 type Category = 'principal_officer' | 'management_staff';
@@ -19,6 +20,8 @@ const StaffAdminPage: React.FC = () => {
     imageFile: null,
   });
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [staffToDelete, setStaffToDelete] = useState<StaffMember | null>(null);
 
   const loadStaff = async () => {
     try {
@@ -71,16 +74,29 @@ const StaffAdminPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Delete this staff member?')) return;
+  const confirmDeleteStaff = (staffMember: StaffMember) => {
+    setStaffToDelete(staffMember);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!staffToDelete) return;
     try {
-      await api.remove(id);
-      setStaff(prev => prev.filter(s => s.id !== id));
+      await api.remove(staffToDelete.id);
+      setStaff(prev => prev.filter(s => s.id !== staffToDelete.id));
       displayNotification?.('success', 'Staff member deleted');
     } catch (err: any) {
       console.error('Failed to delete staff', err);
       displayNotification?.('error', 'Failed to delete staff');
+    } finally {
+      setIsDeleteModalOpen(false);
+      setStaffToDelete(null);
     }
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setStaffToDelete(null);
   };
 
   const principal = staff.filter(s => s.category === 'principal_officer');
@@ -140,7 +156,7 @@ const StaffAdminPage: React.FC = () => {
                         <div className="text-sm text-gray-600">{member.position}</div>
                       </div>
                     </div>
-                    <button onClick={() => handleDelete(member.id)} className="text-red-600 hover:underline">Delete</button>
+                    <button onClick={() => confirmDeleteStaff(member)} className="text-red-600 hover:underline">Delete</button>
                   </div>
                 ))
               )}
@@ -162,7 +178,7 @@ const StaffAdminPage: React.FC = () => {
                         <div className="text-sm text-gray-600">{member.position}</div>
                       </div>
                     </div>
-                    <button onClick={() => handleDelete(member.id)} className="text-red-600 hover:underline">Delete</button>
+                    <button onClick={() => confirmDeleteStaff(member)} className="text-red-600 hover:underline">Delete</button>
                   </div>
                 ))
               )}
@@ -172,6 +188,16 @@ const StaffAdminPage: React.FC = () => {
 
         {loading && <p className="mt-4 text-gray-500">Loading...</p>}
       </div>
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        title="Delete staff member"
+        message={`Delete ${staffToDelete?.name}? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmButtonClass="bg-red-600 hover:bg-red-700"
+        onConfirm={handleDelete}
+        onCancel={closeDeleteModal}
+      />
     </div>
   );
 };

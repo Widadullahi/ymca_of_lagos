@@ -5,7 +5,7 @@ import { Member } from '../../types/types';
 
 const MemberRequestListing: React.FC = () => {
   // State
-  const { fetchWithAuth} = useAuth();
+  const { fetchWithAuth, displayNotification } = useAuth();
   const navigate = useNavigate();
   const [members, setMembers] = useState<Member[]>([]);
   const [filteredMembers, setFilteredMembers] = useState<Member[]>([]);
@@ -127,18 +127,18 @@ const MemberRequestListing: React.FC = () => {
       
       // Show success message with user creation info if applicable
       if (response?.data?.user_created) {
-        alert(`Request approved successfully! User profile created for ${response.data.user_email} with default password 'member12345'`);
+        displayNotification('success', `Request approved successfully! User profile created for ${response.data.user_email} with default password 'member12345'`);
       } else {
-        alert('Request approved successfully!');
+        displayNotification('success', 'Request approved successfully!');
       }
     } catch (error: any) {
       console.error('Error approving request:', error);
       
       // Handle specific error messages from backend
       if (error?.response?.data?.message) {
-        alert(error.response.data.message);
+        displayNotification('error', error.response.data.message);
       } else {
-        alert('Failed to approve request. Please try again.');
+        displayNotification('error', 'Failed to approve request. Please try again.');
       }
     } finally {
       setIsProcessing(false);
@@ -170,10 +170,10 @@ const MemberRequestListing: React.FC = () => {
       setSelectedMember(null);
       setReviewNotes('');
       
-      alert('Request rejected successfully!');
+      displayNotification('success', 'Request rejected successfully!');
     } catch (error) {
       console.error('Error rejecting request:', error);
-      alert('Failed to reject request. Please try again.');
+      displayNotification('error', 'Failed to reject request. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -200,13 +200,13 @@ const MemberRequestListing: React.FC = () => {
       setReviewNotes('');
 
       if (response?.data?.user_created) {
-        alert(`Request approved successfully! User profile created for ${response.data.user_email} with default password 'member12345'`);
+        displayNotification('success', `Request approved successfully! User profile created for ${response.data.user_email} with default password 'member12345'`);
       } else {
-        alert('Rejected request approved successfully!');
+        displayNotification('success', 'Rejected request approved successfully!');
       }
     } catch (error) {
       console.error('Error reconsidering request:', error);
-      alert('Failed to reconsider request. Please try again.');
+      displayNotification('error', 'Failed to reconsider request. Please try again.');
     } finally {
       setIsProcessing(false);
     }

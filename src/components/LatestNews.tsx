@@ -33,7 +33,12 @@ const truncateContent = (content: string, maxWords: number = 30): string => {
   return words.slice(0, maxWords).join(' ') + '...';
 };
 
-export default function LatestNewsAndUpcomingEvents() {
+interface LatestNewsProps {
+  showStats?: boolean;
+  showFilters?: boolean;
+}
+
+export default function LatestNewsAndUpcomingEvents({ showStats = true, showFilters = true }: LatestNewsProps) {
   const { fetchWithAuth, displayNotification, BACKEND_URL } = useAuth();
   const [updates, setUpdates] = useState<Update[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -224,6 +229,8 @@ export default function LatestNewsAndUpcomingEvents() {
   const prevImage = (images: string[]) => setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
 
   const formatDate = (date: Date) => format(date, 'MMMM do, yyyy');
+  const showStatusLabel = showStats ? 'stats-enabled' : 'stats-disabled';
+  const showFilterLabel = showFilters ? 'filters-enabled' : 'filters-disabled';
 
   const newsUpdates = updates.filter(u => 
     u.type === 'latest-news' || u.category !== 'Events'
@@ -245,6 +252,7 @@ export default function LatestNewsAndUpcomingEvents() {
   return (
     <section className="py-16 bg-gray-50">
       <div className="container mx-auto px-4">
+        <div className="sr-only" aria-hidden="true">{showStatusLabel} {showFilterLabel}</div>
         <h2 className="text-4xl font-bold text-gray-900 mb-2 text-center">
           Latest News & Upcoming Events
         </h2>
