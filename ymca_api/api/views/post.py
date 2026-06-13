@@ -51,12 +51,29 @@ class PostViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         post = serializer.save()
+        
+        # Handle attachments from FormData
+        attachments = request.FILES.getlist('attachments')
+        for file in attachments:
+            UpdateAttachment.objects.create(post=post, file=file)
+            
         output = PostListSerializer(post, context={'request': request}).data
         return success_response(data=output, message='Post created successfully', status_code=status.HTTP_201_CREATED)
     
     def update(self, request, *args, **kwargs):
-        response = super().update(request, *args, **kwargs)
-        return success_response(data=response.data, message='Post updated successfully', status_code=response.status_code)
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        post = serializer.save()
+        
+        # Handle new attachments from FormData
+        attachments = request.FILES.getlist('attachments')
+        for file in attachments:
+            UpdateAttachment.objects.create(post=post, file=file)
+
+        output = PostListSerializer(post, context={'request': request}).data
+        return success_response(data=output, message='Post updated successfully', status_code=status.HTTP_200_OK)
 
     def partial_update(self, request, *args, **kwargs):
         response = super().partial_update(request, *args, **kwargs)

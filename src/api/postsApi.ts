@@ -33,7 +33,7 @@ interface PostsListResponse {
   results: PostResponse[];
 }
 
-// Utility function to convert file to base64
+// Utility function to convert file to base64 (Deprecated - using FormData instead)
 const fileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -129,53 +129,21 @@ export const createPostsApi = (fetchWithAuth: any) => ({
       method: 'POST',
       path: '/posts/',
       body: postData,
-      timeoutMS: 120000,
+      isFormData: postData instanceof FormData,
+      timeoutMS: 600000, // 10 minutes timeout for large video uploads
     });
 
     return data?.data ?? data;
   },
 
   // Update existing post
-  async updatePost(id: string, postData: {
-    title?: string;
-    content?: string;
-    category?: string;
-    image?: File | null;
-    attachments?: File[];
-    removeImage?: boolean;
-  }): Promise<any> {
-    const requestBody: any = {};
-    
-    if (postData.title !== undefined) requestBody.title = postData.title;
-    if (postData.content !== undefined) requestBody.content = postData.content;
-    if ((postData as any).category !== undefined) requestBody.category = (postData as any).category;
-    if ((postData as any).post_type !== undefined) requestBody.post_type = (postData as any).post_type;
-    if ((postData as any).action_button_label !== undefined) requestBody.action_button_label = (postData as any).action_button_label;
-    if ((postData as any).action_button_url !== undefined) requestBody.action_button_url = (postData as any).action_button_url;
-    
-    // Handle image update
-    if (postData.removeImage) {
-      requestBody.remove_image = true;
-    } else if (postData.image) {
-      requestBody.image_base64 = await fileToBase64(postData.image);
-      requestBody.image_name = postData.image.name;
-    }
-
-    // Handle new attachments
-    if (postData.attachments && postData.attachments.length > 0) {
-      requestBody.new_attachments = await Promise.all(
-        postData.attachments.map(async (file) => ({
-          file_base64: await fileToBase64(file),
-          file_name: file.name,
-        }))
-      );
-    }
-
+  async updatePost(id: string, postData: any): Promise<any> {
     const data: any = await fetchWithAuth({
       method: 'PATCH',
       path: `/posts/${id}/`,
-      body: requestBody,
-      timeoutMS: 120000,
+      body: postData,
+      isFormData: postData instanceof FormData,
+      timeoutMS: 600000, // 10 minutes timeout for large video uploads
     });
 
     return data?.data ?? data;

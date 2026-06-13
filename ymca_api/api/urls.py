@@ -7,7 +7,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from account import views as account_views
 from api.views.category import AdminChurchDetailView, AdminChurchListCreateView, CategoryListView, ChurchListView, YouthGroupListView
-from api.views.transaction import ActivateMembershipView, InitiateDonationPamentView, RenewMembershipView, TotalMembersCountView, VerifyDonationPamentView, StartMembershipDemoView, VerifyPaymentView
+from api.views.transaction import ActivateMembershipView, InitiateDonationPamentView, RenewMembershipView, TotalMembersCountView, VerifyDonationPamentView, StartMembershipDemoView, VerifyPaymentView, PaystackWebhookView
 from api.views.members import  AdminAddMembersView,AdminGetSingleRequestView, AdminGetMemberOverview, AdminMemberRetrieveUpdateDestroyView, AdminMemberUpdateDestroyView, AdminMembersBulkUploadView, AdminPromoteMemberView, AdminUpdateRequestStatusView, AdminUserRequestListView, CreateUserRequestView, CurrentUserRequestUpdateView, UserRequestDetailView, UserRequestListView, VerifyCardIdNumberView, AdminMembersExportView, AdminsExportView, SendEmailVerificationCodeView, VerifyEmailVerificationCodeView
 from api.views.set_password import AdminSetUserPasswordView
 from . import views
@@ -69,6 +69,7 @@ urlpatterns = [
     path('membership/activation', ActivateMembershipView.as_view(), name='ActivateMembershipView'),
     path('membership/renewal', RenewMembershipView.as_view(), name='RenewMembershipView'),
     path('payment/verify', VerifyPaymentView.as_view(), name='VerifyPaymentView'), 
+    path('payment/webhook', PaystackWebhookView.as_view(), name='PaystackWebhookView'), 
     path('initiate/donation', InitiateDonationPamentView.as_view(), name='InitiateDonationPamentView'), 
     path('verify/donation', VerifyDonationPamentView.as_view(), name='VerifyDonationPamentView'), 
 

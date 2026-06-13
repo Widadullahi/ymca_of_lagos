@@ -308,6 +308,14 @@ export default function LatestNewsAndUpcomingEvents({ showStats = true, showFilt
                             e.currentTarget.src = createInlinePlaceholder(400, 256, 'No Image');
                           }}
                         />
+                      ) : update.attachments?.find(a => ['mp4', 'webm', 'mov', 'ogg'].includes(a.type)) ? (
+                        <video
+                          src={update.attachments.find(a => ['mp4', 'webm', 'mov', 'ogg'].includes(a.type))?.url}
+                          className="w-full h-64 object-cover"
+                          muted
+                          playsInline
+                          preload="metadata"
+                        />
                       ) : (
                         <div className="w-full h-64 bg-gray-100 flex items-center justify-center">
                           <span className="text-gray-400 text-lg">No image</span>
@@ -392,6 +400,14 @@ export default function LatestNewsAndUpcomingEvents({ showStats = true, showFilt
                             e.currentTarget.onerror = null;
                             e.currentTarget.src = createInlinePlaceholder(400, 224, 'No Image');
                           }}
+                        />
+                      ) : update.attachments?.find(a => ['mp4', 'webm', 'mov', 'ogg'].includes(a.type)) ? (
+                        <video
+                          src={update.attachments.find(a => ['mp4', 'webm', 'mov', 'ogg'].includes(a.type))?.url}
+                          className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-500"
+                          muted
+                          playsInline
+                          preload="metadata"
                         />
                       ) : (
                         <div className="w-full h-56 bg-gray-100 flex items-center justify-center">

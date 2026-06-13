@@ -34,7 +34,7 @@ export const useAuth = (): AuthContextType => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 
-  const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL as string) || 'https://api-ymca.onrender.com/api/v1';
+  const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL as string) || 'http://backend.ymcaoflagos.org/api/v1';
   const FRONTEND_URL = window.location.origin
 
   const [user, setUser] = useState<any>(null);

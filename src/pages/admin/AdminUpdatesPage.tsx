@@ -181,63 +181,34 @@ const AdminUpdatesPage = () => {
         ...((formData.otherImageUrls || formData.images || []) as string[])
       ].filter(Boolean);
 
-      // Prepare data for API
-      let apiData: any = {
-        title: formData.title,
-        content: formData.content,
-        post_type: formData.type,
-        action_button_label: formData.actionButtonLabel || '',
-        action_button_url: formData.actionButtonUrl || '',
-        // Map type to category for backward compatibility
-        category: formData.type === 'upcoming-event' ? 'Events' : 'Announcements'
-      };
+      // Prepare data for API using FormData for file uploads
+      const apiData = new FormData();
+      apiData.append('title', formData.title);
+      apiData.append('content', formData.content);
+      apiData.append('post_type', formData.type);
+      apiData.append('action_button_label', formData.actionButtonLabel || '');
+      apiData.append('action_button_url', formData.actionButtonUrl || '');
+      apiData.append('category', formData.type === 'upcoming-event' ? 'Events' : 'Announcements');
 
       // Handle main image
-      if (formData.primaryImageBase64) {
-        apiData.image_base64 = formData.primaryImageBase64;
-
-        let imageName = formData.primaryImageFile?.name || '';
-        if (!imageName && formData.primaryImageBase64.includes(';base64,')) {
-          const format = formData.primaryImageBase64.split(';base64,')[0];
-          if (format.includes('image/')) {
-            imageName = `image.${format.split('image/')[1]}`;
-          }
-        }
-        apiData.image_name = imageName || 'image.jpg';
+      if (formData.primaryImageFile) {
+        apiData.append('image', formData.primaryImageFile);
+      } else if (!formData.primaryImageFile && !formData.primaryImageUrl && isEditing) {
+        apiData.append('remove_image', 'true');
       }
 
       // Handle gallery images and video files as attachments
-      const galleryAttachments: any[] = [];
-      
-      // Add other images as attachments
-      if (formData.otherImageBase64s && Array.isArray(formData.otherImageBase64s)) {
-        galleryAttachments.push(
-          ...formData.otherImageBase64s.map((base64: string, index: number) => ({
-            file_base64: base64,
-            file_name: formData.otherImageFiles?.[index]?.name || `image_${index + 2}.png`,
-            file_type: 'image'
-          }))
-        );
-      }
-      
-      // Add videos as attachments
-      if (formData.videoBase64s && Array.isArray(formData.videoBase64s) && formData.videoBase64s.length > 0) {
-        const videoAttachments = formData.videoBase64s.map((base64: string, index: number) => {
-          const fileName = formData.videoFiles?.[index]?.name || `video_${index + 1}.mp4`;
-          return {
-            file_base64: base64,
-            file_name: fileName,
-            file_type: 'video'
-          };
+      if (formData.otherImageFiles && Array.isArray(formData.otherImageFiles)) {
+        formData.otherImageFiles.forEach((file: File) => {
+          apiData.append('attachments', file);
         });
-        galleryAttachments.push(...videoAttachments);
-        console.log('Video attachments prepared:', videoAttachments.length, 'videos');
       }
 
-      if (galleryAttachments.length > 0) {
-        apiData.attachments = galleryAttachments;
-        apiData.new_attachments = galleryAttachments;
-        console.log('Total attachments to upload:', galleryAttachments.length);
+      if (formData.videoFiles && Array.isArray(formData.videoFiles)) {
+        formData.videoFiles.forEach((file: File) => {
+          apiData.append('attachments', file);
+        });
+        console.log('Video attachments prepared:', formData.videoFiles.length, 'videos');
       }
 
       console.log('Form data received:', formData);

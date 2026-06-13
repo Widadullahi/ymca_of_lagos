@@ -181,8 +181,14 @@ class Paystack:
                     )
 
                 return bad_request_response(message=response_data.get('message', 'Failed to initiate payment.'))
+            
+            error_msg = 'Failed to initiate payment.'
+            try:
+                error_msg = f"{error_msg} Reason: {response.json().get('message', response.text)}"
+            except Exception:
+                error_msg = f"{error_msg} Reason: {response.text}"
 
-            return bad_request_response(message='Failed to initiate payment.')
+            return bad_request_response(message=error_msg)
 
         except Exception as e:
             return bad_request_response(message=str(e))
@@ -228,7 +234,13 @@ class Paystack:
 
                 return bad_request_response(message=response_data.get('message', 'Failed to initiate payment.'))
 
-            return bad_request_response(message='Failed to initiate payment.')
+            error_msg = 'Failed to initiate payment.'
+            try:
+                error_msg = f"{error_msg} Reason: {response.json().get('message', response.text)}"
+            except Exception:
+                error_msg = f"{error_msg} Reason: {response.text}"
+
+            return bad_request_response(message=error_msg)
 
         except Exception as e:
             return bad_request_response(message=str(e))

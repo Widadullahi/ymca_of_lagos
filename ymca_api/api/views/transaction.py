@@ -12,6 +12,30 @@ from api.serializers.donation import DonationInitiateSerializer
 from api.utils.payment.paystack import Paystack
 from api.utils.response.response_format import success_response, bad_request_response
 import datetime
+import hmac
+import hashlib
+from django.conf import settings
+
+class PaystackWebhookView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        paystack_signature = request.headers.get('x-paystack-signature')
+        if not paystack_signature:
+            return bad_request_response(message="Missing signature")
+            
+        secret = getattr(settings, 'PAYSTACK_SECRET_KEY', '').encode('utf-8')
+        body = request.body
+        hash_digest = hmac.new(secret, body, hashlib.sha512).hexdigest()
+        
+        if hash_digest != paystack_signature:
+            return bad_request_response(message="Invalid signature")
+            
+        event = request.data.get('event')
+        if event == 'charge.success':
+            return Paystack.process_webhook(request.data)
+            
+        return success_response(message="Webhook received")
 
 class StartMembershipDemoView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
