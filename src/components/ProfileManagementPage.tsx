@@ -221,8 +221,7 @@ const ProfileManagementPage: React.FC = () => {
         first_name: profile.first_name,
         last_name: profile.last_name,
         email: profile.email,
-        phone_number: profile.phone_number,
-        gender: profile.gender
+        phone_number: profile.phone_number
       });
       setSignatureFile(null);
     }
@@ -468,21 +467,6 @@ const ProfileManagementPage: React.FC = () => {
                 />
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                <select
-                  name="gender"
-                  value={profileForm?.gender || ''}
-                  onChange={handleProfileChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">Select Gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              
               {!isAdmin && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -557,7 +541,32 @@ const ProfileManagementPage: React.FC = () => {
             </div>
             
             <div className="md:w-2/3">
-              {profile?.role === 'Member' && profile?.user_request ? (
+              {isAdmin ? (
+                /* Show basic info only for Admins */
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Personal Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">First Name</h4>
+                        <p className="mt-1">{profile.first_name}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Last Name</h4>
+                        <p className="mt-1">{profile.last_name}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Email</h4>
+                        <p className="mt-1">{profile.email}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Phone Number</h4>
+                        <p className="mt-1">{profile.phone_number || 'Not provided'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : profile?.role === 'Member' && profile?.user_request ? (
                 /* Show detailed user_request data for Members */
                 <div className="space-y-6">
                   {/* Personal Information Section */}
@@ -643,25 +652,29 @@ const ProfileManagementPage: React.FC = () => {
                         <h4 className="text-sm font-medium text-gray-500">Club</h4>
                         <p className="mt-1">{profile.user_request.club}</p>
                       </div>
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-500">Card ID</h4>
-                        <p className="mt-1">{profile?.card?.id_number || 'No ID issued'}</p>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-500">Card Status</h4>
-                        <p className="mt-1">
-                          {profile?.card?.is_active ? 
-                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Active</span> : 
-                            <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">Inactive</span>
-                          }
-                          {profile?.card?.expired && 
-                            <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Expired</span>
-                          }
-                      {!isHonoraryOrLife && !profile?.card?.expired && computedDaysRemaining > 0 &&
-                        <span className="ml-2 text-xs text-gray-500">({computedDaysRemaining} days remaining)</span>
-                      }
-                        </p>
-                      </div>
+                      {!isAdmin && (
+                        <>
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">Card ID</h4>
+                            <p className="mt-1">{profile?.card?.id_number || 'No ID issued'}</p>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">Card Status</h4>
+                            <p className="mt-1">
+                              {profile?.card?.is_active ? 
+                                <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Active</span> : 
+                                <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">Inactive</span>
+                              }
+                              {profile?.card?.expired && 
+                                <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Expired</span>
+                              }
+                              {!isHonoraryOrLife && !profile?.card?.expired && computedDaysRemaining > 0 &&
+                                <span className="ml-2 text-xs text-gray-500">({computedDaysRemaining} days remaining)</span>
+                              }
+                            </p>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -832,31 +845,35 @@ const ProfileManagementPage: React.FC = () => {
                     <p className="mt-1">{profile?.unit || 'Not assigned'}</p>
                   </div>
                   
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Youth Council Group</h3>
-                    <p className="mt-1">{profile?.youth_council_group?.name || 'Not assigned'}</p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Card ID</h3>
-                    <p className="mt-1">{profile?.card?.id_number || 'No ID issued'}</p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Card Status</h3>
-                    <p className="mt-1">
-                      {profile?.card?.is_active ? 
-                        <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Active</span> : 
-                        <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">Inactive</span>
-                      }
-                      {profile?.card?.expired && 
-                        <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Expired</span>
-                      }
-                      {!isHonoraryOrLife && !profile?.card?.expired && computedDaysRemaining > 0 &&
-                        <span className="ml-2 text-xs text-gray-500">({computedDaysRemaining} days remaining)</span>
-                      }
-                    </p>
-                  </div>
+                  {!isAdmin && (
+                    <>
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-500">Youth Council Group</h3>
+                        <p className="mt-1">{profile?.youth_council_group?.name || 'Not assigned'}</p>
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-500">Card ID</h3>
+                        <p className="mt-1">{profile?.card?.id_number || 'No ID issued'}</p>
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-500">Card Status</h3>
+                        <p className="mt-1">
+                          {profile?.card?.is_active ? 
+                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Active</span> : 
+                            <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">Inactive</span>
+                          }
+                          {profile?.card?.expired && 
+                            <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Expired</span>
+                          }
+                          {!isHonoraryOrLife && !profile?.card?.expired && computedDaysRemaining > 0 &&
+                            <span className="ml-2 text-xs text-gray-500">({computedDaysRemaining} days remaining)</span>
+                          }
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>

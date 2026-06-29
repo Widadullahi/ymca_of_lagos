@@ -33,25 +33,7 @@ export interface Update {
   images?: string[];
 }
 
-// Define API response type
-interface ApiResponse {
-  id: string;
-  title: string;
-  content: string;
-  category: string;
-  type?: 'latest-news' | 'upcoming-event';
-  post_type?: 'latest-news' | 'upcoming-event';
-  action_button_label?: string;
-  action_button_url?: string;
-  created_at: string;
-  imageUrl?: string;
-  images?: string[];
-  attachments?: Attachment[];
-  attachments_data?: Attachment[];
-  // Add other properties as needed
-}
 
-const collectPostAttachments = (item: any) => item.attachments || item.attachments_data || [];
 
 const AdminUpdatesPage = () => {
   const { fetchWithAuth, BACKEND_URL, displayNotification } = useAuth();
@@ -73,30 +55,7 @@ const AdminUpdatesPage = () => {
   const [updateToDelete, setUpdateToDelete] = useState<Update | null>(null);
 
   // Initialize API with fetchWithAuth
-  const postsApi = createPostsApi(fetchWithAuth);
-
-  const mediaBaseUrl = BACKEND_URL.replace(/\/api\/v1\/?$/, '');
-  const getImageValue = (value: any): string => {
-    if (!value) return '';
-    if (typeof value === 'string') return value;
-    if (typeof value === 'object') {
-      return value.url || value.file || value.path || value.image || value.image_url || value.imageUrl || '';
-    }
-    return '';
-  };
-  const isImageFile = (url?: string | null): boolean => {
-    if (!url) return false;
-    const lower = url.toLowerCase();
-    return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'].some(ext => lower.includes(ext));
-  };
-  const toAbsoluteUrl = (value?: any): string => {
-    const url = getImageValue(value);
-    if (!url) return '';
-    if (/^https?:\/\//i.test(url)) return url;
-    if (url.startsWith('//')) return `${window.location.protocol}${url}`;
-    if (url.startsWith('/')) return `${mediaBaseUrl}${url}`;
-    return `${mediaBaseUrl}/${url.replace(/^\/+/, '')}`;
-  };
+  const postsApi = createPostsApi(fetchWithAuth, BACKEND_URL);
 
   // Fetch updates from API
   const fetchUpdates = async () => {
@@ -104,44 +63,10 @@ const AdminUpdatesPage = () => {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetchWithAuth({
-        method: 'GET',
-        path: `/posts/?page_size=100`,
-      });
-
-      if (response?.data) {
-        // Transform data to include type field
-        const transformedData: Update[] = response.data
-          .filter(Boolean)
-          .map((item: any) => {
-            const postAttachments = collectPostAttachments(item);
-            const primaryImage = toAbsoluteUrl(item.image || item.image_url || item.imageUrl || item?.image_base64);
-
-            return {
-              ...item,
-              // Ensure type is always defined and matches expected values
-              type: item.type && (item.type === 'latest-news' || item.type === 'upcoming-event') 
-                ? item.type 
-                : item.post_type && (item.post_type === 'latest-news' || item.post_type === 'upcoming-event')
-                  ? item.post_type
-                : (item.category === 'Events' ? 'upcoming-event' : 'latest-news'),
-              actionButtonLabel: item.action_button_label || item.actionButtonLabel || '',
-              actionButtonUrl: item.action_button_url || item.actionButtonUrl || '',
-              postedAt: new Date(item.created_at),
-              imageUrl: primaryImage,
-              images: [
-                primaryImage,
-                ...((item.images || item.image_list || item.imageUrls || []).map((img: any) => toAbsoluteUrl(img))),
-                ...(postAttachments.map((att: any) => toAbsoluteUrl(att?.file || att?.url)).filter(isImageFile))
-              ].filter(Boolean),
-              attachments: postAttachments
-            };
-          });
-        
-      setUpdates(transformedData);
-      setTotalCount(response.data.length);
+      const { posts, count } = await postsApi.getPosts({ page_size: 100 });
+      setUpdates(posts);
+      setTotalCount(count);
       setSelectedUpdateIds([]);
-    }
     } catch (err) {
       console.error('Error fetching updates:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch updates');
@@ -172,14 +97,6 @@ const AdminUpdatesPage = () => {
       setError(null);
 
       console.log('Form data received in parent:', formData);
-
-      const normalizeResponse = (response: any) => response?.data ?? response;
-      const fallbackPrimaryImage =
-        formData.primaryImageUrl || formData.imageUrl || '';
-      const fallbackGalleryImages = [
-        fallbackPrimaryImage,
-        ...((formData.otherImageUrls || formData.images || []) as string[])
-      ].filter(Boolean);
 
       // Prepare data for API using FormData for file uploads
       const apiData = new FormData();
@@ -214,93 +131,30 @@ const AdminUpdatesPage = () => {
       console.log('Form data received:', formData);
       console.log('PrimaryImage:', formData.primaryImageFile);
       console.log('OtherImages:', formData.otherImageFiles);
-      console.log('Sending to API:', apiData);
+      
+      // Log all FormData entries
+      console.log('Sending to API (FormData entries):');
+      for (const [key, value] of apiData.entries()) {
+        const valueStr = typeof value === 'object' && value !== null && 'name' in value ? value.name : String(value);
+        console.log('  ' + key + ': ' + valueStr + ' (type: ' + typeof value + ')');
+      }
 
-      let response: ApiResponse | undefined;
       if (isEditing && updateToEdit) {
         // Update existing update
-        response = await postsApi.updatePost(updateToEdit.id, apiData);
+        await postsApi.updatePost(updateToEdit.id, apiData);
         
-        if (response) {
-          const normalized = normalizeResponse(response);
-          const createdAt = normalized?.created_at || normalized?.postedAt || new Date().toISOString();
-          // Update local state
-          setUpdates(prev => 
-            prev.map(update => 
-              update.id === updateToEdit.id ? {
-                ...normalized as ApiResponse,
-                // Ensure type is defined
-                type: (normalized?.type && (normalized.type === 'latest-news' || normalized.type === 'upcoming-event')) 
-                  ? normalized.type 
-                  : (normalized?.post_type && (normalized.post_type === 'latest-news' || normalized.post_type === 'upcoming-event'))
-                    ? normalized.post_type
-                  : 'latest-news',
-                actionButtonLabel: normalized?.action_button_label || normalized?.actionButtonLabel || '',
-                actionButtonUrl: normalized?.action_button_url || normalized?.actionButtonUrl || '',
-                postedAt: new Date(createdAt),
-                created_at: createdAt,
-                imageUrl:
-                  toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64) ||
-                  fallbackPrimaryImage,
-                images: [
-                  toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64) ||
-                    fallbackPrimaryImage,
-                  ...((normalized?.images || normalized?.image_list || normalized?.imageUrls || []).map((img: any) => toAbsoluteUrl(img))),
-                  ...(collectPostAttachments(normalized).map((att: any) => toAbsoluteUrl(att?.file || att?.url)).filter(isImageFile)),
-                  ...fallbackGalleryImages
-                ].filter(Boolean),
-                attachments: collectPostAttachments(normalized)
-              } : update
-            )
-          );
-          displayNotification('success', 'Update updated successfully!');
-          success = true;
-        } else {
-          await fetchUpdates();
-          displayNotification('success', 'Update updated successfully!');
-          success = true;
-        }
+        // Refresh the full list to ensure we get the complete image URLs from the server
+        await fetchUpdates();
+        displayNotification('success', 'Update updated successfully!');
+        success = true;
       } else {
         // Create new update
-        response = await postsApi.createPost(apiData);
+        await postsApi.createPost(apiData);
         
-        if (response) {
-          const normalized = normalizeResponse(response);
-          const createdAt = normalized?.created_at || normalized?.postedAt || new Date().toISOString();
-          // Add to local state at the beginning
-          const newUpdate: Update = {
-            ...normalized,
-            // Ensure type is defined
-            type: (normalized?.type && (normalized.type === 'latest-news' || normalized.type === 'upcoming-event')) 
-              ? normalized.type 
-              : (normalized?.post_type && (normalized.post_type === 'latest-news' || normalized.post_type === 'upcoming-event'))
-                ? normalized.post_type
-              : 'latest-news',
-            actionButtonLabel: normalized?.action_button_label || normalized?.actionButtonLabel || '',
-            actionButtonUrl: normalized?.action_button_url || normalized?.actionButtonUrl || '',
-            postedAt: new Date(createdAt),
-            created_at: createdAt,
-            imageUrl:
-              toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64) ||
-              fallbackPrimaryImage,
-            images: [
-              toAbsoluteUrl(normalized?.image || normalized?.image_url || normalized?.imageUrl || normalized?.image_base64) ||
-                fallbackPrimaryImage,
-              ...((normalized?.images || normalized?.image_list || normalized?.imageUrls || []).map((img: any) => toAbsoluteUrl(img))),
-              ...(collectPostAttachments(normalized).map((att: any) => toAbsoluteUrl(att?.file || att?.url)).filter(isImageFile)),
-              ...fallbackGalleryImages
-            ].filter(Boolean),
-            attachments: collectPostAttachments(normalized)
-          };
-          setUpdates(prev => [newUpdate, ...prev]);
-          setTotalCount(prev => prev + 1);
-          displayNotification('success', 'Update created successfully!');
-          success = true;
-        } else {
-          await fetchUpdates();
-          displayNotification('success', 'Update created successfully!');
-          success = true;
-        }
+        // Refresh the full list to ensure we get the complete image URLs from the server
+        await fetchUpdates();
+        displayNotification('success', 'Update created successfully!');
+        success = true;
       }
       
     } catch (err: any) {
@@ -660,7 +514,7 @@ const AdminUpdatesPage = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {formatDistance(new Date(update.created_at), new Date(), { addSuffix: true })}
+                    {formatDistance(update.postedAt, new Date(), { addSuffix: true })}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-3">
                     <button 

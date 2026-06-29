@@ -122,7 +122,6 @@ class ProfileView(generics.GenericAPIView):
         last_name = request.data.get("last_name")
         email = request.data.get("email")
         phone_number = request.data.get("phone_number")
-        gender = request.data.get("gender")
 
         user: User = request.user
 
@@ -140,15 +139,15 @@ class ProfileView(generics.GenericAPIView):
                 )
             user.email = email
 
+        if phone_number is not None:
+            user.phone_number = phone_number
+
         user.save()
 
         user_request = getattr(user, 'user_request', None)
         if user_request:
             if phone_number is not None:
                 user_request.phone_number = phone_number
-
-            if gender is not None:
-                user_request.gender = gender
 
             user_request.save()
 

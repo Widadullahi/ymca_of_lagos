@@ -1,8 +1,9 @@
 
 import { useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { useAuth } from '../context/NewAuthContext';
+import { createPostsApi } from '../api/postsApi';
 import SocialMediaBar from '../components/navigation/SocialMediaBar';
 import MainNavigation from '../components/navigation/MainNavigation';
 
@@ -26,86 +27,34 @@ interface Update {
   attachments?: Attachment[];
 }
 
-const collectPostAttachments = (item: any) => item.attachments || item.attachments_data || [];
-
 export default function NewsDetailPage() {
   // Dummy handler for donation modal (replace with actual if needed)
   const openDonationModal = () => {};
   const { id } = useParams();
   const { fetchWithAuth, displayNotification, BACKEND_URL } = useAuth();
+  // Memoize postsApi to prevent re-creating it on every render
+  const postsApi = React.useMemo(() => createPostsApi(fetchWithAuth, BACKEND_URL), [fetchWithAuth, BACKEND_URL]);
   const [update, setUpdate] = useState<Update | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const mediaBaseUrl = BACKEND_URL.replace(/\/api\/v1\/?$/, '');
-  const getImageValue = (value: any): string => {
-    if (!value) return '';
-    if (typeof value === 'string') return value;
-    if (typeof value === 'object') {
-      return value.url || value.file || value.path || value.image || value.image_url || value.imageUrl || '';
-    }
-    return '';
-  };
-  const isImageFile = (url?: string | null): boolean => {
-    if (!url) return false;
-    const lower = url.toLowerCase();
-    return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'].some(ext => lower.includes(ext));
-  };
-  const toAbsoluteUrl = (value?: any): string => {
-    const url = getImageValue(value);
-    if (!url) return '';
-    // If already an absolute URL, return as is
-    if (/^https?:\/\//i.test(url)) return url;
-    if (url.startsWith('//')) return `${window.location.protocol}${url}`;
-    if (url.startsWith('/')) return `${mediaBaseUrl}${url}`;
-    return `${mediaBaseUrl}/${url.replace(/^\/+/, '')}`;
-  };
-
   useEffect(() => {
     const fetchUpdate = async () => {
+      if (!id) return;
       try {
-        const response = await fetchWithAuth({ method: 'GET', path: `/posts/${id}` });
-        const item = response?.data;
-        if (item) {
-          const postAttachments = collectPostAttachments(item);
-          const attachmentImages = postAttachments
-            .map((att: any) => toAbsoluteUrl(att?.file || att?.url))
-            .filter(isImageFile);
-          const allImages = [
-            toAbsoluteUrl(item.image || item.image_url || item.imageUrl || item?.image_base64),
-            ...(item.images || item.image_list || item.imageUrls || []).map((img: any) => toAbsoluteUrl(img)),
-            ...attachmentImages
-          ].filter(Boolean);
-
-          setUpdate({
-            id: item.id,
-            title: item.title,
-            content: item.content,
-            category: item.category,
-            actionButtonLabel: item.action_button_label || item.actionButtonLabel || '',
-            actionButtonUrl: item.action_button_url || item.actionButtonUrl || '',
-            imageUrl: allImages[0] || '',
-            images: allImages,
-            postedAt: new Date(item.created_at),
-            postedBy: item.user?.first_name || item.user?.email || 'Anonymous',
-            attachments: postAttachments.map((att: any) => {
-              const attachmentUrl = toAbsoluteUrl(att?.file || att?.url);
-              const fileName = (att?.file || att?.url || '').split('/').pop() || 'attachment';
-              return {
-                name: fileName,
-                url: attachmentUrl,
-                type: fileName.split('.').pop()?.toLowerCase() || 'file',
-              };
-            }),
-          });
+        setIsLoading(true);
+        const post = await postsApi.getPost(id);
+        if (post) {
+          setUpdate(post);
         }
       } catch (error) {
+        console.error('Error fetching news detail:', error);
         displayNotification('error', 'Failed to load news detail');
       } finally {
         setIsLoading(false);
       }
     };
     fetchUpdate();
-  }, [id]);
+  }, [id, postsApi]);
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-64">Loading...</div>;

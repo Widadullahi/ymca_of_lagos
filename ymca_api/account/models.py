@@ -186,6 +186,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     # Essential Personal Information for Authentication
     first_name = models.CharField(max_length=64, null=True, blank=True)
     last_name = models.CharField(max_length=64, null=True, blank=True)
+    phone_number = models.CharField(max_length=15, null=True, blank=True)
     
 
     # Reference to UserRequest for detailed information

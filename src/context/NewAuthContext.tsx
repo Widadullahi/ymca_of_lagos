@@ -253,7 +253,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setAuthToken(refreshData);
         // Retry the original request with the new access token
         headers['Authorization'] = `Bearer ${refreshData?.access_token}`;
-        response = await fetchWithTimeout(url, { method, headers, body: body ? JSON.stringify(body) : null });
+        response = await fetchWithTimeout(url, { method, headers, body: isFormData ? body : (body ? JSON.stringify(body) : null) });
 
         if (!response.ok) {
           await handleErrorResponse(response, true);
@@ -302,6 +302,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       errorData = null;
     }
 
+    // Log full error details for debugging
+    console.error('Error response from server:', {
+      status: response.status,
+      statusText: response.statusText,
+      errorData
+    });
+
     if (response.status === 400) {
       if (errorData?.message) {
         displayNotification('error', errorData.message);
@@ -313,6 +320,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               errorMessages.forEach((message: string) => {
                 displayNotification('error', `${field}: ${message}`);
               });
+            } else {
+              displayNotification('error', `${field}: ${errorMessages}`);
             }
           }
         }

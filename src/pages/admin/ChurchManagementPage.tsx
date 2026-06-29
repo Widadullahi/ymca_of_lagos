@@ -17,6 +17,8 @@ const ChurchManagementPage: React.FC = () => {
   const [editingChurchName, setEditingChurchName] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [churchToDelete, setChurchToDelete] = useState<Church | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const fetchChurches = async () => {
     try {
@@ -53,6 +55,7 @@ const ChurchManagementPage: React.FC = () => {
         body: { name: trimmedName },
       });
       setNewChurchName('');
+      setShowAddForm(false);
       displayNotification('success', 'Church added successfully');
       fetchChurches();
     } catch (error: any) {
@@ -117,45 +120,71 @@ const ChurchManagementPage: React.FC = () => {
     setChurchToDelete(null);
   };
 
+  const filteredChurches = churches.filter(church =>
+    church.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="max-w-5xl mx-auto p-6 bg-gray-50 min-h-screen">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Churches</h1>
-        <p className="mt-1 text-gray-600">Manage the Council of Church dropdown list.</p>
-      </div>
-
-      <div className="mb-8 rounded-lg bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900">Add Church</h2>
-        <form className="mt-4 flex flex-col gap-3 md:flex-row" onSubmit={handleAddChurch}>
+      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Churches</h1>
+          <p className="mt-1 text-gray-600">Manage the Council of Church dropdown list.</p>
+        </div>
+        <div className="flex flex-col md:flex-row gap-3">
           <input
             type="text"
-            value={newChurchName}
-            onChange={(e) => setNewChurchName(e.target.value)}
-            placeholder="Enter church name"
-            className="flex-1 rounded-md border border-gray-300 px-4 py-2"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search churches..."
+            className="rounded-md border border-gray-300 px-4 py-2"
           />
           <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-md bg-indigo-600 px-5 py-2 text-white hover:bg-indigo-700 disabled:opacity-60"
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="rounded-md bg-indigo-600 px-5 py-2 text-white hover:bg-indigo-700"
           >
-            Add Church
+            {showAddForm ? 'Cancel' : 'Add Church'}
           </button>
-        </form>
+        </div>
       </div>
 
+      {showAddForm && (
+        <div className="mb-8 rounded-lg bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900">Add Church</h2>
+          <form className="mt-4 flex flex-col gap-3 md:flex-row" onSubmit={handleAddChurch}>
+            <input
+              type="text"
+              value={newChurchName}
+              onChange={(e) => setNewChurchName(e.target.value)}
+              placeholder="Enter church name"
+              className="flex-1 rounded-md border border-gray-300 px-4 py-2"
+            />
+            <button
+              type="submit"
+              disabled={submitting}
+              className="rounded-md bg-green-600 px-5 py-2 text-white hover:bg-green-700 disabled:opacity-60"
+            >
+              Add Church
+            </button>
+          </form>
+        </div>
+      )}
+
       <div className="rounded-lg bg-white shadow-sm">
-        <div className="border-b border-gray-200 px-6 py-4">
+        <div className="border-b border-gray-200 px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <h2 className="text-lg font-semibold text-gray-900">Church List</h2>
+          <div className="text-sm text-gray-500">
+            {filteredChurches.length} result{filteredChurches.length !== 1 ? 's' : ''} found
+          </div>
         </div>
 
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading churches...</div>
-        ) : churches.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">No churches added yet.</div>
+        ) : filteredChurches.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">No churches found.</div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {churches.map((church) => (
+            {filteredChurches.map((church) => (
               <div key={church.id} className="flex flex-col gap-3 px-6 py-4 md:flex-row md:items-center md:justify-between">
                 <div className="flex-1">
                   {editingChurchId === church.id ? (

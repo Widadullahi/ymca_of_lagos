@@ -23,6 +23,7 @@ const UserListingPage: React.FC = () => {
   const [genderFilter, setGenderFilter] = useState<string>('');
   const [stateFilter, setStateFilter] = useState<string>('');
   const [membershipCategoryFilter, setMembershipCategoryFilter] = useState<string>('');
+  const [adminFilter, setAdminFilter] = useState<string>('');
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -102,7 +103,7 @@ const UserListingPage: React.FC = () => {
 
       // Transform the API response to our form format
       const formattedChurches = data?.data?.map((church: any) => ({
-        value: church.id,
+        value: church.name,
         label: church.name
       }));
 
@@ -296,8 +297,17 @@ const UserListingPage: React.FC = () => {
       });
     }
 
+    // Apply admin filter
+    if (adminFilter) {
+      if (adminFilter === 'admin') {
+        result = result.filter(member => member.is_admin);
+      } else if (adminFilter === 'non-admin') {
+        result = result.filter(member => !member.is_admin);
+      }
+    }
+
     setFilteredMembers(result);
-  }, [members, searchTerm, categoryFilter, statusFilter, unitFilter, subUnitFilter, genderFilter, membershipCategoryFilter, stateFilter]);
+  }, [members, searchTerm, categoryFilter, statusFilter, unitFilter, subUnitFilter, genderFilter, membershipCategoryFilter, stateFilter, adminFilter]);
 
   useEffect(() => {
     if (!shouldShowSubUnitFilter && subUnitFilter) {
@@ -344,6 +354,7 @@ const UserListingPage: React.FC = () => {
     setGenderFilter('');
     setMembershipCategoryFilter('');
     setStateFilter('');
+    setAdminFilter('');
   };
 
   const [isExporting, setIsExporting] = useState(false);
@@ -764,9 +775,28 @@ const UserListingPage: React.FC = () => {
               <option value="Zamfara">Zamfara</option>
             </select>
           </div>
+
+          <div>
+            <label htmlFor="admin" className="block text-sm font-medium text-gray-700 mb-1">
+              Admin Status
+            </label>
+            <select
+              id="admin"
+              value={adminFilter}
+              onChange={(e) => setAdminFilter(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            >
+              <option value="">All Users</option>
+              <option value="admin">Admins Only</option>
+              <option value="non-admin">Non-Admins Only</option>
+            </select>
+          </div>
         </div>
 
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="text-sm text-gray-600">
+            <strong>{filteredMembers.length}</strong> result{filteredMembers.length !== 1 ? 's' : ''} found
+          </div>
           <button
             onClick={clearFilters}
             className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"

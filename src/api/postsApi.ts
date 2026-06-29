@@ -49,35 +49,65 @@ const fileToBase64 = (file: File): Promise<string> => {
   });
 };
 
-// Transform backend response to frontend Update type
-const transformPostToUpdate = (post: PostResponse | null | undefined): any => {
-  if (!post) return null;
+// API functions factory - accepts fetchWithAuth function and BACKEND_URL
+export const createPostsApi = (fetchWithAuth: any, BACKEND_URL: string) => {
+  const mediaBaseUrl = BACKEND_URL.replace(/\/api\/v1\/?$/, '');
+  // Utility function to convert relative URLs to absolute
+  const toAbsoluteUrl = (url?: any): string => {
+    if (!url) return '';
+    if (typeof url !== 'string') return '';
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('//')) return `${window.location.protocol}${url}`;
+    if (url.startsWith('/')) return `${mediaBaseUrl}${url}`;
+    return `${mediaBaseUrl}/${url.replace(/^\/+/, '')}`;
+  };
 
-  const postedBy = post.user 
-    ? `${post.user.first_name} ${post.user.last_name}`.trim() || post.user.username
-    : 'Anonymous';
+  // Transform backend response to frontend Update type
+  const transformPostToUpdate = (post: any | null | undefined): any => {
+    if (!post) return null;
+
+    const postedBy = post.user 
+      ? `${post.user.first_name} ${post.user.last_name}`.trim() || post.user.username
+      : 'Anonymous';
+
+    const attachments = Array.isArray(post.attachments) ? post.attachments : 
+                        Array.isArray(post.attachments_data) ? post.attachments_data : [];
+
+    // Safely create a Date object, fallback to current date if invalid
+    let postedAt: Date;
+    try {
+      postedAt = new Date(post.created_at);
+      if (isNaN(postedAt.getTime())) {
+        postedAt = new Date();
+      }
+    } catch {
+      postedAt = new Date();
+    }
+
+    return {
+      id: post.id,
+      title: post.title || '',
+      content: post.content || '',
+      category: post.category || 'Uncategorized',
+      type: post.post_type || post.type || (post.category === 'Events' ? 'upcoming-event' : 'latest-news'),
+      actionButtonLabel: post.action_button_label || post.actionButtonLabel || '',
+      actionButtonUrl: post.action_button_url || post.actionButtonUrl || '',
+      imageUrl: toAbsoluteUrl(post.image || post.image_url || post.imageUrl || post?.image_base64),
+      postedBy: postedBy,
+      postedAt: postedAt,
+      created_at: postedAt.toISOString(), // Add created_at as ISO string for formatDistance
+      attachments: attachments.map((att: any) => ({
+        name: (att.file || att.url || '').split('/').pop() || 'File',
+        url: toAbsoluteUrl(att.file || att.url),
+        type: (att.file || att.url || '').split('.').pop() || 'file'
+      })),
+      images: [toAbsoluteUrl(post.image || post.image_url || post.imageUrl || post?.image_base64), ...attachments.filter((att: any) => 
+        ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(((att.file || att.url || '').split('.').pop() || '').toLowerCase())
+      ).map((att: any) => toAbsoluteUrl(att.file || att.url))].filter(Boolean)
+    };
+  };
 
   return {
-    id: post.id,
-    title: post.title,
-    content: post.content,
-    category: post.category,
-    type: post.post_type || 'latest-news',
-    actionButtonLabel: post.action_button_label || '',
-    actionButtonUrl: post.action_button_url || '',
-    imageUrl: post.image,
-    postedBy: postedBy,
-    postedAt: new Date(post.created_at),
-    attachments: post.attachments.map(att => ({
-      name: att.file.split('/').pop() || 'File',
-      url: att.file,
-      type: att.file.split('.').pop() || 'file'
-    }))
-  };
-};
-
-// API functions factory - accepts fetchWithAuth function
-export const createPostsApi = (fetchWithAuth: any) => ({
   // Fetch units
   async getUnits(): Promise<any[]> {
     try {
@@ -110,16 +140,41 @@ export const createPostsApi = (fetchWithAuth: any) => ({
     if (params?.page) queryParams.page = params.page;
     if (params?.page_size) queryParams.page_size = params.page_size;
 
-    const data: PostsListResponse = await fetchWithAuth({
-      method: 'GET',
-      path: '/posts/',
-      queryParams,
-    });
-    
-    return {
-      posts: data.results.map(transformPostToUpdate),
-      count: data.count
-    };
+    try {
+      const response = await fetchWithAuth({
+        method: 'GET',
+        path: '/posts/',
+        queryParams,
+      });
+      
+      // Handle different response structures!
+      let posts: any[] = [];
+      let count: number = 0;
+      
+      if (response) {
+        if (Array.isArray(response)) {
+          posts = response;
+          count = response.length;
+        } else if (Array.isArray(response.data)) {
+          posts = response.data;
+          count = response.data.length;
+        } else if (Array.isArray(response.results)) {
+          posts = response.results;
+          count = response.count || response.results.length;
+        }
+      }
+      
+      return {
+        posts: posts.filter(Boolean).map(transformPostToUpdate).filter(Boolean),
+        count: count
+      };
+    } catch (error) {
+      console.error('Error in getPosts:', error);
+      return {
+        posts: [],
+        count: 0
+      };
+    }
   },
 
   // Create new post
@@ -159,12 +214,17 @@ export const createPostsApi = (fetchWithAuth: any) => ({
 
   // Get single post
   async getPost(id: string): Promise<any> {
-    const data: PostResponse = await fetchWithAuth({
-      method: 'GET',
-      path: `/posts/${id}/`,
-    });
+    try {
+      const data: PostResponse = await fetchWithAuth({
+        method: 'GET',
+        path: `/posts/${id}/`,
+      });
 
-    return transformPostToUpdate(data);
+      return transformPostToUpdate(data);
+    } catch (error) {
+      console.error('Error in getPost:', error);
+      return null;
+    }
   },
 
   // Upload single attachment to existing post
@@ -208,11 +268,12 @@ export const createPostsApi = (fetchWithAuth: any) => ({
       timeoutMS: 120000,
     });
   }
-});
+  };
+};
 
 // For backwards compatibility, you can export a default instance
 // but you'll need to pass fetchWithAuth when you use it
 export const postsApi = {
   // This will be initialized with your fetchWithAuth function
-  init: (fetchWithAuth: any) => createPostsApi(fetchWithAuth)
+  init: (fetchWithAuth: any, BACKEND_URL: string) => createPostsApi(fetchWithAuth, BACKEND_URL)
 };

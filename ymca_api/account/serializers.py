@@ -44,7 +44,6 @@ class UserSerializer(serializers.ModelSerializer):
     user_request = serializers.SerializerMethodField(read_only=True)
     profile_completion_required = serializers.SerializerMethodField()
     phone_number = serializers.SerializerMethodField()
-    gender = serializers.SerializerMethodField()
     
     class Meta:
         model = User 
@@ -54,7 +53,6 @@ class UserSerializer(serializers.ModelSerializer):
             'first_name',
             'last_name',
             'phone_number',
-            'gender',
             'image',
             'card',
             'role',
@@ -135,14 +133,9 @@ class UserSerializer(serializers.ModelSerializer):
         return any(not value for value in required_values)
 
     def get_phone_number(self, obj: User):
-        if obj.user_request:
+        if obj.user_request and obj.user_request.phone_number:
             return obj.user_request.phone_number
-        return None
-
-    def get_gender(self, obj: User):
-        if obj.user_request:
-            return obj.user_request.gender
-        return None
+        return obj.phone_number
 
 
 class RegisterSerializer(serializers.ModelSerializer):

@@ -75,7 +75,7 @@ const MemberRequestListing: React.FC = () => {
       });
 
       const formattedChurches = data?.data?.map((church: any) => ({
-        value: church.id,
+        value: church.name,
         label: church.name,
       })) || [];
 
