@@ -801,7 +801,7 @@ class AdminAddMembersView(generics.GenericAPIView):
 
 class AdminMemberRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
-    queryset = User.objects.filter(is_superuser=False, is_admin=False).order_by('-created_at')
+    queryset = User.objects.filter(is_superuser=False).order_by('-created_at')
     serializer_class = UserSerializer
     lookup_field = 'id'
 
@@ -946,32 +946,50 @@ class CurrentUserRequestUpdateView(generics.GenericAPIView):
 
 class AdminMemberUpdateDestroyView(generics.GenericAPIView):
 
-    queryset = User.objects.filter(is_superuser=False, is_admin=False).order_by('-created_at')
+    queryset = User.objects.filter(is_superuser=False).order_by('-created_at')
     serializer_class = UserSerializer
     lookup_field = 'id'
 
-        
-    def put(self, request,id):
+    def put(self, request, id):
         try:
             user = User.objects.get(id=id)
         except:
             return bad_request_response(
                 message='User not found'
-                )
+            )
         try:
             serializer = self.get_serializer(user, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return success_response(
                 data=serializer.data,
-                message="Member updated successfully"
-                )
+                message="User updated successfully"
+            )
+        except:
+            return bad_request_response(
+                message='Error updating user'
+            )
+
+    def patch(self, request, id):
+        try:
+            user = User.objects.get(id=id)
+        except:
+            return bad_request_response(
+                message='User not found'
+            )
+        try:
+            serializer = self.get_serializer(user, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return success_response(
+                data=serializer.data,
+                message="User updated successfully"
+            )
         except:
             return bad_request_response(
                 message='Error updating user'
             )
         
-
     
     def delete(self, request, id):
         try:
@@ -979,12 +997,11 @@ class AdminMemberUpdateDestroyView(generics.GenericAPIView):
         except:
             return bad_request_response(
                 message='User not found'
-                )
+            )
         try:
-            user = self.get_object()
             user.delete()
             return success_response(
-                message="Member deleted successfully"
+                message="User deleted successfully"
             )
         except:
             return bad_request_response(

@@ -329,6 +329,11 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
                     src={primaryImagePreview}
                     alt="Primary preview"
                     className="w-full h-40 rounded-lg border border-gray-300 object-cover"
+                    onError={(e) => {
+                      console.warn('Failed to load primary image preview:', primaryImagePreview);
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.style.display = 'none';
+                    }}
                   />
                   <button
                     type="button"
@@ -367,6 +372,11 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
                         src={preview}
                         alt={`Gallery ${index + 1}`}
                         className="w-full h-32 rounded-lg border border-gray-300 object-cover"
+                        onError={(e) => {
+                          console.warn('Failed to load gallery image:', preview);
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.style.display = 'none';
+                        }}
                       />
                       <button
                         type="button"
@@ -406,6 +416,11 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
                         src={preview}
                         controls
                         className="w-full h-40 rounded object-cover"
+                        onError={(e) => {
+                          console.warn('Failed to load video preview:', preview);
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.style.display = 'none';
+                        }}
                       />
                       <button
                         type="button"

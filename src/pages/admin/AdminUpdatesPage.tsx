@@ -20,7 +20,6 @@ export interface Update {
   id: string;
   title: string;
   content: string;
-  category: string;
   actionButtonLabel?: string;
   actionButtonUrl?: string;
   imageUrl?: string;
@@ -64,6 +63,7 @@ const AdminUpdatesPage = () => {
       setError(null);
 
       const { posts, count } = await postsApi.getPosts({ page_size: 100 });
+      console.log('Admin fetched posts:', posts);
       setUpdates(posts);
       setTotalCount(count);
       setSelectedUpdateIds([]);
@@ -105,7 +105,6 @@ const AdminUpdatesPage = () => {
       apiData.append('post_type', formData.type);
       apiData.append('action_button_label', formData.actionButtonLabel || '');
       apiData.append('action_button_url', formData.actionButtonUrl || '');
-      apiData.append('category', formData.type === 'upcoming-event' ? 'Events' : 'Announcements');
 
       // Handle main image
       if (formData.primaryImageFile) {
@@ -271,6 +270,11 @@ const AdminUpdatesPage = () => {
       update.content?.toLowerCase().includes(normalizedSearchTerm)
     );
   });
+
+  console.log('Admin updates:', updates);
+  console.log('Admin filtered updates:', filteredUpdates);
+  console.log('News count:', updates.filter(u => u.type === 'latest-news').length);
+  console.log('Events count:', updates.filter(u => u.type === 'upcoming-event').length);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

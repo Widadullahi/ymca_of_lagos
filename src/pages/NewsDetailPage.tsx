@@ -17,7 +17,7 @@ interface Update {
   id: string;
   title: string;
   content: string;
-  category: string;
+  type: 'latest-news' | 'upcoming-event';
   actionButtonLabel?: string;
   actionButtonUrl?: string;
   imageUrl?: string;
@@ -25,6 +25,7 @@ interface Update {
   postedBy: string;
   postedAt: Date;
   attachments?: Attachment[];
+  category?: string;
 }
 
 export default function NewsDetailPage() {
@@ -63,6 +64,23 @@ export default function NewsDetailPage() {
     return <div className="flex justify-center items-center h-64">News not found.</div>;
   }
 
+  const getUpdateImages = (update: Update): string[] => {
+    if (update.images?.length) return update.images;
+    if (update.imageUrl) return [update.imageUrl];
+    return [];
+  };
+  
+  const getUpdateVideos = (update: Update): Attachment[] => {
+    if (!update.attachments) return [];
+    return update.attachments.filter(att => 
+      ['mp4', 'webm', 'mov', 'ogg'].includes(att.type.toLowerCase())
+    );
+  };
+  
+  const images = getUpdateImages(update);
+  const videos = getUpdateVideos(update);
+  const isVideo = (type: string) => ['mp4', 'webm', 'mov', 'ogg'].includes(type.toLowerCase());
+  
   return (
     <>
       {/* Social Media Bar */}
@@ -70,27 +88,49 @@ export default function NewsDetailPage() {
       {/* Main Navigation */}
       <MainNavigation openDonationModal={openDonationModal} />
       <article className="min-h-screen bg-[#faf9f6] pb-20">
-        <div className="max-w-3xl mx-auto">
-          {update.imageUrl && (
-            <div className="w-full bg-gray-100 rounded-b-lg overflow-hidden flex items-center justify-center mb-8 p-3">
-              <img
-                src={update.imageUrl}
-                alt={update.title}
-                className="w-full h-auto max-h-[75vh] object-contain rounded-lg"
-                style={{ objectPosition: 'center' }}
-              />
-            </div>
-          )}
+        <div className="max-w-4xl mx-auto">
+          {/* Media Gallery (Images & Videos) */}
+          <div className="mb-10">
+            {/* Videos */}
+            {videos.map((video, idx) => (
+              <div key={`video-${idx}`} className="mb-6 w-full">
+                <video
+                  src={video.url}
+                  controls
+                  className="w-full max-h-[75vh] rounded-lg object-contain"
+                  onError={(e) => {
+                    console.warn('Failed to load video:', video.url);
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+            ))}
+            
+            {/* Images */}
+            {images.map((img, idx) => (
+              <div key={`img-${idx}`} className="mb-6">
+                <img
+                  src={img}
+                  alt={idx === 0 ? update.title : `${update.title} - Image ${idx + 1}`}
+                  className="w-full h-auto max-h-[75vh] object-contain rounded-lg"
+                  style={{ objectPosition: 'center' }}
+                  onError={(e) => {
+                    console.warn('Failed to load image:', img);
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+          
           <div className="px-4 md:px-0">
             <h1 className="text-4xl md:text-5xl font-extrabold leading-tight mb-4 text-gray-900">
               {update.title}
             </h1>
             <div className="flex items-center gap-3 mb-8">
-              {/* <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-lg font-bold text-white">
-                {update.postedBy[0]}
-              </div> */}
               <div className="text-gray-700 text-base">
-                {/* <span className="font-semibold">{update.postedBy}</span> */}
                 <span className="mx-2">·</span>
                 <span>{format(update.postedAt, 'MMMM do, yyyy')}</span>
                 {update.category && (
@@ -119,11 +159,11 @@ export default function NewsDetailPage() {
                 </a>
               </div>
             )}
-            {update.attachments && update.attachments.length > 0 && (
+            {update.attachments && update.attachments.filter(a => !isVideo(a.type)).length > 0 && (
               <div className="border-t pt-6 mt-10">
                 <h4 className="font-semibold mb-3 text-lg">Attachments</h4>
                 <div className="space-y-2">
-                  {update.attachments.map((attachment, idx) => (
+                  {update.attachments.filter(a => !isVideo(a.type)).map((attachment, idx) => (
                     <a
                       key={idx}
                       href={attachment.url}

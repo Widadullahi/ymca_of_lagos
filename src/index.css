@@ -1,5 +1,25 @@
 @import "tailwindcss";
 
+/* GLOBAL SCROLLBAR STYLES - Always visible scrollbars for everything */
+::-webkit-scrollbar {
+  width: 10px;
+  display: block !important;
+}
+
+::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #000000;
+  border-radius: 4px;
+  display: block !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #333333;
+}
+
 /* Visible scrollbar for modal content (Chrome/WebKit) */
 .modal-scrollbar::-webkit-scrollbar {
   width: 10px;

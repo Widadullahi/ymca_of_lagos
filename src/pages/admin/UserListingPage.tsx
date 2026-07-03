@@ -23,7 +23,6 @@ const UserListingPage: React.FC = () => {
   const [genderFilter, setGenderFilter] = useState<string>('');
   const [stateFilter, setStateFilter] = useState<string>('');
   const [membershipCategoryFilter, setMembershipCategoryFilter] = useState<string>('');
-  const [adminFilter, setAdminFilter] = useState<string>('');
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -79,7 +78,6 @@ const UserListingPage: React.FC = () => {
       setHasNextPage(!!response.metadata.next);
       setCurrentPage(page)
     } catch (error) {
-      console.error('Error fetching members:', error);
     } finally {
       setIsLoading(false);
       setIsLoadingMore(false);
@@ -109,7 +107,6 @@ const UserListingPage: React.FC = () => {
 
       setChurches(formattedChurches);
     } catch (error) {
-      console.error('Error fetching churches:', error);
     }
   }
 
@@ -130,7 +127,6 @@ const UserListingPage: React.FC = () => {
 
       setYouthGroups(formattedGroups);
     } catch (error) {
-      console.error('Error fetching youth groups:', error);
     }
   }
 
@@ -229,6 +225,9 @@ const UserListingPage: React.FC = () => {
   useEffect(() => {
     let result = members;
 
+    // Automatically exclude admins
+    result = result.filter(member => !member.is_admin);
+
     // Apply search filter
     if (searchTerm) {
       const term = normalize(searchTerm);
@@ -297,17 +296,8 @@ const UserListingPage: React.FC = () => {
       });
     }
 
-    // Apply admin filter
-    if (adminFilter) {
-      if (adminFilter === 'admin') {
-        result = result.filter(member => member.is_admin);
-      } else if (adminFilter === 'non-admin') {
-        result = result.filter(member => !member.is_admin);
-      }
-    }
-
     setFilteredMembers(result);
-  }, [members, searchTerm, categoryFilter, statusFilter, unitFilter, subUnitFilter, genderFilter, membershipCategoryFilter, stateFilter, adminFilter]);
+  }, [members, searchTerm, categoryFilter, statusFilter, unitFilter, subUnitFilter, genderFilter, membershipCategoryFilter, stateFilter]);
 
   useEffect(() => {
     if (!shouldShowSubUnitFilter && subUnitFilter) {
@@ -354,7 +344,6 @@ const UserListingPage: React.FC = () => {
     setGenderFilter('');
     setMembershipCategoryFilter('');
     setStateFilter('');
-    setAdminFilter('');
   };
 
   const [isExporting, setIsExporting] = useState(false);
@@ -381,7 +370,6 @@ const UserListingPage: React.FC = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Export failed:', error);
       displayNotification('error', 'Failed to export members list. Please try again.');
     } finally {
       setIsExporting(false);
@@ -511,7 +499,6 @@ const UserListingPage: React.FC = () => {
       setSelectedUserIds([]);
     } catch (err) {
       // Optionally show error to user
-      console.error('Bulk update failed', err);
     }
     closeBulkActionModal();
   };
@@ -773,22 +760,6 @@ const UserListingPage: React.FC = () => {
               <option value="Taraba">Taraba</option>
               <option value="Yobe">Yobe</option>
               <option value="Zamfara">Zamfara</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="admin" className="block text-sm font-medium text-gray-700 mb-1">
-              Admin Status
-            </label>
-            <select
-              id="admin"
-              value={adminFilter}
-              onChange={(e) => setAdminFilter(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-            >
-              <option value="">All Users</option>
-              <option value="admin">Admins Only</option>
-              <option value="non-admin">Non-Admins Only</option>
             </select>
           </div>
         </div>

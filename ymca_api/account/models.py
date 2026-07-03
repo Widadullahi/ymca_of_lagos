@@ -61,6 +61,29 @@ class SystemCardSignature(models.Model):
     def __str__(self):
         return self.signature.url
 
+
+class MembershipFeeSettings(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Youth Council (LYY prefix) fees
+    youth_council_first_payment = models.DecimalField(max_digits=10, decimal_places=2, default=2500.00)
+    youth_council_renewal = models.DecimalField(max_digits=10, decimal_places=2, default=2000.00)
+    
+    # Regular members (LYA prefix) fees
+    regular_first_payment = models.DecimalField(max_digits=10, decimal_places=2, default=3000.00)
+    regular_renewal = models.DecimalField(max_digits=10, decimal_places=2, default=2500.00)
+    
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return "Membership Fee Settings"
+    
+    class Meta:
+        verbose_name_plural = "Membership Fee Settings"
+
+
 # UserManager remains the same
 class UserManager(BaseUserManager):
     def create_user(self, email, password, **extra_fields):
@@ -420,3 +443,19 @@ class EmailVerification(models.Model):
         self.is_verified = False
         self.verified_at = None
         self.expires_at = timezone.now() + timedelta(minutes=10)
+
+
+class BirthdayWish(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='birthday_wishes')
+    year = models.IntegerField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+    is_sent = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('user', 'year')
+        ordering = ['-sent_at']
+        verbose_name_plural = 'Birthday Wishes'
+
+    def __str__(self):
+        return f"Birthday wish for {self.user.get_full_name()} in {self.year}"

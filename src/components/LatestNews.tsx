@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { format } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
+import { format, formatDistance } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/NewAuthContext';
 import { createPostsApi } from '../api/postsApi';
-import { useNavigate } from 'react-router-dom';
 
 interface Attachment {
   name: string;
@@ -16,7 +16,6 @@ interface Update {
   title: string;
   content: string;
   type: 'latest-news' | 'upcoming-event';
-  category: string;
   actionButtonLabel?: string;
   actionButtonUrl?: string;
   imageUrl?: string;
@@ -24,9 +23,9 @@ interface Update {
   postedBy: string;
   postedAt: Date;
   attachments?: Attachment[];
+  category?: string;
 }
 
-// Function to truncate content to a maximum number of words
 const truncateContent = (content: string, maxWords: number = 30): string => {
   const words = content.split(' ');
   if (words.length <= maxWords) return content;
@@ -39,14 +38,20 @@ interface LatestNewsProps {
   showAll?: boolean;
 }
 
-export default function LatestNewsAndUpcomingEvents({ showStats = true, showFilters = true, showAll = false }: LatestNewsProps) {
-  const { fetchWithAuth, displayNotification, BACKEND_URL } = useAuth();
+export default function LatestNewsAndUpcomingEvents({ 
+  showStats: _showStats = true, 
+  showFilters: _showFilters = true, 
+  showAll = false 
+}: LatestNewsProps) {
   const navigate = useNavigate();
-  // Create postsApi only once by memoizing it
+  const { fetchWithAuth, displayNotification, BACKEND_URL } = useAuth();
   const postsApi = React.useMemo(() => createPostsApi(fetchWithAuth, BACKEND_URL), [fetchWithAuth, BACKEND_URL]);
   
   const [updates, setUpdates] = useState<Update[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedUpdate, setSelectedUpdate] = useState<Update | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
 
   const createInlinePlaceholder = (width: number, height: number, label: string) =>
     `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
@@ -58,25 +63,52 @@ export default function LatestNewsAndUpcomingEvents({ showStats = true, showFilt
       </svg>`
     )}`;
 
+  const fetchUpdates = async () => {
+    try {
+      setIsLoading(true);
+      const { posts } = await postsApi.getPosts({ page_size: 100 });
+      const sorted = [...posts].sort((a: Update, b: Update) => 
+        b.postedAt.getTime() - a.postedAt.getTime()
+      );
+      setUpdates(sorted);
+    } catch (error) {
+      displayNotification('error', 'Failed to load updates');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchUpdates = async () => {
-      try {
-        setIsLoading(true);
-        const { posts } = await postsApi.getPosts({ page_size: 100 });
-        const sorted = [...posts].sort((a: Update, b: Update) => 
-          b.postedAt.getTime() - a.postedAt.getTime()
-        );
-        setUpdates(sorted);
-      } catch (error) {
-        console.error('Error fetching updates:', error);
-        displayNotification('error', 'Failed to load updates');
-      } finally {
-        setIsLoading(false);
+    fetchUpdates();
+
+    // Listen for localStorage changes from admin updates
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'news-events-updated') {
+        fetchUpdates();
+        // Clear the flag after fetching
+        localStorage.removeItem('news-events-updated');
       }
     };
 
-    fetchUpdates();
-  }, [postsApi]); // Removed displayNotification from dependency array since it's stable from context
+    // Also check for local changes (same tab)
+    const checkForUpdates = () => {
+      const flag = localStorage.getItem('news-events-updated');
+      if (flag) {
+        fetchUpdates();
+        localStorage.removeItem('news-events-updated');
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Poll for updates every 2 seconds to catch same-tab changes
+    const pollInterval = setInterval(checkForUpdates, 2000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(pollInterval);
+    };
+  }, [postsApi]);
 
   const getUpdateImages = (update: Update): string[] => {
     if (update.images?.length) return update.images;
@@ -84,21 +116,49 @@ export default function LatestNewsAndUpcomingEvents({ showStats = true, showFilt
     return [];
   };
 
+  const getUpdateVideos = (update: Update): Attachment[] => {
+    if (!update.attachments) return [];
+    return update.attachments.filter(att => 
+      ['mp4', 'webm', 'mov', 'ogg'].includes(att.type.toLowerCase())
+    );
+  };
+
+  const getAllMedia = (update: Update): Array<{ type: 'image' | 'video'; url: string; name?: string }> => {
+    const images = getUpdateImages(update).map(url => ({ type: 'image' as const, url }));
+    const videos = getUpdateVideos(update).map(att => ({ type: 'video' as const, url: att.url, name: att.name }));
+    return [...images, ...videos];
+  };
+
   const openModal = (update: Update) => {
-    navigate(`/news/${update.id}`);
+    setSelectedUpdate(update);
+    setCurrentMediaIndex(0);
+    setIsModalOpen(true);
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setCurrentMediaIndex(0);
+    document.body.style.overflow = 'auto';
+  };
+
+  const nextMedia = (media: Array<{ type: 'image' | 'video'; url: string; name?: string }>) => {
+    setCurrentMediaIndex((prev) => (prev + 1) % media.length);
+  };
+
+  const prevMedia = (media: Array<{ type: 'image' | 'video'; url: string; name?: string }>) => {
+    setCurrentMediaIndex((prev) => (prev - 1 + media.length) % media.length);
   };
 
   const formatDate = (date: Date) => format(date, 'MMMM do, yyyy');
-  const showStatusLabel = showStats ? 'stats-enabled' : 'stats-disabled';
-  const showFilterLabel = showFilters ? 'filters-enabled' : 'filters-disabled';
 
   const newsUpdates = updates.filter(u => 
-    u.type === 'latest-news' || u.category !== 'Events'
-  ).slice(0, showAll ? undefined : 5);
+    u.type === 'latest-news'
+  ).slice(0, showAll ? undefined : 3);
 
   const eventUpdates = updates.filter(u => 
-    u.type === 'upcoming-event' || u.category === 'Events'
-  ).slice(0, showAll ? undefined : 5);
+    u.type === 'upcoming-event'
+  ).slice(0, showAll ? undefined : 3);
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -112,7 +172,6 @@ export default function LatestNewsAndUpcomingEvents({ showStats = true, showFilt
   return (
     <section className="py-16 bg-gray-50">
       <div className="container mx-auto px-4">
-        <div className="sr-only" aria-hidden="true">{showStatusLabel} {showFilterLabel}</div>
         <h2 className="text-4xl font-bold text-gray-900 mb-2 text-center">
           Latest News & Upcoming Events
         </h2>
@@ -120,19 +179,24 @@ export default function LatestNewsAndUpcomingEvents({ showStats = true, showFilt
           Stay up to date with what's happening in our community from inspiring stories to exciting upcoming events.
         </p>
 
-        {/* Featured News - 3 equal cards in a row */}
+        {/* Featured News */}
         <div className="mb-20">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex justify-between items-center mb-8">
             <h3 className="text-2xl font-semibold text-gray-800 pl-4 border-l-4 border-red-500">
               Latest News
             </h3>
-            {newsUpdates.length > 0 && (
-              <a
-                href="/news"
-                className="text-red-600 hover:text-red-800 font-medium flex items-center gap-2 transition-colors"
+            {!showAll && (
+              <motion.button
+                onClick={() => navigate('/news')}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-2 px-6 py-3 border-2 border-red-600 text-red-600 font-semibold rounded-lg hover:bg-red-600 hover:text-white transition-all"
               >
-                See More News →
-              </a>
+                View All News
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </motion.button>
             )}
           </div>
 
@@ -142,7 +206,7 @@ export default function LatestNewsAndUpcomingEvents({ showStats = true, showFilt
             </div>
           ) : newsUpdates.length === 0 ? (
             <div className="flex justify-center items-center h-96">
-              <p className="text-gray-500 text-lg">No recent news available.</p>
+              <p className="text-gray-500 text-lg">No news available at the moment.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -151,51 +215,54 @@ export default function LatestNewsAndUpcomingEvents({ showStats = true, showFilt
                 return (
                   <motion.div
                     key={update.id}
-                    variants={cardVariants}
+                    custom={index}
                     initial="hidden"
                     animate="visible"
-                    custom={index}
-                    className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col h-full"
+                    variants={cardVariants}
+                    className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col"
                   >
                     <div className="relative">
                       {images.length > 0 ? (
                         <img
                           src={images[0]}
                           alt={update.title}
-                          className="w-full h-64 object-cover"
+                          className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-500"
                           onError={(e) => {
+                            console.warn('Failed to load image:', images[0]);
                             e.currentTarget.onerror = null;
-                            e.currentTarget.src = createInlinePlaceholder(400, 256, 'No Image');
+                            e.currentTarget.src = createInlinePlaceholder(400, 224, 'No Image');
                           }}
                         />
                       ) : update.attachments?.find(a => ['mp4', 'webm', 'mov', 'ogg'].includes(a.type)) ? (
                         <video
                           src={update.attachments.find(a => ['mp4', 'webm', 'mov', 'ogg'].includes(a.type))?.url}
-                          className="w-full h-64 object-cover"
+                          className="w-full h-56 object-cover"
                           muted
                           playsInline
                           preload="metadata"
                         />
                       ) : (
-                        <div className="w-full h-64 bg-gray-100 flex items-center justify-center">
-                          <span className="text-gray-400 text-lg">No image</span>
+                        <div className="w-full h-56 bg-gray-100 flex items-center justify-center">
+                          <span className="text-gray-400">No image</span>
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                      <div className="absolute bottom-4 left-4 right-4">
-                        {/* Removed category tag from here */}
-                        <p className="text-white text-sm opacity-90">{formatDate(update.postedAt)}</p>
-                      </div>
+                      {images.length > 1 && (
+                        <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                          +{images.length - 1} more
+                        </div>
+                      )}
                     </div>
 
                     <div className="p-6 flex flex-col flex-grow">
+                    <div className="mb-3">
+                      <span className="text-xs text-gray-500">{formatDate(update.postedAt)}</span>
+                    </div>
+                      
                       <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2">{update.title}</h3>
-                      {/* FIX: Truncate content in card (max 30 words) */}
                       <p className="text-gray-600 mb-6 line-clamp-4 flex-grow">
                         {truncateContent(update.content, 30)}
                       </p>
                       <div className="mt-auto">
-                        {/* Removed posted by section from here */}
                         <motion.button
                           onClick={() => openModal(update)}
                           whileHover={{ scale: 1.05 }}
@@ -215,17 +282,22 @@ export default function LatestNewsAndUpcomingEvents({ showStats = true, showFilt
 
         {/* Upcoming Events */}
         <div>
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex justify-between items-center mb-8">
             <h3 className="text-2xl font-semibold text-gray-800 pl-4 border-l-4 border-green-500">
               Upcoming Events
             </h3>
-            {eventUpdates.length > 0 && (
-              <a
-                href="/news"
-                className="text-green-600 hover:text-green-800 font-medium flex items-center gap-2 transition-colors"
+            {!showAll && (
+              <motion.button
+                onClick={() => navigate('/news')}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-2 px-6 py-3 border-2 border-green-600 text-green-600 font-semibold rounded-lg hover:bg-green-600 hover:text-white transition-all"
               >
-                See All Events →
-              </a>
+                View All Events
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </motion.button>
             )}
           </div>
 
@@ -244,10 +316,11 @@ export default function LatestNewsAndUpcomingEvents({ showStats = true, showFilt
                 return (
                   <motion.div
                     key={update.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 group cursor-pointer flex flex-col"
+                    custom={index}
+                    initial="hidden"
+                    animate="visible"
+                    variants={cardVariants}
+                    className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col cursor-pointer"
                     onClick={() => openModal(update)}
                   >
                     <div className="relative">
@@ -257,6 +330,7 @@ export default function LatestNewsAndUpcomingEvents({ showStats = true, showFilt
                           alt={update.title}
                           className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-500"
                           onError={(e) => {
+                            console.warn('Failed to load image:', images[0]);
                             e.currentTarget.onerror = null;
                             e.currentTarget.src = createInlinePlaceholder(400, 224, 'No Image');
                           }}
@@ -274,19 +348,33 @@ export default function LatestNewsAndUpcomingEvents({ showStats = true, showFilt
                           <span className="text-gray-400">No image</span>
                         </div>
                       )}
-                      {/* Removed the event badge from here */}
+                      {images.length > 1 && (
+                        <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                          +{images.length - 1} more
+                        </div>
+                      )}
                     </div>
+
                     <div className="p-6 flex flex-col flex-grow">
+                    <div className="mb-3">
+                      <span className="text-xs text-gray-500">{formatDate(update.postedAt)}</span>
+                    </div>
+
                       <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-red-600 transition-colors">
                         {update.title}
                       </h3>
-                      {/* FIX: Truncate content in card (max 20 words for events) */}
-                      <p className="text-gray-600 mb-6 line-clamp-3 flex-grow text-sm">
+                      <p className="text-gray-600 mb-6 line-clamp-4 flex-grow text-sm">
                         {truncateContent(update.content, 20)}
                       </p>
-                      <div className="mt-auto flex items-center justify-between text-sm">
-                        <span className="text-gray-500">{formatDate(update.postedAt)}</span> {/* Replaced postedBy with date */}
-                        <span className="text-red-600 font-medium">View Details →</span>
+                      <div className="mt-auto">
+                        <motion.button
+                          onClick={() => openModal(update)}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium transition-colors"
+                        >
+                          View Details
+                        </motion.button>
                       </div>
                     </div>
                   </motion.div>
@@ -296,6 +384,182 @@ export default function LatestNewsAndUpcomingEvents({ showStats = true, showFilt
           )}
         </div>
       </div>
+
+      {/* Modal */}
+      <AnimatePresence>
+        {isModalOpen && selectedUpdate && (
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <motion.div
+              className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full mx-auto max-h-[90vh] overflow-hidden flex flex-col"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+            >
+              <button
+                onClick={closeModal}
+                className="absolute top-4 right-4 z-10 bg-white rounded-full p-2 shadow-lg text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+
+              <div className="p-6 overflow-y-auto">
+                <h3 className="text-2xl font-bold mb-2">{selectedUpdate.title}</h3>
+                <div className="mb-6">
+                  <span className="text-sm text-gray-500">
+                    {formatDistance(selectedUpdate.postedAt, new Date(), { addSuffix: true })}
+                  </span>
+                </div>
+
+                {(() => {
+                  const allMedia = getAllMedia(selectedUpdate);
+                  if (allMedia.length === 0) return null;
+
+                  const currentMedia = allMedia[currentMediaIndex];
+                  return (
+                    <div className="mb-6">
+                      <div className="relative mb-4">
+                        {currentMedia.type === 'image' ? (
+                          <img
+                            src={currentMedia.url}
+                            alt={`Media ${currentMediaIndex + 1}`}
+                            className="w-full h-96 object-contain rounded-md"
+                            onError={(e) => {
+                              console.warn('Failed to load image:', currentMedia.url);
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <video
+                            src={currentMedia.url}
+                            controls
+                            className="w-full h-96 object-contain rounded-md"
+                            onError={(e) => {
+                              console.warn('Failed to load video:', currentMedia.url);
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        )}
+                        
+                        {allMedia.length > 1 && (
+                          <>
+                            <button
+                              onClick={() => prevMedia(allMedia)}
+                              className="absolute top-1/2 left-2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white px-3 py-2 rounded-full hover:bg-opacity-70 transition"
+                            >
+                              ‹
+                            </button>
+                            <button
+                              onClick={() => nextMedia(allMedia)}
+                              className="absolute top-1/2 right-2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white px-3 py-2 rounded-full hover:bg-opacity-70 transition"
+                            >
+                              ›
+                            </button>
+                            <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-xs px-3 py-1 rounded-full">
+                              {currentMediaIndex + 1} / {allMedia.length}
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Thumbnail Previews */}
+                      {allMedia.length > 1 && (
+                        <div className="flex gap-2 overflow-x-auto pb-2">
+                          {allMedia.map((media, index) => (
+                            <button
+                              key={index}
+                              onClick={() => setCurrentMediaIndex(index)}
+                              className={`flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 transition-all ${
+                                index === currentMediaIndex 
+                                  ? 'border-blue-600 ring-2 ring-blue-600 ring-offset-2' 
+                                  : 'border-gray-200 hover:border-gray-400'
+                              }`}
+                            >
+                              {media.type === 'image' ? (
+                                <img
+                                  src={media.url}
+                                  alt={`Thumbnail ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    console.warn('Failed to load thumbnail:', media.url);
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                  <span className="text-2xl">🎬</span>
+                                </div>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                <div className="prose prose-lg max-w-none mb-6 text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>
+                  <p className="whitespace-pre-line">{selectedUpdate.content}</p>
+                </div>
+
+                {(selectedUpdate.actionButtonLabel || selectedUpdate.actionButtonUrl) && (
+                  <div className="mb-6">
+                    <a
+                      href={selectedUpdate.actionButtonUrl || '#'}
+                      target={selectedUpdate.actionButtonUrl ? "_blank" : "_self"}
+                      rel={selectedUpdate.actionButtonUrl ? "noopener noreferrer" : undefined}
+                      className={`inline-flex items-center rounded-lg px-6 py-3 font-semibold transition ${
+                        selectedUpdate.actionButtonUrl 
+                          ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      {selectedUpdate.actionButtonLabel || 'Learn More'}
+                    </a>
+                  </div>
+                )}
+
+                {selectedUpdate.attachments && selectedUpdate.attachments.filter(a => 
+                  !['mp4', 'webm', 'mov', 'ogg'].includes(a.type.toLowerCase())
+                ).length > 0 && (
+                  <div className="border-t pt-6">
+                    <h4 className="font-semibold mb-3 text-lg">Attachments</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedUpdate.attachments.filter(a => 
+                        !['mp4', 'webm', 'mov', 'ogg'].includes(a.type.toLowerCase())
+                      ).map((att, i) => (
+                        <a
+                          key={i}
+                          href={att.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-sm bg-gray-100 hover:bg-gray-200 rounded-full px-4 py-2 text-gray-700"
+                        >
+                          {(() => {
+                            switch (att.type.toLowerCase()) {
+                              case 'pdf':
+                                return <span className="text-red-500 mr-2">📄</span>;
+                              case 'docx':
+                                return <span className="text-blue-500 mr-2">📄</span>;
+                              case 'mp3':
+                                return <span className="text-purple-500 mr-2">🎵</span>;
+                              default:
+                                return <span className="text-gray-500 mr-2">📎</span>;
+                            }
+                          })()}
+                          {att.name}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

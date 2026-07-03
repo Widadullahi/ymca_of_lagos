@@ -33,6 +33,7 @@ import AdminSignaturePage from './pages/admin/AdminSignaturePage';
 import CompleteProfilePage from './pages/CompleteProfilePage';
 import AdminAccessPage from './pages/admin/AdminAccessPage';
 import ChurchManagementPage from './pages/admin/ChurchManagementPage';
+import MembershipFeeSettingsPage from './pages/admin/MembershipFeeSettingsPage';
 
 
 
@@ -81,7 +82,8 @@ const App: React.FC = () => {
         
         <Route path="/admin/account" element={<RoleBasedRoute element={<ProfileManagementPage />}  requiredRole="Admin"/>} />
         <Route path="/admin/signature" element={<RoleBasedRoute element={<AdminSignaturePage />} requiredRole="Admin" />} />
-        <Route path="/admin/churches" element={<RoleBasedRoute element={<ChurchManagementPage />} requiredRole="Admin" />} />
+    <Route path="/admin/churches" element={<RoleBasedRoute element={<ChurchManagementPage />} requiredRole="Admin" />} />
+    <Route path="/admin/fee-settings" element={<RoleBasedRoute element={<MembershipFeeSettingsPage />} requiredRole="Admin" />} />
         <Route path="*" element={<Navigate to={user?.role == "Admin" ? "/admin/dashboard" : "/dashboard"} />} />
       </Routes>
     </Router>

@@ -3,7 +3,7 @@ from rest_framework import serializers
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from backend import settings
-from .models import IDCard, User, SystemCardSignature
+from .models import IDCard, User, SystemCardSignature, MembershipFeeSettings
 
 
 
@@ -184,3 +184,19 @@ class SystemCardSignatureSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.signature.url)
             return f"{settings.BASE_URL}{obj.signature.url}"
         return None
+
+
+class MembershipFeeSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MembershipFeeSettings
+        fields = [
+            'id',
+            'youth_council_first_payment',
+            'youth_council_renewal',
+            'regular_first_payment',
+            'regular_renewal',
+            'is_active',
+            'created_at',
+            'updated_at'
+        ]
+

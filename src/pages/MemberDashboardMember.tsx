@@ -5,6 +5,13 @@ import { useAuth } from '../context/NewAuthContext';
 import { FaIdCard, FaCalendarAlt, FaCreditCard, FaCheck} from 'react-icons/fa';
 import { BiErrorCircle } from 'react-icons/bi';
 
+interface FeeSettings {
+  youth_council_first_payment: number;
+  youth_council_renewal: number;
+  regular_first_payment: number;
+  regular_renewal: number;
+}
+
 const MemberDashboardMember: React.FC = () => {
   const { user, fetchWithAuth, FRONTEND_URL, displayNotification } = useAuth();
   const [greeting, setGreeting] = useState('');
@@ -13,6 +20,7 @@ const MemberDashboardMember: React.FC = () => {
   const [isExpired, setIsExpired] = useState<boolean>(false);
   const [paymentYears, setPaymentYears] = useState<number>(1);
   const [arrearsYears, setArrearsYears] = useState<number>(1);
+  const [feeSettings, setFeeSettings] = useState<FeeSettings | null>(null);
   const navigate = useNavigate();
 
   const calculateDaysRemaining = (expiryDate: Date): number => {
@@ -26,6 +34,24 @@ const MemberDashboardMember: React.FC = () => {
   const formatDate = (date: Date): string => {
     return date.toISOString().split('T')[0];
   };
+
+  const fetchFeeSettings = async () => {
+    try {
+      const response = await fetchWithAuth({
+        method: 'GET',
+        path: '/membership-fees/'
+      });
+      if (response?.data) {
+        setFeeSettings(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch fee settings:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchFeeSettings();
+  }, []);
 
   useEffect(() => {
     // Set greeting
@@ -85,9 +111,21 @@ const MemberDashboardMember: React.FC = () => {
 
   const getDueAmount = (renew: boolean): number => {
     if (isHonoraryOrLife) return 0;
-    if (memberPrefix === 'LYY') return renew ? 2000 : 2500;
-    if (memberPrefix === 'LYA') return renew ? 2500 : 3000;
-    return renew ? 2500 : 3000;
+    if (!feeSettings) {
+      // Fallback to defaults if settings haven't loaded yet
+      if (memberPrefix === 'LYY') return renew ? 2000 : 2500;
+      if (memberPrefix === 'LYA') return renew ? 2500 : 3000;
+      return renew ? 2500 : 3000;
+    }
+
+    if (memberPrefix === 'LYY') {
+      return renew 
+        ? Number(feeSettings.youth_council_renewal) 
+        : Number(feeSettings.youth_council_first_payment);
+    }
+    return renew 
+      ? Number(feeSettings.regular_renewal) 
+      : Number(feeSettings.regular_first_payment);
   };
 
   const calculateMembershipFee = (renew: boolean, years: number): number => {

@@ -7,6 +7,11 @@ const AdminAccessPage: React.FC = () => {
   const [admins, setAdmins] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState<{
+    open: boolean;
+    admin: Member | null;
+    action: 'suspend' | 'reactivate';
+  }>({ open: false, admin: null, action: 'suspend' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     first_name: '',
@@ -69,7 +74,6 @@ const AdminAccessPage: React.FC = () => {
   const handleExportAdmins = async () => {
     try {
       displayNotification('info', 'Preparing admin export...');
-      // Use the dedicated admin export endpoint
       const response = await fetchWithAuth({
         method: 'GET',
         path: `/admin/admins/export/`,
@@ -88,7 +92,6 @@ const AdminAccessPage: React.FC = () => {
       
       displayNotification('success', 'Admin export downloaded successfully');
     } catch (error: any) {
-      console.error('Error exporting admins:', error);
       displayNotification('error', error?.message || 'Failed to export admins');
     }
   };
@@ -118,7 +121,6 @@ const AdminAccessPage: React.FC = () => {
         displayNotification('success', response?.message || 'Admins uploaded successfully');
         fetchAdmins();
       } catch (error: any) {
-        console.error('Error uploading admins:', error);
         displayNotification('error', error?.message || 'Failed to upload admins');
       } finally {
         setIsSubmitting(false);
@@ -127,43 +129,34 @@ const AdminAccessPage: React.FC = () => {
     fileInput.click();
   };
 
-  const handleSuspendAdmin = async (adminId: string) => {
-    if (!confirm('Are you sure you want to suspend this admin?')) return;
-
-    try {
-      setIsSubmitting(true);
-      const response = await fetchWithAuth({
-        method: 'PATCH',
-        path: `/admin/members/${adminId}/update`,
-        body: { is_active: false },
-      });
-
-      displayNotification('success', response?.message || 'Admin suspended successfully');
-      fetchAdmins();
-    } catch (error: any) {
-      console.error('Error suspending admin:', error);
-      displayNotification('error', error?.message || 'Failed to suspend admin');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleSuspendAdmin = async (admin: Member) => {
+    setShowConfirmModal({ open: true, admin, action: 'suspend' });
   };
 
-  const handleReactivateAdmin = async (adminId: string) => {
+  const handleReactivateAdmin = async (admin: Member) => {
+    setShowConfirmModal({ open: true, admin, action: 'reactivate' });
+  };
+
+  const handleConfirmAction = async () => {
+    if (!showConfirmModal.admin) return;
     try {
       setIsSubmitting(true);
       const response = await fetchWithAuth({
         method: 'PATCH',
-        path: `/admin/members/${adminId}/update`,
-        body: { is_active: true },
+        path: `/admin/members/${showConfirmModal.admin.id}/update`,
+        body: { is_active: showConfirmModal.action === 'suspend' ? false : true },
       });
 
-      displayNotification('success', response?.message || 'Admin reactivated successfully');
+      displayNotification(
+        'success',
+        response?.message || `Admin ${showConfirmModal.action === 'suspend' ? 'suspended' : 'reactivated'} successfully`
+      );
       fetchAdmins();
     } catch (error: any) {
-      console.error('Error reactivating admin:', error);
-      displayNotification('error', error?.message || 'Failed to reactivate admin');
+      displayNotification('error', error?.message || 'Failed to update admin');
     } finally {
       setIsSubmitting(false);
+      setShowConfirmModal({ open: false, admin: null, action: 'suspend' });
     }
   };
 
@@ -187,7 +180,6 @@ const AdminAccessPage: React.FC = () => {
       resetForm();
       fetchAdmins();
     } catch (error: any) {
-      console.error('Error creating admin:', error);
       displayNotification('error', error?.message || 'Unable to create admin');
     } finally {
       setIsSubmitting(false);
@@ -341,16 +333,14 @@ const AdminAccessPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {admin.is_active ? (
                         <button
-                          onClick={() => handleSuspendAdmin(admin.id)}
-                          className="text-red-600 hover:text-red-900 font-medium"
-                        >
+                          onClick={() => handleSuspendAdmin(admin)}
+                          className="text-red-600 hover:text-red-900 font-medium">
                           Suspend
                         </button>
                       ) : (
                         <button
-                          onClick={() => handleReactivateAdmin(admin.id)}
-                          className="text-green-600 hover:text-green-900 font-medium"
-                        >
+                          onClick={() => handleReactivateAdmin(admin)}
+                          className="text-green-600 hover:text-green-900 font-medium">
                           Reactivate
                         </button>
                       )}
@@ -362,6 +352,38 @@ const AdminAccessPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-bold mb-4">
+              {showConfirmModal.action === 'suspend' ? 'Suspend Admin' : 'Reactivate Admin'}
+            </h3>
+            <p className="mb-6 text-gray-600">
+              Are you sure you want to {showConfirmModal.action} {showConfirmModal.admin?.first_name} {showConfirmModal.admin?.last_name}?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowConfirmModal({ open: false, admin: null, action: 'suspend' })}
+                className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmAction}
+                disabled={isSubmitting}
+                className={`px-4 py-2 rounded-md font-medium text-white ${
+                  showConfirmModal.action === 'suspend' 
+                    ? 'bg-red-600 hover:bg-red-700' 
+                    : 'bg-green-600 hover:bg-green-700'
+                } disabled:opacity-50`}
+              >
+                {isSubmitting ? 'Processing...' : (showConfirmModal.action === 'suspend' ? 'Suspend' : 'Reactivate')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

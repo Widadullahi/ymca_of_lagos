@@ -208,7 +208,109 @@ EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "15"))
 
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")class RemittaWebhookView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        return Remitta.process_webhook(request.data)
+
+
+class ActivateMembershipRemittaView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        redirect_url = request.data.get("redirect_url")
+        if not redirect_url:
+            return bad_request_response(message='Redirect URL is required')
+        return Remitta.charge_user(request, request.user.id, transaction_type='ID')
+
+
+class RenewMembershipRemittaView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        redirect_url = request.data.get("redirect_url")
+        if not redirect_url:
+            return bad_request_response(message='Redirect URL is required')
+        return Remitta.charge_user(request, request.user.id, transaction_type='RENEWAL')
+
+
+class VerifyRemittaPaymentView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        rrr = request.data.get("rrr")
+        if not rrr:
+            return bad_request_response(message='RRR is required')
+        return Remitta.validate_payment(rrr)class RemittaWebhookView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        return Remitta.process_webhook(request.data)
+
+
+class ActivateMembershipRemittaView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        redirect_url = request.data.get("redirect_url")
+        if not redirect_url:
+            return bad_request_response(message='Redirect URL is required')
+        return Remitta.charge_user(request, request.user.id, transaction_type='ID')
+
+
+class RenewMembershipRemittaView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        redirect_url = request.data.get("redirect_url")
+        if not redirect_url:
+            return bad_request_response(message='Redirect URL is required')
+        return Remitta.charge_user(request, request.user.id, transaction_type='RENEWAL')
+
+
+class VerifyRemittaPaymentView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        rrr = request.data.get("rrr")
+        if not rrr:
+            return bad_request_response(message='RRR is required')
+        return Remitta.validate_payment(rrr)class RemittaWebhookView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        return Remitta.process_webhook(request.data)
+
+
+class ActivateMembershipRemittaView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        redirect_url = request.data.get("redirect_url")
+        if not redirect_url:
+            return bad_request_response(message='Redirect URL is required')
+        return Remitta.charge_user(request, request.user.id, transaction_type='ID')
+
+
+class RenewMembershipRemittaView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        redirect_url = request.data.get("redirect_url")
+        if not redirect_url:
+            return bad_request_response(message='Redirect URL is required')
+        return Remitta.charge_user(request, request.user.id, transaction_type='RENEWAL')
+
+
+class VerifyRemittaPaymentView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        rrr = request.data.get("rrr")
+        if not rrr:
+            return bad_request_response(message='RRR is required')
+        return Remitta.validate_payment(rrr)
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
@@ -217,3 +319,10 @@ RESEND_API_URL = os.getenv("RESEND_API_URL", "https://api.resend.com/emails")
 
 PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "")
 PAYSTACK_PUBLIC_KEY = os.getenv("PAYSTACK_PUBLIC_KEY", "")
+
+# Remitta Settings
+REMITTA_BASE_URL = os.getenv("REMITTA_BASE_URL", "https://demo.remita.net/remita/exapp/api/v1/send/api")
+REMITTA_MERCHANT_ID = os.getenv("REMITTA_MERCHANT_ID", "")
+REMITTA_API_KEY = os.getenv("REMITTA_API_KEY", "")
+REMITTA_SERVICE_TYPE_ID = os.getenv("REMITTA_SERVICE_TYPE_ID", "")
+REMITTA_PUBLIC_KEY = os.getenv("REMITTA_PUBLIC_KEY", "")

@@ -1,111 +1,42 @@
 
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework import status, generics
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
-from django.contrib.auth import authenticate
-
-from account.models import IDCard, User
-from api.serializers.donation import DonationInitiateSerializer
-from api.utils.payment.paystack import Paystack
-from api.utils.response.response_format import success_response, bad_request_response
-import datetime
-import hmac
-import hashlib
+from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.conf import settings
-
-class PaystackWebhookView(generics.GenericAPIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request, *args, **kwargs):
-        paystack_signature = request.headers.get('x-paystack-signature')
-        if not paystack_signature:
-            return bad_request_response(message="Missing signature")
-            
-        secret = getattr(settings, 'PAYSTACK_SECRET_KEY', '').encode('utf-8')
-        body = request.body
-        hash_digest = hmac.new(secret, body, hashlib.sha512).hexdigest()
-        
-        if hash_digest != paystack_signature:
-            return bad_request_response(message="Invalid signature")
-            
-        event = request.data.get('event')
-        if event == 'charge.success':
-            return Paystack.process_webhook(request.data)
-            
-        return success_response(message="Webhook received")
+from api.utils.payment.remitta import Remitta
+from api.utils.response.response_format import success_response, bad_request_response
+from account.models import IDCard, User
+import datetime
 
 class StartMembershipDemoView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        
         id_card, created = IDCard.objects.get_or_create(user=request.user)
-        id_card.is_active =True
-        id_card.first_time =False
+        id_card.is_active = True
+        id_card.first_time = False
         id_card.expired = False
-        # let expired at 30 days from today
         id_card.expired_at = datetime.date.today() + datetime.timedelta(days=30)
         id_card.save()
         return success_response(
             message="Payment successful.",
             data={
                 "transaction_id": str('demo-id'),
-                "success":True,
+                "success": True,
                 "amount": 10,
                 "message": "Payment successful."
             }
         )
-                  
-        
 
-
-class InitiateDonationPamentView(generics.GenericAPIView):
-    permission_classes = []
-    serializer_class  = DonationInitiateSerializer
-
-    def post(self, request, *args, **kwargs):
-        
-        redirect_url = request.data.get("redirect_url")
-        if not redirect_url:
-            return bad_request_response(
-                message='Redirect URL is required',
-            )
-        
-        return Paystack.charge_user_for_donation(
-            request,
-            amount=request.data['amount'],
-            name=request.data['name'],
-            email=request.data['email'],
-        )
-    
-
-class VerifyDonationPamentView(generics.GenericAPIView):
-    permission_classes = []
-
-    def post(self, request, *args, **kwargs):
-        transaction_id = request.data.get("trxn")
-        if not transaction_id:
-            return bad_request_response(
-                message='Transaction ID is required',
-            )
-        return Paystack.validate_payment_donation(transaction_id)
-    
 class ActivateMembershipView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        
         redirect_url = request.data.get("redirect_url")
         if not redirect_url:
             return bad_request_response(
                 message='Redirect URL is required',
             )
-        
-        return Paystack.charge_user(request,request.user.id,transaction_type='ID')
-
+        return Remitta.charge_user(request, request.user.id, transaction_type='ID')
 
 class RenewMembershipView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
@@ -116,30 +47,61 @@ class RenewMembershipView(generics.GenericAPIView):
             return bad_request_response(
                 message='Redirect URL is required',
             )
-
-        return Paystack.charge_user(request, request.user.id, transaction_type='RENEWAL')
-
+        return Remitta.charge_user(request, request.user.id, transaction_type='RENEWAL')
 
 class VerifyPaymentView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        
-        transaction_id = request.data.get("trxn")
-        if not transaction_id:
+        rrr = request.data.get("rrr")
+        if not rrr:
             return bad_request_response(
-                message='Transaction ID is required',
+                message='RRR is required',
             )
-        
-        return Paystack.validate_payment(transaction_id)
+        return Remitta.validate_payment(rrr)
 
+class RemittaWebhookView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
 
-
-
-
+    def post(self, request, *args, **kwargs):
+        return Remitta.process_webhook(request.data)
 
 class TotalMembersCountView(generics.GenericAPIView):
     permission_classes = []
 
     def get(self, request, *args, **kwargs):
-        return success_response(data={"count":User.objects.count()})
+        return success_response(data={"count": User.objects.count()})
+
+class ActivateMembershipRemittaView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        redirect_url = request.data.get("redirect_url")
+        if not redirect_url:
+            return bad_request_response(
+                message='Redirect URL is required',
+            )
+        return Remitta.charge_user(request, request.user.id, transaction_type='ID')
+
+class RenewMembershipRemittaView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        redirect_url = request.data.get("redirect_url")
+        if not redirect_url:
+            return bad_request_response(
+                message='Redirect URL is required',
+            )
+        return Remitta.charge_user(request, request.user.id, transaction_type='RENEWAL')
+
+class VerifyRemittaPaymentView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        rrr = request.data.get("rrr")
+        if not rrr:
+            return bad_request_response(
+                message='RRR is required',
+            )
+        return Remitta.validate_payment(rrr)
+

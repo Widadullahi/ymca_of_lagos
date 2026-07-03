@@ -11,7 +11,7 @@ interface PostResponse {
   } | null;
   title: string;
   content: string;
-  category: string;
+  category?: string;
   created_at: string;
   updated_at: string;
   image: string | null;
@@ -24,13 +24,6 @@ interface PostResponse {
     created_at: string;
     updated_at: string;
   }[];
-}
-
-interface PostsListResponse {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: PostResponse[];
 }
 
 // Utility function to convert file to base64 (Deprecated - using FormData instead)
@@ -84,12 +77,12 @@ export const createPostsApi = (fetchWithAuth: any, BACKEND_URL: string) => {
       postedAt = new Date();
     }
 
-    return {
+    const transformed = {
       id: post.id,
       title: post.title || '',
       content: post.content || '',
-      category: post.category || 'Uncategorized',
-      type: post.post_type || post.type || (post.category === 'Events' ? 'upcoming-event' : 'latest-news'),
+      // Use post_type or default
+      type: post.post_type || post.type || 'latest-news',
       actionButtonLabel: post.action_button_label || post.actionButtonLabel || '',
       actionButtonUrl: post.action_button_url || post.actionButtonUrl || '',
       imageUrl: toAbsoluteUrl(post.image || post.image_url || post.imageUrl || post?.image_base64),
@@ -105,6 +98,8 @@ export const createPostsApi = (fetchWithAuth: any, BACKEND_URL: string) => {
         ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(((att.file || att.url || '').split('.').pop() || '').toLowerCase())
       ).map((att: any) => toAbsoluteUrl(att.file || att.url))].filter(Boolean)
     };
+
+    return transformed;
   };
 
   return {
@@ -122,7 +117,6 @@ export const createPostsApi = (fetchWithAuth: any, BACKEND_URL: string) => {
         label: unit.name
       })) || [];
     } catch (error) {
-      console.error('Error fetching units:', error);
       return [];
     }
   },
@@ -169,7 +163,6 @@ export const createPostsApi = (fetchWithAuth: any, BACKEND_URL: string) => {
         count: count
       };
     } catch (error) {
-      console.error('Error in getPosts:', error);
       return {
         posts: [],
         count: 0
@@ -179,7 +172,6 @@ export const createPostsApi = (fetchWithAuth: any, BACKEND_URL: string) => {
 
   // Create new post
   async createPost(postData: any): Promise<any> {
-
     const data: any = await fetchWithAuth({
       method: 'POST',
       path: '/posts/',
@@ -187,6 +179,9 @@ export const createPostsApi = (fetchWithAuth: any, BACKEND_URL: string) => {
       isFormData: postData instanceof FormData,
       timeoutMS: 600000, // 10 minutes timeout for large video uploads
     });
+    
+    // Set refresh flag for landing page
+    localStorage.setItem('news-events-updated', Date.now().toString());
 
     return data?.data ?? data;
   },
@@ -200,6 +195,9 @@ export const createPostsApi = (fetchWithAuth: any, BACKEND_URL: string) => {
       isFormData: postData instanceof FormData,
       timeoutMS: 600000, // 10 minutes timeout for large video uploads
     });
+    
+    // Set refresh flag for landing page
+    localStorage.setItem('news-events-updated', Date.now().toString());
 
     return data?.data ?? data;
   },
@@ -210,6 +208,9 @@ export const createPostsApi = (fetchWithAuth: any, BACKEND_URL: string) => {
       method: 'DELETE',
       path: `/posts/${id}/`,
     });
+    
+    // Set refresh flag for landing page
+    localStorage.setItem('news-events-updated', Date.now().toString());
   },
 
   // Get single post
@@ -222,7 +223,6 @@ export const createPostsApi = (fetchWithAuth: any, BACKEND_URL: string) => {
 
       return transformPostToUpdate(data);
     } catch (error) {
-      console.error('Error in getPost:', error);
       return null;
     }
   },

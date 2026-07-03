@@ -12,10 +12,22 @@ class Transaction(models.Model):
         ('success', 'success'),
         ('failed', 'failed'),
     )
+    PAYMENT_GATEWAY_CHOICES = (
+        ('paystack', 'Paystack'),
+        ('remitta', 'Remitta'),
+        ('stripe', 'Stripe'),
+        ('flutterwave', 'Flutterwave'),
+        ('other', 'Other'),
+    )
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     transaction_type = models.CharField(max_length=10)
+    payment_gateway = models.CharField(
+        max_length=20,
+        choices=PAYMENT_GATEWAY_CHOICES,
+        default='other',
+    )
     response= models.JSONField(null=True,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

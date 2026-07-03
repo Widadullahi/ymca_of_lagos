@@ -6,8 +6,8 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import authenticate
 
-from account.models import IDCard, User, SystemCardSignature
-from .serializers import LoginSerializer, PasswordChangeSerializer, RegisterSerializer, UserSerializer,SystemCardSignatureSerializer
+from account.models import IDCard, User, SystemCardSignature, MembershipFeeSettings
+from .serializers import LoginSerializer, PasswordChangeSerializer, RegisterSerializer, UserSerializer,SystemCardSignatureSerializer, MembershipFeeSettingsSerializer
 from api.utils.response.response_format import success_response, bad_request_response
 
 # 
@@ -220,3 +220,37 @@ class SystemCardSignatureView(generics.GenericAPIView):
         return success_response(
             data=SystemCardSignatureSerializer(card, context={'request': request}).data,
         )
+
+
+class MembershipFeeSettingsView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            from rest_framework.permissions import IsAdminUser
+            self.permission_classes = [IsAdminUser]
+        return super().get_permissions()
+    
+    def get(self, request):
+        settings = MembershipFeeSettings.objects.filter(is_active=True).first()
+        if not settings:
+            # Create default settings
+            settings = MembershipFeeSettings.objects.create()
+        return success_response(
+            data=MembershipFeeSettingsSerializer(settings, context={'request': request}).data,
+        )
+    
+    def put(self, request):
+        settings = MembershipFeeSettings.objects.filter(is_active=True).first()
+        if not settings:
+            settings = MembershipFeeSettings.objects.create()
+        
+        serializer = MembershipFeeSettingsSerializer(settings, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        
+        return success_response(
+            data=serializer.data,
+            message="Membership fee settings updated successfully"
+        )
+

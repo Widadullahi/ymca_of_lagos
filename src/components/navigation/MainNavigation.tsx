@@ -202,12 +202,12 @@ const MainNavigation: React.FC<MainNavigationProps> = () => {
               Register
             </button>
             
-            <button 
+            {/* <button 
               onClick={openDonationModal}
               className="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition-colors"
             >
               Donate
-            </button>
+            </button> */}
           </div>
 
           {/* Mobile Menu Button */}
