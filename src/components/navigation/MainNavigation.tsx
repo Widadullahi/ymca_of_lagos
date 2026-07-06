@@ -47,10 +47,14 @@ const MainNavigation: React.FC<MainNavigationProps> = () => {
           path: `/initiate/donation`,
           body: donationForm
         });
+        // Store RRR in localStorage for verification later
+        if (response?.data?.rrr) {
+          localStorage.setItem('remitta_rrr', response.data.rrr);
+        }
         window.location = response?.data?.payment_url;
       } catch (error) {
-        console.error('Error fetching churches:', error);
-        displayNotification('error', 'Failed to load churches');
+        console.error('Error processing donation:', error);
+        displayNotification('error', 'Failed to process donation');
       }
     }
   };

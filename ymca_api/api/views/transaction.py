@@ -1,11 +1,12 @@
-
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.conf import settings
 from api.utils.payment.remitta import Remitta
+from api.serializers.donation import DonationInitiateSerializer
 from api.utils.response.response_format import success_response, bad_request_response
 from account.models import IDCard, User
 import datetime
+
 
 class StartMembershipDemoView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
@@ -27,6 +28,7 @@ class StartMembershipDemoView(generics.GenericAPIView):
             }
         )
 
+
 class ActivateMembershipView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
@@ -37,6 +39,7 @@ class ActivateMembershipView(generics.GenericAPIView):
                 message='Redirect URL is required',
             )
         return Remitta.charge_user(request, request.user.id, transaction_type='ID')
+
 
 class RenewMembershipView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
@@ -49,6 +52,7 @@ class RenewMembershipView(generics.GenericAPIView):
             )
         return Remitta.charge_user(request, request.user.id, transaction_type='RENEWAL')
 
+
 class VerifyPaymentView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
@@ -60,48 +64,32 @@ class VerifyPaymentView(generics.GenericAPIView):
             )
         return Remitta.validate_payment(rrr)
 
+
+class InitiateDonationView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = DonationInitiateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return bad_request_response(message=serializer.errors)
+        
+        return Remitta.charge_user_for_donation(
+            request,
+            amount=serializer.validated_data['amount'],
+            name=serializer.validated_data['name'],
+            email=serializer.validated_data.get('email')
+        )
+
+
 class RemittaWebhookView(generics.GenericAPIView):
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         return Remitta.process_webhook(request.data)
 
+
 class TotalMembersCountView(generics.GenericAPIView):
     permission_classes = []
 
     def get(self, request, *args, **kwargs):
         return success_response(data={"count": User.objects.count()})
-
-class ActivateMembershipRemittaView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, *args, **kwargs):
-        redirect_url = request.data.get("redirect_url")
-        if not redirect_url:
-            return bad_request_response(
-                message='Redirect URL is required',
-            )
-        return Remitta.charge_user(request, request.user.id, transaction_type='ID')
-
-class RenewMembershipRemittaView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, *args, **kwargs):
-        redirect_url = request.data.get("redirect_url")
-        if not redirect_url:
-            return bad_request_response(
-                message='Redirect URL is required',
-            )
-        return Remitta.charge_user(request, request.user.id, transaction_type='RENEWAL')
-
-class VerifyRemittaPaymentView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, *args, **kwargs):
-        rrr = request.data.get("rrr")
-        if not rrr:
-            return bad_request_response(
-                message='RRR is required',
-            )
-        return Remitta.validate_payment(rrr)
-

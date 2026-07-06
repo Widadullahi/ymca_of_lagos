@@ -151,6 +151,10 @@ const MemberDashboardMember: React.FC = () => {
         path: path,
         body: payload
       });
+      // Store RRR in localStorage for verification later
+      if (response?.data?.rrr) {
+        localStorage.setItem('remitta_rrr', response.data.rrr);
+      }
       window.location.href = response?.data?.payment_url;
     } catch (error) {
       console.error('Error processing payment:', error);

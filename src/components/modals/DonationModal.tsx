@@ -59,6 +59,10 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose }) => {
           path: `/initiate/donation`,
           body: donationForm
         });
+        // Store RRR in localStorage for verification later
+        if (response?.data?.rrr) {
+          localStorage.setItem('remitta_rrr', response.data.rrr);
+        }
         window.location = response?.data?.payment_url;
       } catch (error) {
         console.error('Error processing donation:', error);

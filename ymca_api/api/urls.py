@@ -12,9 +12,7 @@ from api.views.transaction import (
     StartMembershipDemoView,
     VerifyPaymentView,
     RemittaWebhookView,
-    ActivateMembershipRemittaView,
-    RenewMembershipRemittaView,
-    VerifyRemittaPaymentView
+    InitiateDonationView
 )
 from api.views.members import AdminAddMembersView, AdminGetSingleRequestView, AdminGetMemberOverview, AdminMemberRetrieveUpdateDestroyView, AdminMemberUpdateDestroyView, AdminMembersBulkUploadView, AdminPromoteMemberView, AdminUpdateRequestStatusView, AdminUserRequestListView, CreateUserRequestView, CurrentUserRequestUpdateView, UserRequestDetailView, UserRequestListView, VerifyCardIdNumberView, AdminMembersExportView, AdminsExportView, SendEmailVerificationCodeView, VerifyEmailVerificationCodeView
 from api.views.set_password import AdminSetUserPasswordView
@@ -67,6 +65,8 @@ urlpatterns = [
     path('membership/activation', ActivateMembershipView.as_view(), name='ActivateMembershipView'),
     path('membership/renewal', RenewMembershipView.as_view(), name='RenewMembershipView'),
     path('payment/verify', VerifyPaymentView.as_view(), name='VerifyPaymentView'),
+    path('payment/webhook', RemittaWebhookView.as_view(), name='RemittaWebhookView'),
+    path('initiate/donation', InitiateDonationView.as_view(), name='InitiateDonationView'),
     path('total-members-count', TotalMembersCountView.as_view(), name='TotalMembersCountView'),
     # Subscription endpoints
     path('subscriptions/', include('subscription.urls')),
@@ -77,10 +77,4 @@ urlpatterns = [
     path('admin/members/bulk-update-status/', BulkStatusUpdateView.as_view(), name='bulk-status-update'),
     path('admin/system/card-signature/', account_views.SystemCardSignatureView.as_view(), name='system-card-signature'),
     path('membership-fees/', account_views.MembershipFeeSettingsView.as_view(), name='membership-fee-settings'),
-    # Remitta endpoints
-    path('membership/remitta/activation', ActivateMembershipRemittaView.as_view(), name='ActivateMembershipRemittaView'),
-    path('membership/remitta/renewal', RenewMembershipRemittaView.as_view(), name='RenewMembershipRemittaView'),
-    path('payment/remitta/verify', VerifyRemittaPaymentView.as_view(), name='VerifyRemittaPaymentView'),
-    path('payment/remitta/webhook', RemittaWebhookView.as_view(), name='RemittaWebhookView'),
 ]
-

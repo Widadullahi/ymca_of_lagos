@@ -267,25 +267,27 @@ class Remitta:
                         "rrr": rrr,
                     }
 
-                    # Update user's card and membership status
-                    id_card, created = IDCard.objects.get_or_create(user=transaction.user)
-                    transaction_metadata = transaction.response or {}
-                    charged_years = max(1, int(transaction_metadata.get('charged_years') or 1))
-                    arrears_years = max(0, int(transaction_metadata.get('arrears_years') or 0))
-                    payment_date = datetime.date.today()
+                    # Update user's card and membership status only if it's not a donation
+                    if transaction.transaction_type != 'DONATION' and transaction.user:
+                        id_card, created = IDCard.objects.get_or_create(user=transaction.user)
+                        transaction_metadata = transaction.response or {}
+                        charged_years = max(1, int(transaction_metadata.get('charged_years') or 1))
+                        arrears_years = max(0, int(transaction_metadata.get('arrears_years') or 0))
+                        payment_date = datetime.date.today()
 
-                    id_card.is_active = True
-                    id_card.first_time = False
-                    id_card.expired = False
-                    if transaction.transaction_type == 'RENEWAL' and arrears_years > 1:
-                        id_card.expired_at = Remitta.next_may_31(payment_date)
-                    else:
-                        id_card.expired_at = Remitta.expiry_after_payment(charged_years, payment_date)
-                    id_card.save()
+                        id_card.is_active = True
+                        id_card.first_time = False
+                        id_card.expired = False
+                        if transaction.transaction_type == 'RENEWAL' and arrears_years > 1:
+                            id_card.expired_at = Remitta.next_may_31(payment_date)
+                        else:
+                            id_card.expired_at = Remitta.expiry_after_payment(charged_years, payment_date)
+                        id_card.save()
 
-                    transaction.user.membership_expiry = id_card.expired_at
-                    transaction.user.is_active = True
-                    transaction.user.save(update_fields=['membership_expiry', 'is_active', 'updated_at'])
+                        transaction.user.membership_expiry = id_card.expired_at
+                        transaction.user.is_active = True
+                        transaction.user.save(update_fields=['membership_expiry', 'is_active', 'updated_at'])
+                    
                     transaction.save()
 
                     return success_response(
@@ -315,6 +317,98 @@ class Remitta:
             return bad_request_response(message="Transaction not found")
         except Exception as e:
             return bad_request_response(message=f'Unable to verify payment at the moment: {str(e)}')
+
+    @staticmethod
+    def charge_user_for_donation(request, amount, name, email=None):
+        try:
+            if amount <= 0:
+                return bad_request_response(message="Amount must be greater than zero")
+
+            redirect_url = request.data.get('redirect_url')
+            if not redirect_url:
+                return bad_request_response(message="Redirect URL is required")
+
+            # Create transaction record in database
+            # For donations, if no user is authenticated, we can still create a transaction
+            user = request.user if request.user.is_authenticated else None
+            transaction = Transaction.objects.create(
+                user=user,
+                amount=amount,
+                transaction_type='DONATION',
+                payment_gateway='remitta',
+                status="pending",
+                response={
+                    "name": name,
+                    "email": email,
+                    "description": "Donation"
+                }
+            )
+
+            # Get Remitta credentials
+            merchant_id = settings.REMITTA_MERCHANT_ID
+            api_key = settings.REMITTA_API_KEY
+            service_type_id = settings.REMITTA_SERVICE_TYPE_ID
+            base_url = settings.REMITTA_BASE_URL
+
+            if not all([merchant_id, api_key, service_type_id]):
+                return bad_request_response(message="Remitta credentials are not configured")
+
+            order_id = str(transaction.id)
+            amount_str = str(amount)
+            api_hash = Remitta.generate_api_hash(merchant_id, service_type_id, amount_str, order_id, api_key)
+
+            # Prepare request payload for Remitta
+            data = {
+                "serviceTypeId": service_type_id,
+                "amount": amount_str,
+                "orderId": order_id,
+                "payerName": name,
+                "payerEmail": email or '',
+                "description": "Donation",
+            }
+
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"REMITTA_APIKEY {api_key}",
+                "MERCHANT_ID": merchant_id,
+                "API_KEY": api_key,
+                "REQUEST_ID": order_id,
+                "API_DETAILS_HASH": api_hash,
+            }
+
+            # Call Remitta API to generate RRR
+            response = requests.post(
+                f"{base_url}/echannelsvc/merchant/api/paymentinit",
+                json=data,
+                headers=headers
+            )
+
+            if response.ok:
+                response_data = response.json()
+                # Check Remitta's response status
+                status_code = response_data.get("statuscode") or response_data.get("status")
+                if status_code in ["00", "0", "success", True]:
+                    rrr = response_data.get("RRR") or response_data.get("rrr")
+                    return success_response(
+                        data={
+                            "rrr": rrr,
+                            "payment_url": f"https://demo.remitta.net/payment/v1/remitta-pay-inline.bundle.js?rrr={rrr}",
+                        },
+                    )
+                else:
+                    error_msg = response_data.get("statusmessage") or response_data.get("message") or "Failed to generate RRR"
+                    return bad_request_response(message=error_msg)
+
+            error_msg = "Failed to initiate donation payment with Remitta"
+            try:
+                error_data = response.json()
+                error_msg = f"{error_msg}: {error_data.get('statusmessage', response.text)}"
+            except Exception:
+                error_msg = f"{error_msg}: {response.text}"
+            return bad_request_response(message=error_msg)
+
+        except Exception as e:
+            return bad_request_response(message=str(e))
 
     @staticmethod
     def process_webhook(payload):
