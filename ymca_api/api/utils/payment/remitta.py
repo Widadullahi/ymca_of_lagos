@@ -89,7 +89,7 @@ class Remitta:
         return max(1, reference_date.year - expiry_date.year)
 
     @staticmethod
-    def generate_api_hash(merchant_id: str, service_type_id: str, amount: str, order_id: str, api_key: str) -> str:
+    def generate_api_hash(merchant_id: str, service_type_id: str, order_id: str, amount: str, api_key: str) -> str:
         """Generate Remitta API hash: SHA-512 of merchantId+serviceTypeId+orderId+amount+apiKey"""
         hash_string = f"{merchant_id}{service_type_id}{order_id}{amount}{api_key}"
         return hashlib.sha512(hash_string.encode('utf-8')).hexdigest()
@@ -153,7 +153,7 @@ class Remitta:
 
             order_id = str(transaction.id)
             amount_str = str(amount_naira)
-            api_hash = Remitta.generate_api_hash(merchant_id, service_type_id, amount_str, order_id, api_key)
+            api_hash = Remitta.generate_api_hash(merchant_id, service_type_id, order_id, amount_str, api_key)
 
             # Prepare request payload for Remitta
             data = {
@@ -188,10 +188,15 @@ class Remitta:
                 status_code = response_data.get("statuscode") or response_data.get("status")
                 if status_code in ["00", "0", "success", True]:
                     rrr = response_data.get("RRR") or response_data.get("rrr")
+                    # Determine the correct payment base URL based on which API we're using
+                    if "demo" in base_url:
+                        payment_base_url = "https://demo.remitta.net"
+                    else:
+                        payment_base_url = "https://login.remita.net"
                     return success_response(
                         data={
                             "rrr": rrr,
-                            "payment_url": f"https://demo.remita.net/payment/v1/remita-pay-inline.bundle.js?rrr={rrr}",
+                            "payment_url": f"{payment_base_url}/payment/v1/remita-pay-inline.bundle.js?rrr={rrr}",
                         },
                     )
                 else:
@@ -355,7 +360,7 @@ class Remitta:
 
             order_id = str(transaction.id)
             amount_str = str(amount)
-            api_hash = Remitta.generate_api_hash(merchant_id, service_type_id, amount_str, order_id, api_key)
+            api_hash = Remitta.generate_api_hash(merchant_id, service_type_id, order_id, amount_str, api_key)
 
             # Prepare request payload for Remitta
             data = {
@@ -389,10 +394,15 @@ class Remitta:
                 status_code = response_data.get("statuscode") or response_data.get("status")
                 if status_code in ["00", "0", "success", True]:
                     rrr = response_data.get("RRR") or response_data.get("rrr")
+                    # Determine the correct payment base URL based on which API we're using
+                    if "demo" in base_url:
+                        payment_base_url = "https://demo.remitta.net"
+                    else:
+                        payment_base_url = "https://login.remita.net"
                     return success_response(
                         data={
                             "rrr": rrr,
-                            "payment_url": f"https://demo.remitta.net/payment/v1/remitta-pay-inline.bundle.js?rrr={rrr}",
+                            "payment_url": f"{payment_base_url}/payment/v1/remita-pay-inline.bundle.js?rrr={rrr}",
                         },
                     )
                 else:
