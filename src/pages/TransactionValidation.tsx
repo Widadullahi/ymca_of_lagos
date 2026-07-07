@@ -14,7 +14,6 @@ const TransactionValidation: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(true);
   const [validationResult, setValidationResult] = useState<ApiResponse | null>(null);
-  const [rrr, setRrr] = useState<string | null>(null);
   const [manualRrr, setManualRrr] = useState<string>('');
 
   useEffect(() => {
@@ -48,7 +47,6 @@ const TransactionValidation: React.FC = () => {
     
     if (storedRrr || urlRrr) {
       const rrrToUse = urlRrr || storedRrr;
-      setRrr(rrrToUse);
       validateTransaction(rrrToUse!);
     } else {
       // No RRR found, show manual input
