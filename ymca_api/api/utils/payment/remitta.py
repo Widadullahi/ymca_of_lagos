@@ -178,10 +178,10 @@ class Remitta:
             # Call Remitta API to generate RRR
             import logging
             logger = logging.getLogger(__name__)
-            logger.info(f"Calling Remitta API: {base_url}/echannelsvc/merchant/api/paymentinit")
-            logger.info(f"Request headers: {headers}")
-            logger.info(f"Request data: {data}")
-            logger.info(f"Generated API hash: {api_hash}")
+            logger.error(f"Calling Remitta API: {base_url}/echannelsvc/merchant/api/paymentinit")
+            logger.error(f"Request headers: {headers}")
+            logger.error(f"Request data: {data}")
+            logger.error(f"Generated API hash: {api_hash}")
             
             response = requests.post(
                 f"{base_url}/echannelsvc/merchant/api/paymentinit",
@@ -189,12 +189,12 @@ class Remitta:
                 headers=headers
             )
             
-            logger.info(f"Remitta response status: {response.status_code}")
-            logger.info(f"Remitta response text: {response.text}")
+            logger.error(f"Remitta response status: {response.status_code}")
+            logger.error(f"Remitta response text: {response.text}")
 
             if response.ok:
                 response_data = response.json()
-                logger.info(f"Remitta response JSON: {response_data}")
+                logger.error(f"Remitta response JSON: {response_data}")
                 # Check Remitta's response status (varies by API version)
                 status_code = response_data.get("statuscode") or response_data.get("status")
                 if status_code in ["00", "0", "success", True]:
@@ -395,10 +395,10 @@ class Remitta:
             # Call Remitta API to generate RRR
             import logging
             logger = logging.getLogger(__name__)
-            logger.info(f"Calling Remitta API (donation): {base_url}/echannelsvc/merchant/api/paymentinit")
-            logger.info(f"Request headers: {headers}")
-            logger.info(f"Request data: {data}")
-            logger.info(f"Generated API hash: {api_hash}")
+            logger.error(f"Calling Remitta API (donation): {base_url}/echannelsvc/merchant/api/paymentinit")
+            logger.error(f"Request headers: {headers}")
+            logger.error(f"Request data: {data}")
+            logger.error(f"Generated API hash: {api_hash}")
             
             response = requests.post(
                 f"{base_url}/echannelsvc/merchant/api/paymentinit",
@@ -406,12 +406,12 @@ class Remitta:
                 headers=headers
             )
             
-            logger.info(f"Remitta donation response status: {response.status_code}")
-            logger.info(f"Remitta donation response text: {response.text}")
+            logger.error(f"Remitta donation response status: {response.status_code}")
+            logger.error(f"Remitta donation response text: {response.text}")
 
             if response.ok:
                 response_data = response.json()
-                logger.info(f"Remitta donation response JSON: {response_data}")
+                logger.error(f"Remitta donation response JSON: {response_data}")
                 # Check Remitta's response status
                 status_code = response_data.get("statuscode") or response_data.get("status")
                 if status_code in ["00", "0", "success", True]:
