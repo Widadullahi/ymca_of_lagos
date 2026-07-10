@@ -1,12 +1,12 @@
 from rest_framework import status, generics
-from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from account.models import User
 from account.serializers import UserSerializer
 from api.utils.response.response_format import success_response, bad_request_response
+from api.utils.permissions import IsAppAdmin
 
 class AdminSetUserPasswordView(generics.GenericAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAppAdmin]
 
     def post(self, request, user_id, *args, **kwargs):
         password = request.data.get('password')

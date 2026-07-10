@@ -13,7 +13,7 @@ from django.core.mail import send_mail
 from django.http import HttpResponse
 from datetime import date, timedelta
 from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated
 from django.db import transaction,IntegrityError
 from django.utils import timezone
 from django.db.models import Count
@@ -29,6 +29,7 @@ from api.serializers.members import (
     UserRequestSerializer,
 )
 from api.utils.response.response_format import success_response, paginate_success_response, bad_request_response,internal_server_error_response
+from api.utils.permissions import IsAppAdmin
 
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -276,7 +277,7 @@ class VerifyEmailVerificationCodeView(generics.GenericAPIView):
 
 
 class AdminGetMemberOverview(generics.GenericAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAppAdmin]
     queryset = User.objects.filter(is_admin=False)
 
     def get(self, request):
@@ -353,7 +354,7 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
     queryset = User.objects.filter(is_admin=False)
     serializer_class = RegisterSerializer
     parser_classes = (MultiPartParser, FormParser)
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAppAdmin]
 
     TEMPLATE_HEADERS = [
         'name',
@@ -699,7 +700,7 @@ class AdminAddMembersView(generics.GenericAPIView):
     queryset = User.objects.filter(is_superuser=False, is_admin=False).order_by('-created_at')
     serializer_class = RegisterSerializer
     parser_classes = [MultiPartParser, FormParser]
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAppAdmin]
 
     def post(self, request, *args, **kwargs):
         try:
@@ -804,6 +805,7 @@ class AdminMemberRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView
     queryset = User.objects.filter(is_superuser=False).order_by('-created_at')
     serializer_class = UserSerializer
     lookup_field = 'id'
+    permission_classes = [IsAppAdmin]
 
 
 
@@ -949,6 +951,7 @@ class AdminMemberUpdateDestroyView(generics.GenericAPIView):
     queryset = User.objects.filter(is_superuser=False).order_by('-created_at')
     serializer_class = UserSerializer
     lookup_field = 'id'
+    permission_classes = [IsAppAdmin]
 
     def put(self, request, id):
         try:
@@ -1016,13 +1019,10 @@ class AdminUserRequestListView(generics.ListAPIView):
     List all requests for admin users
     """
     serializer_class = UserRequestListSerializer
-    permission_classes = [IsAuthenticated] 
+    permission_classes = [IsAppAdmin]
     queryset = UserRequest.objects.all()
     
     def get_queryset(self):
-        # Only allow admin users to see all requests
-        if not self.request.user.is_admin:
-            return UserRequest.objects.none()
         return super().get_queryset()
     
 
@@ -1039,17 +1039,11 @@ class AdminGetSingleRequestView(generics.RetrieveAPIView):
     """
     Get single request (admin only)
     """
-    permission_classes = [IsAuthenticated] 
+    permission_classes = [IsAppAdmin]
     queryset = UserRequest.objects.all()
     serializer_class = UserRequestSerializer
     
     def get(self, request, *args, **kwargs):
-        if not request.user.is_admin:
-            return Response({
-                'success': False,
-                'message': 'Permission denied'
-            }, status=status.HTTP_403_FORBIDDEN)
-        
         user_request = self.get_object()
         serializer = self.serializer_class(user_request, context={'request': request})
         return success_response(
@@ -1062,16 +1056,10 @@ class AdminUpdateRequestStatusView(generics.UpdateAPIView):
     """
     Update request status (admin only)
     """
-    permission_classes = [IsAuthenticated] 
+    permission_classes = [IsAppAdmin]
     queryset = UserRequest.objects.all()
     
     def patch(self, request, *args, **kwargs):
-        if not request.user.is_admin:
-            return Response({
-                'success': False,
-                'message': 'Permission denied'
-            }, status=status.HTTP_403_FORBIDDEN)
-        
         user_request = self.get_object()
         new_status = request.data.get('status')
         review_notes = request.data.get('review_notes', '')
@@ -1241,7 +1229,7 @@ class VerifyCardIdNumberView(generics.GenericAPIView):
         )
 
 class AdminMembersExportView(generics.GenericAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAppAdmin]
 
     def get(self, request):
         from subscription.models import MembershipSubscription
@@ -1395,7 +1383,7 @@ class AdminMembersExportView(generics.GenericAPIView):
 
 class AdminsExportView(generics.GenericAPIView):
     """Export admins to Excel"""
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAppAdmin]
 
     def get(self, request):
         # Only export admins
@@ -1504,7 +1492,7 @@ class AdminsExportView(generics.GenericAPIView):
 
 
 class AdminPromoteMemberView(generics.GenericAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAppAdmin]
 
     def get(self, request, *args, **kwargs):
         users = User.objects.filter(is_superuser=False, is_admin=True).select_related('user_request').order_by('-created_at')

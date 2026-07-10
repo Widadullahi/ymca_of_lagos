@@ -54,7 +54,7 @@ class RenewMembershipView(generics.GenericAPIView):
 
 
 class VerifyPaymentView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         rrr = request.data.get("rrr")
@@ -77,7 +77,8 @@ class InitiateDonationView(generics.GenericAPIView):
             request,
             amount=serializer.validated_data['amount'],
             name=serializer.validated_data['name'],
-            email=serializer.validated_data.get('email')
+            email=serializer.validated_data.get('email'),
+            phone=serializer.validated_data.get('phone', '')
         )
 
 

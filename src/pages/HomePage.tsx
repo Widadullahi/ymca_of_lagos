@@ -16,6 +16,7 @@ import Footer from '../components/Footer';
 import aboutUsImage from '../assets/images/image4.jpg';
 import historyImage from '../assets/images/image1.jpg';
 import donateImage from '../assets/images/image10.jpg';
+import { openRemitaInlinePayment } from '../api/remitaInline';
 
 interface Quote {
   id: string;
@@ -89,13 +90,19 @@ const HomePage: React.FC = () => {
         const response = await fetchWithAuth({
           method: 'POST',
           path: `/initiate/donation`,
-          body: donationForm
+          body: donationForm,
+          isAthenticated: false
         });
         // Store RRR in localStorage for verification later
-        if (response?.data?.rrr) {
-          localStorage.setItem('remitta_rrr', response.data.rrr);
+        if (!response?.data?.rrr) {
+          throw new Error('Missing Remita RRR');
         }
-        window.location = response?.data?.payment_url
+        localStorage.setItem('remitta_rrr', response.data.rrr);
+        await openRemitaInlinePayment({
+          rrr: response.data.rrr,
+          scriptUrl: response.data.payment_url,
+          inlineConfig: response.data.inline_config,
+        });
       } catch (error) {
         console.error('Error processing donation:', error);
         displayNotification('error', 'Failed to process donation',);

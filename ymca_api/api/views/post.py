@@ -13,6 +13,7 @@ from django.db.models import Q
 from api.models import Post, UpdateAttachment
 from api.serializers.post import AttachmentCreateSerializer, PostCreateUpdateSerializer, PostListSerializer, UpdateAttachmentSerializer
 from api.utils.response.response_format import success_response, bad_request_response
+from api.utils.permissions import IsAppAdmin
 
 import base64, uuid
 from django.core.files.base import ContentFile
@@ -41,6 +42,11 @@ class PostViewSet(viewsets.ModelViewSet):
     # ordering_fields = ['created_at', 'updated_at', 'title']
     serializer_class = PostListSerializer
     ordering = ['-created_at']  
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve', 'attachments', 'stats']:
+            return [permissions.AllowAny()]
+        return [IsAppAdmin()]
 
 
     # def create(self, request, *args, **kwargs):
@@ -176,7 +182,7 @@ class UpdateAttachmentViewSet(viewsets.ModelViewSet):
     ViewSet for managing attachments
     """
     queryset = UpdateAttachment.objects.all().select_related('post')
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAppAdmin]
 
 
     

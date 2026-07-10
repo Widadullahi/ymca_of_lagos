@@ -1,5 +1,5 @@
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from account.models import User
@@ -11,6 +11,7 @@ from .serializers import (
     CreateSubscriptionSerializer
 )
 from api.utils.response.response_format import success_response, paginate_success_response, bad_request_response
+from api.utils.permissions import IsAppAdmin
 
 
 class SubscriptionPlanListView(generics.ListAPIView):
@@ -23,7 +24,7 @@ class SubscriptionPlanListView(generics.ListAPIView):
 class UserSubscriptionHistoryView(generics.ListAPIView):
     """Get subscription history for a specific user (for admin)"""
     serializer_class = MembershipSubscriptionListSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAppAdmin]
 
     def get_queryset(self):
         user_id = self.kwargs.get('user_id')
@@ -53,7 +54,7 @@ class MySubscriptionHistoryView(generics.ListAPIView):
 class CreateSubscriptionView(generics.CreateAPIView):
     """Create a new subscription (admin only)"""
     serializer_class = CreateSubscriptionSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAppAdmin]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -71,7 +72,7 @@ class CreateSubscriptionView(generics.CreateAPIView):
 class SubscriptionDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Retrieve, update, or delete a subscription (admin only)"""
     serializer_class = MembershipSubscriptionSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAppAdmin]
     queryset = MembershipSubscription.objects.all()
 
     def update(self, request, *args, **kwargs):
@@ -94,7 +95,7 @@ class SubscriptionDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class ActivateSubscriptionView(generics.GenericAPIView):
     """Activate a subscription (admin only)"""
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAppAdmin]
 
     def post(self, request, pk):
         subscription = get_object_or_404(MembershipSubscription, pk=pk)
@@ -109,7 +110,7 @@ class ActivateSubscriptionView(generics.GenericAPIView):
 
 class CancelSubscriptionView(generics.GenericAPIView):
     """Cancel a subscription (admin only)"""
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAppAdmin]
 
     def post(self, request, pk):
         subscription = get_object_or_404(MembershipSubscription, pk=pk)

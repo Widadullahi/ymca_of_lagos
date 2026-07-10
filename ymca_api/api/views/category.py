@@ -1,9 +1,9 @@
 from rest_framework import generics
-from rest_framework.permissions import IsAdminUser
 
 from account.models import Category, Church, YouthGroup
 from api.serializers.category import CategorySerializer, ChurchSerializer, YouthGroupSerializer
 from api.utils.response.response_format import bad_request_response, success_response
+from api.utils.permissions import IsAppAdmin
 
 
 
@@ -34,7 +34,7 @@ class ChurchListView(generics.ListAPIView):
 class AdminChurchListCreateView(generics.GenericAPIView):
     queryset = Church.objects.all().order_by('name')
     serializer_class = ChurchSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAppAdmin]
 
     def get(self, request, *args, **kwargs):
         serializer = self.serializer_class(self.get_queryset(), many=True)
@@ -58,7 +58,7 @@ class AdminChurchListCreateView(generics.GenericAPIView):
 class AdminChurchDetailView(generics.GenericAPIView):
     queryset = Church.objects.all()
     serializer_class = ChurchSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAppAdmin]
     lookup_field = 'id'
 
     def get_object(self):

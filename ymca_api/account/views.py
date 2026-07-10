@@ -9,6 +9,7 @@ from django.contrib.auth import authenticate
 from account.models import IDCard, User, SystemCardSignature, MembershipFeeSettings
 from .serializers import LoginSerializer, PasswordChangeSerializer, RegisterSerializer, UserSerializer,SystemCardSignatureSerializer, MembershipFeeSettingsSerializer
 from api.utils.response.response_format import success_response, bad_request_response
+from api.utils.permissions import IsAppAdmin
 
 # 
 
@@ -197,14 +198,13 @@ class CardSignatureView(generics.GenericAPIView):
 class SystemCardSignatureView(generics.GenericAPIView):
     permission_classes = [AllowAny]
     parser_classes = (MultiPartParser, FormParser)
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAppAdmin()]
     
     def post(self,request):
-        if not request.user.is_authenticated:
-            return bad_request_response(
-                message="You are not authorized to perform this action"
-            )
-        
-        print(request.data)
         signature = request.data.get("signature")
         SystemCardSignature.objects.filter(is_active=True).update(is_active=False)
         card = SystemCardSignature.objects.create(signature=signature)
@@ -227,8 +227,7 @@ class MembershipFeeSettingsView(generics.GenericAPIView):
     
     def get_permissions(self):
         if self.request.method in ['PUT', 'PATCH']:
-            from rest_framework.permissions import IsAdminUser
-            self.permission_classes = [IsAdminUser]
+            self.permission_classes = [IsAppAdmin]
         return super().get_permissions()
     
     def get(self, request):

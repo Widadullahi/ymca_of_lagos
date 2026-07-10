@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import ymca from '../../assets/images/image.png';
 import { useAuth } from '../../context/NewAuthContext';
+import { openRemitaInlinePayment } from '../../api/remitaInline';
 
 interface MainNavigationProps {
   openDonationModal: () => void;
@@ -48,10 +49,14 @@ const MainNavigation: React.FC<MainNavigationProps> = () => {
           body: donationForm
         });
         // Store RRR in localStorage for verification later
-        if (response?.data?.rrr) {
-          localStorage.setItem('remitta_rrr', response.data.rrr);
+        if (!response?.data?.rrr) {
+          throw new Error('Missing Remita RRR');
         }
-        window.location = response?.data?.payment_url;
+        localStorage.setItem('remitta_rrr', response.data.rrr);
+        await openRemitaInlinePayment({
+          rrr: response.data.rrr,
+          scriptUrl: response.data.payment_url,
+        });
       } catch (error) {
         console.error('Error processing donation:', error);
         displayNotification('error', 'Failed to process donation');

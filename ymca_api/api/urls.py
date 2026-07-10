@@ -3,6 +3,7 @@ from api.views.bulk_status import BulkStatusUpdateView
 from api.views.bulk_membership import BulkMembershipTypeUpdateView
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from rest_framework_simplejwt.views import TokenRefreshView
 from account import views as account_views
 from api.views.category import AdminChurchDetailView, AdminChurchListCreateView, CategoryListView, ChurchListView, YouthGroupListView
 from api.views.transaction import (
@@ -30,6 +31,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('register/', account_views.RegisterUserView.as_view(), name='register'),
     path('login/', account_views.LoginUserView.as_view(), name='login'),
+    path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('account/', account_views.ProfileView.as_view(), name='ProfileView'),
     path('account/signature/', account_views.CardSignatureView.as_view(), name='CardSignatureView'),
     path('account/picture/', account_views.ProfileImageView.as_view(), name='ProfileImageView'),

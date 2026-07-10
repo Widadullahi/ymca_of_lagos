@@ -1,10 +1,17 @@
 import datetime
+import json
+from decimal import Decimal
 import hashlib
+import logging
 import requests
 from django.conf import settings
 from account.models import IDCard, User
 from api.utils.response.response_format import bad_request_response, success_response
 from transaction.models import Transaction
+
+logger = logging.getLogger(__name__)
+
+REMITTA_SUCCESS_STATUSES = ["00", "0", "025", "success", True]
 
 
 class Remitta:
@@ -12,6 +19,78 @@ class Remitta:
     Remitta class to handle payment-related tasks such as
     initiating transactions (generating RRR) and verifying payments.
     """
+
+    @staticmethod
+    def log_remitta_request(context: str, url: str, data: dict):
+        logger.info(
+            "%s Remitta request: %s",
+            context,
+            {
+                "url": url,
+                "orderId": data.get("orderId"),
+                "amount": data.get("amount"),
+                "payerEmail": data.get("payerEmail"),
+                "description": data.get("description"),
+            },
+        )
+
+    @staticmethod
+    def log_remitta_response(context: str, response):
+        logger.info("%s Remitta response status: %s", context, response.status_code)
+        logger.debug("%s Remitta response body: %s", context, response.text)
+
+    @staticmethod
+    def parse_response(response):
+        text = getattr(response, "text", "")
+        text = text.strip() if isinstance(text, str) else ""
+        if not text and hasattr(response, "json"):
+            return response.json()
+        if text.startswith("jsonp"):
+            start = text.find("(")
+            end = text.rfind(")")
+            if start != -1 and end != -1 and end > start:
+                text = text[start + 1:end].strip()
+        return json.loads(text)
+
+    @staticmethod
+    def get_payment_base_url(base_url: str) -> str:
+        if "demo" in base_url:
+            return "https://demo.remita.net"
+        return "https://login.remita.net"
+
+    @staticmethod
+    def build_inline_payment_data(
+        *,
+        rrr: str,
+        transaction_id: str,
+        amount,
+        payer_name: str,
+        payer_email: str = "",
+        payer_phone: str = "",
+        description: str = "",
+        base_url: str,
+    ) -> dict:
+        payment_base_url = Remitta.get_payment_base_url(base_url)
+        public_key = settings.REMITTA_PUBLIC_KEY
+
+        return {
+            "rrr": rrr,
+            "payment_url": f"{payment_base_url}/payment/v1/remita-pay-inline.bundle.js",
+            "public_key": public_key,
+            "inline_config": {
+                "key": public_key,
+                "processRrr": True,
+                "paymentReference": rrr,
+                "transactionId": transaction_id,
+                "amount": Remitta.format_amount(amount),
+                "currency": "NGN",
+                "payerName": payer_name,
+                "payerEmail": payer_email or "",
+                "payerPhone": payer_phone or "",
+                "narration": description,
+                "description": description,
+            },
+        }
 
     @staticmethod
     def next_may_31(reference_date: datetime.date | None = None) -> datetime.date:
@@ -101,6 +180,18 @@ class Remitta:
         return hashlib.sha512(hash_string.encode('utf-8')).hexdigest()
 
     @staticmethod
+    def format_amount(amount) -> str:
+        decimal_amount = Decimal(str(amount)).quantize(Decimal("0.01"))
+        return format(decimal_amount, "f")
+
+    @staticmethod
+    def build_headers(merchant_id: str, api_hash: str) -> dict:
+        return {
+            "Content-Type": "application/json",
+            "Authorization": f"remitaConsumerKey={merchant_id},remitaConsumerToken={api_hash}",
+        }
+
+    @staticmethod
     def charge_user(request, user_id, transaction_type, **kwargs):
         try:
             user = request.user
@@ -148,11 +239,11 @@ class Remitta:
             service_type_id = settings.REMITTA_SERVICE_TYPE_ID
             base_url = settings.REMITTA_BASE_URL
 
-            if not all([merchant_id, api_key, service_type_id]):
+            if not all([merchant_id, api_key, service_type_id, settings.REMITTA_PUBLIC_KEY]):
                 return bad_request_response(message="Remitta credentials are not configured")
 
             order_id = str(transaction.id)
-            amount_str = str(amount_naira)
+            amount_str = Remitta.format_amount(amount_naira)
             api_hash = Remitta.generate_api_hash(merchant_id, service_type_id, order_id, amount_str, api_key)
 
             # Prepare request payload for Remitta
@@ -166,52 +257,45 @@ class Remitta:
                 "description": "YMCA membership payment",
             }
 
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"REMITTA_APIKEY {api_key}",
-                "MERCHANT_ID": merchant_id,
-                "API_KEY": api_key,
-                "REQUEST_ID": order_id,
-                "API_DETAILS_HASH": api_hash,
-            }
+            headers = Remitta.build_headers(merchant_id, api_hash)
 
-            # Call Remitta API to generate RRR
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Calling Remitta API: {base_url}/echannelsvc/merchant/api/paymentinit")
-            logger.error(f"Request headers: {headers}")
-            logger.error(f"Request data: {data}")
-            logger.error(f"Generated API hash: {api_hash}")
+            payment_init_url = f"{base_url}/echannelsvc/merchant/api/paymentinit"
+            Remitta.log_remitta_request("membership", payment_init_url, data)
             
             response = requests.post(
-                f"{base_url}/echannelsvc/merchant/api/paymentinit",
+                payment_init_url,
                 json=data,
                 headers=headers
             )
             
-            logger.error(f"Remitta response status: {response.status_code}")
-            logger.error(f"Remitta response text: {response.text}")
+            Remitta.log_remitta_response("membership", response)
 
             if response.ok:
-                response_data = response.json()
-                logger.error(f"Remitta response JSON: {response_data}")
+                response_data = Remitta.parse_response(response)
                 # Check Remitta's response status (varies by API version)
                 status_code = response_data.get("statuscode") or response_data.get("status")
-                if status_code in ["00", "0", "success", True]:
+                if status_code in REMITTA_SUCCESS_STATUSES:
                     rrr = response_data.get("RRR") or response_data.get("rrr")
-                    # Determine the correct payment base URL based on which API we're using
-                    if "demo" in base_url:
-                        payment_base_url = "https://demo.remitta.net"
-                    else:
-                        payment_base_url = "https://login.remita.net"
+                    # Update transaction to store RRR in response field
+                    transaction.response = {
+                        **transaction.response,
+                        "rrr": rrr
+                    }
+                    transaction.save()
                     return success_response(
-                        data={
-                            "rrr": rrr,
-                            "payment_url": f"{payment_base_url}/payment/v1/remita-pay-inline.bundle.js?rrr={rrr}",
-                        },
+                        data=Remitta.build_inline_payment_data(
+                            rrr=rrr,
+                            transaction_id=order_id,
+                            amount=amount_naira,
+                            payer_name=data["payerName"],
+                            payer_email=data["payerEmail"],
+                            payer_phone=data["payerPhone"],
+                            description=data["description"],
+                            base_url=base_url,
+                        ),
                     )
                 else:
-                    error_msg = response_data.get("statusmessage") or response_data.get("message") or "Failed to generate RRR"
+                    error_msg = response_data.get("statusmessage") or response_data.get("statusMessage") or response_data.get("message") or "Failed to generate RRR"
                     return bad_request_response(message=error_msg)
 
             error_msg = "Failed to initiate payment with Remitta"
@@ -235,14 +319,7 @@ class Remitta:
             api_hash = Remitta.generate_status_hash(merchant_id, rrr, api_key)
 
             # Call Remitta status API
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"REMITTA_APIKEY {api_key}",
-                "MERCHANT_ID": merchant_id,
-                "API_KEY": api_key,
-                "REQUEST_ID": rrr,
-                "API_DETAILS_HASH": api_hash,
-            }
+            headers = Remitta.build_headers(merchant_id, api_hash)
 
             response = requests.get(
                 f"{base_url}/echannelsvc/{merchant_id}/{rrr}/{api_hash}/status.reg",
@@ -250,20 +327,20 @@ class Remitta:
             )
 
             if response.ok:
-                response_data = response.json()
+                response_data = Remitta.parse_response(response)
                 status_code = response_data.get("statuscode") or response_data.get("status")
 
                 # Find transaction by RRR in response metadata (we store RRR in transaction.response)
                 # First, try to find transaction with this RRR
                 transaction = Transaction.objects.filter(
                     payment_gateway='remitta',
-                    response__contains=rrr
+                    response__rrr=rrr
                 ).first()
 
                 if not transaction:
                     return bad_request_response(message="Transaction not found")
 
-                if status_code in ["00", "0", "success", True]:
+                if status_code in REMITTA_SUCCESS_STATUSES:
                     if transaction.status == 'success':
                         return success_response(
                             message="Transaction already successful.",
@@ -335,7 +412,7 @@ class Remitta:
             return bad_request_response(message=f'Unable to verify payment at the moment: {str(e)}')
 
     @staticmethod
-    def charge_user_for_donation(request, amount, name, email=None):
+    def charge_user_for_donation(request, amount, name, email=None, phone=''):
         try:
             if amount <= 0:
                 return bad_request_response(message="Amount must be greater than zero")
@@ -344,8 +421,6 @@ class Remitta:
             if not redirect_url:
                 return bad_request_response(message="Redirect URL is required")
 
-            # Create transaction record in database
-            # For donations, if no user is authenticated, we can still create a transaction
             user = request.user if request.user.is_authenticated else None
             transaction = Transaction.objects.create(
                 user=user,
@@ -356,6 +431,7 @@ class Remitta:
                 response={
                     "name": name,
                     "email": email,
+                    "phone": phone,
                     "description": "Donation"
                 }
             )
@@ -366,11 +442,11 @@ class Remitta:
             service_type_id = settings.REMITTA_SERVICE_TYPE_ID
             base_url = settings.REMITTA_BASE_URL
 
-            if not all([merchant_id, api_key, service_type_id]):
+            if not all([merchant_id, api_key, service_type_id, settings.REMITTA_PUBLIC_KEY]):
                 return bad_request_response(message="Remitta credentials are not configured")
 
             order_id = str(transaction.id)
-            amount_str = str(amount)
+            amount_str = Remitta.format_amount(amount)
             api_hash = Remitta.generate_api_hash(merchant_id, service_type_id, order_id, amount_str, api_key)
 
             # Prepare request payload for Remitta
@@ -380,55 +456,49 @@ class Remitta:
                 "orderId": order_id,
                 "payerName": name,
                 "payerEmail": email or '',
+                "payerPhone": phone or '08000000000',
                 "description": "Donation",
             }
 
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"REMITTA_APIKEY {api_key}",
-                "MERCHANT_ID": merchant_id,
-                "API_KEY": api_key,
-                "REQUEST_ID": order_id,
-                "API_DETAILS_HASH": api_hash,
-            }
+            headers = Remitta.build_headers(merchant_id, api_hash)
 
-            # Call Remitta API to generate RRR
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Calling Remitta API (donation): {base_url}/echannelsvc/merchant/api/paymentinit")
-            logger.error(f"Request headers: {headers}")
-            logger.error(f"Request data: {data}")
-            logger.error(f"Generated API hash: {api_hash}")
+            payment_init_url = f"{base_url}/echannelsvc/merchant/api/paymentinit"
+            Remitta.log_remitta_request("donation", payment_init_url, data)
             
             response = requests.post(
-                f"{base_url}/echannelsvc/merchant/api/paymentinit",
+                payment_init_url,
                 json=data,
                 headers=headers
             )
             
-            logger.error(f"Remitta donation response status: {response.status_code}")
-            logger.error(f"Remitta donation response text: {response.text}")
+            Remitta.log_remitta_response("donation", response)
 
             if response.ok:
-                response_data = response.json()
-                logger.error(f"Remitta donation response JSON: {response_data}")
+                response_data = Remitta.parse_response(response)
                 # Check Remitta's response status
                 status_code = response_data.get("statuscode") or response_data.get("status")
-                if status_code in ["00", "0", "success", True]:
+                if status_code in REMITTA_SUCCESS_STATUSES:
                     rrr = response_data.get("RRR") or response_data.get("rrr")
-                    # Determine the correct payment base URL based on which API we're using
-                    if "demo" in base_url:
-                        payment_base_url = "https://demo.remitta.net"
-                    else:
-                        payment_base_url = "https://login.remita.net"
+                    # Update transaction to store RRR in response field
+                    transaction.response = {
+                        **transaction.response,
+                        "rrr": rrr
+                    }
+                    transaction.save()
                     return success_response(
-                        data={
-                            "rrr": rrr,
-                            "payment_url": f"{payment_base_url}/payment/v1/remita-pay-inline.bundle.js?rrr={rrr}",
-                        },
+                        data=Remitta.build_inline_payment_data(
+                            rrr=rrr,
+                            transaction_id=order_id,
+                            amount=amount,
+                            payer_name=name,
+                            payer_email=email or "",
+                            payer_phone=phone or "08000000000",
+                            description="Donation",
+                            base_url=base_url,
+                        ),
                     )
                 else:
-                    error_msg = response_data.get("statusmessage") or response_data.get("message") or "Failed to generate RRR"
+                    error_msg = response_data.get("statusmessage") or response_data.get("statusMessage") or response_data.get("message") or "Failed to generate RRR"
                     return bad_request_response(message=error_msg)
 
             error_msg = "Failed to initiate donation payment with Remitta"
@@ -453,4 +523,3 @@ class Remitta:
 
         except Exception as e:
             return bad_request_response(message=str(e))
-

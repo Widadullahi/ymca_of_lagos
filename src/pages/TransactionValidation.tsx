@@ -9,7 +9,7 @@ type ApiResponse = {
 };
 
 const TransactionValidation: React.FC = () => {
-    const { fetchWithAuth,fetchUserProfile  } = useAuth();
+    const { fetchWithAuth, fetchUserProfile, user  } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(true);
@@ -22,11 +22,14 @@ const TransactionValidation: React.FC = () => {
         const response = await fetchWithAuth({
             method: 'POST',
             path: `/payment/verify`,
-            body: { rrr: rrrToValidate }
+            body: { rrr: rrrToValidate },
+            isAthenticated: false
         });
 
         setValidationResult(response?.data);
-        fetchUserProfile();
+        if (user) {
+          fetchUserProfile();
+        }
         // Clear RRR from localStorage after verification
         localStorage.removeItem('remitta_rrr');
         setLoading(false);
@@ -52,7 +55,7 @@ const TransactionValidation: React.FC = () => {
       // No RRR found, show manual input
       setLoading(false);
     }
-  }, [searchParams]);
+  }, [searchParams, user, fetchWithAuth, fetchUserProfile]);
 
   const handleManualVerify = async () => {
     if (!manualRrr.trim()) {
@@ -63,11 +66,14 @@ const TransactionValidation: React.FC = () => {
       const response = await fetchWithAuth({
           method: 'POST',
           path: `/payment/verify`,
-          body: { rrr: manualRrr }
+          body: { rrr: manualRrr },
+          isAthenticated: false
       });
 
       setValidationResult(response?.data);
-      fetchUserProfile();
+      if (user) {
+        fetchUserProfile();
+      }
       // Clear RRR from localStorage after verification
       localStorage.removeItem('remitta_rrr');
       setLoading(false);
@@ -79,6 +85,10 @@ const TransactionValidation: React.FC = () => {
       });
       setLoading(false);
     }
+  };
+
+  const handleNavigateHome = () => {
+    navigate('/');
   };
 
   const handleNavigateToDashboard = () => {
@@ -113,13 +123,13 @@ const TransactionValidation: React.FC = () => {
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                 </div>
-                <h2 className="mt-4 text-xl font-semibold text-gray-700">Membership Renewed Successfully!</h2>
-                <p className="mt-2 text-gray-500">Your transaction has been validated and your membership has been renewed.</p>
+                <h2 className="mt-4 text-xl font-semibold text-gray-700">Payment Successful!</h2>
+                <p className="mt-2 text-gray-500">Your transaction has been validated.</p>
                 <button 
-                  onClick={handleNavigateToDashboard} 
+                  onClick={user ? handleNavigateToDashboard : handleNavigateHome} 
                   className="w-full px-4 py-2 mt-6 font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
-                  Go to Dashboard
+                  {user ? "Go to Dashboard" : "Return to Home"}
                 </button>
               </>
             ) : (
@@ -132,10 +142,10 @@ const TransactionValidation: React.FC = () => {
                 <h2 className="mt-4 text-xl font-semibold text-gray-700">Transaction Failed</h2>
                 <p className="mt-2 text-gray-500">{validationResult?.message || 'Your transaction could not be completed.'}</p>
                 <button 
-                  onClick={handleNavigateToDashboard} 
+                  onClick={user ? handleNavigateToDashboard : handleNavigateHome} 
                   className="w-full px-4 py-2 mt-6 font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
-                  Return to Dashboard
+                  {user ? "Return to Dashboard" : "Return to Home"}
                 </button>
               </>
             )}
@@ -169,10 +179,10 @@ const TransactionValidation: React.FC = () => {
           Verify Payment
         </button>
         <button
-          onClick={handleNavigateToDashboard}
+          onClick={user ? handleNavigateToDashboard : handleNavigateHome}
           className="w-full px-4 py-2 font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
         >
-          Return to Dashboard
+          {user ? "Return to Dashboard" : "Return to Home"}
         </button>
       </div>
     </div>

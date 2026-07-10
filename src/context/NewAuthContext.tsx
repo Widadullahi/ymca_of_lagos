@@ -93,7 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const data = await fetchWithAuth({
         method: 'POST',
-        path: `/auth/login`,
+        path: `/login/`,
         body: request_data,
       });
       setAuthToken(data?.data?.tokens);

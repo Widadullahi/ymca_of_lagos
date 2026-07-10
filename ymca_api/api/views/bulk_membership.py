@@ -1,12 +1,12 @@
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework import status
 from account.models import User
 from api.serializers.bulk_membership import BulkMembershipTypeUpdateSerializer
+from api.utils.permissions import IsAppAdmin
 
 class BulkMembershipTypeUpdateView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAppAdmin]
 
     def post(self, request):
         serializer = BulkMembershipTypeUpdateSerializer(data=request.data)

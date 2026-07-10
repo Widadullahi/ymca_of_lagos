@@ -66,7 +66,7 @@ const App: React.FC = () => {
         <Route path="/complete-profile" element={<PrivateRoute element={<CompleteProfilePage />} />} />
         <Route path="/account" element={<PrivateRoute element={<ProfileManagementPage />} />} />
         <Route path="/myid" element={<PrivateRoute element={<DashboardPage />} />} />
-        <Route path="/payment" element={<PrivateRoute element={<TransactionValidation />} />} />
+        <Route path="/payment" element={<TransactionValidation />} />
         <Route path="/admin/dashboard" element={<RoleBasedRoute element={<MemberDashboard />} requiredRole="Admin" />} />
         <Route path="/admin/staff" element={<RoleBasedRoute element={<StaffAdminPage />} requiredRole="Admin" />} />
         <Route path="/admin/admin-access" element={<RoleBasedRoute element={<AdminAccessPage />} requiredRole="Admin" />} />
