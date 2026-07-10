@@ -19,12 +19,14 @@ const TransactionValidation: React.FC = () => {
   useEffect(() => {
     const validateTransaction = async (rrrToValidate: string) => {
       try {
+        console.log('Validating transaction with RRR:', rrrToValidate);
         const response = await fetchWithAuth({
             method: 'POST',
-            path: `/payment/verify`,
+            path: '/payment/verify',
             body: { rrr: rrrToValidate },
             isAthenticated: false
         });
+        console.log('Verification response:', response);
 
         setValidationResult(response?.data);
         if (user) {
@@ -35,6 +37,7 @@ const TransactionValidation: React.FC = () => {
         setLoading(false);
       } catch (error) {
         console.error('Error validating transaction:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
         setValidationResult({
           success: false,
           message: 'An error occurred while validating the transaction'

@@ -318,32 +318,47 @@ class Remitta:
     @staticmethod
     def validate_payment(rrr: str):
         try:
+            logger.info("Starting payment validation for RRR: %s", rrr)
             merchant_id = settings.REMITTA_MERCHANT_ID
             api_key = settings.REMITTA_API_KEY
             base_url = settings.REMITTA_BASE_URL
+            logger.info("Remitta credentials - merchant_id: %s, base_url: %s", merchant_id, base_url)
 
             api_hash = Remitta.generate_status_hash(merchant_id, rrr, api_key)
+            logger.info("Generated status API hash: %s", api_hash)
 
             # Call Remitta status API
             headers = Remitta.build_headers(merchant_id, api_hash)
+            status_url = f"{base_url}/echannelsvc/{merchant_id}/{rrr}/{api_hash}/status.reg"
+            logger.info("Calling Remitta status API: %s", status_url)
 
             response = requests.get(
-                f"{base_url}/echannelsvc/{merchant_id}/{rrr}/{api_hash}/status.reg",
+                status_url,
                 headers=headers
             )
 
+            logger.info("Remitta status API response status: %s", response.status_code)
+            logger.info("Remitta status API response text: %s", response.text)
+            
             if response.ok:
                 response_data = Remitta.parse_response(response)
+                logger.info("Parsed Remitta response data: %s", response_data)
                 status_code = response_data.get("statuscode") or response_data.get("status")
+                logger.info("Remitta status code: %s", status_code)
 
                 # Find transaction by RRR in response metadata (we store RRR in transaction.response)
                 # First, try to find transaction with this RRR
+                logger.info("Looking for transaction with RRR: %s", rrr)
                 transaction = Transaction.objects.filter(
                     payment_gateway='remitta',
                     response__rrr=rrr
                 ).first()
 
-                if not transaction:
+                if transaction:
+                    logger.info("Found transaction: %s, type: %s, status: %s", 
+                                transaction.id, transaction.transaction_type, transaction.status)
+                else:
+                    logger.error("No transaction found for RRR: %s", rrr)
                     return bad_request_response(message="Transaction not found")
 
                 if status_code in REMITTA_SUCCESS_STATUSES:
@@ -413,8 +428,10 @@ class Remitta:
             return bad_request_response(message='Failed to verify payment with Remitta')
 
         except Transaction.DoesNotExist:
+            logger.exception("Transaction not found for RRR: %s", rrr)
             return bad_request_response(message="Transaction not found")
         except Exception as e:
+            logger.exception("Exception occurred during payment validation: %s", str(e))
             return bad_request_response(message=f'Unable to verify payment at the moment: {str(e)}')
 
     @staticmethod
