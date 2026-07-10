@@ -70,6 +70,7 @@ export async function openRemitaInlinePayment({
     throw new Error('Missing Remita RRR');
   }
 
+  console.log("openRemitaInlinePayment params:", { rrr, scriptUrl, inlineConfig });
   await loadRemitaScript(scriptUrl);
 
   if (!window.RmPaymentEngine) {
@@ -80,7 +81,7 @@ export async function openRemitaInlinePayment({
     window.location.assign(`${verificationUrl}?rrr=${encodeURIComponent(rrr)}`);
   };
 
-  const paymentEngine = window.RmPaymentEngine.init({
+  const remitaConfig = {
     ...(inlineConfig || {}),
     processRrr: true,
     paymentReference: String(inlineConfig?.paymentReference || rrr),
@@ -88,7 +89,9 @@ export async function openRemitaInlinePayment({
     onSuccess: goToVerification,
     onError: goToVerification,
     onClose: goToVerification,
-  });
+  };
+  console.log("Remita config being passed to RmPaymentEngine.init:", remitaConfig);
+  const paymentEngine = window.RmPaymentEngine.init(remitaConfig);
 
   paymentEngine.showPaymentWidget();
 }

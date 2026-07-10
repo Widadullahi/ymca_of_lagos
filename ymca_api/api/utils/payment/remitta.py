@@ -72,7 +72,11 @@ class Remitta:
     ) -> dict:
         payment_base_url = Remitta.get_payment_base_url(base_url)
         public_key = settings.REMITTA_PUBLIC_KEY
-
+        name_parts = payer_name.strip().split()
+        first_name = name_parts[0] if len(name_parts) > 0 else ""
+        last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
+        customer_id = payer_email or transaction_id  # Use email as customer ID if available, else transaction ID
+        
         return {
             "rrr": rrr,
             "payment_url": f"{payment_base_url}/payment/v1/remita-pay-inline.bundle.js",
@@ -84,9 +88,11 @@ class Remitta:
                 "transactionId": transaction_id,
                 "amount": Remitta.format_amount(amount),
                 "currency": "NGN",
-                "payerName": payer_name,
-                "payerEmail": payer_email or "",
-                "payerPhone": payer_phone or "",
+                "firstName": first_name,
+                "lastName": last_name,
+                "email": payer_email or "",
+                "phone": payer_phone or "",
+                "customerId": customer_id,
                 "narration": description,
                 "description": description,
             },

@@ -93,6 +93,7 @@ const HomePage: React.FC = () => {
           body: donationForm,
           isAthenticated: false
         });
+        console.log("Donation initiate response:", response);
         // Store RRR in localStorage for verification later
         if (!response?.data?.rrr) {
           throw new Error('Missing Remita RRR');
