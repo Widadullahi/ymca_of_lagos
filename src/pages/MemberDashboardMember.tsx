@@ -160,10 +160,11 @@ const MemberDashboardMember: React.FC = () => {
       await openRemitaInlinePayment({
         rrr: response.data.rrr,
         scriptUrl: response.data.payment_url,
+        inlineConfig: response.data.inline_config,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing payment:', error);
-      displayNotification('error', 'Failed to process payment');
+      displayNotification('error', error?.message || 'Failed to process payment');
     }
   };
 

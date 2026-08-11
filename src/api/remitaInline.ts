@@ -45,6 +45,10 @@ function loadRemitaScript(scriptUrl?: string) {
     const existingScript = document.getElementById(REMITA_SCRIPT_ID) as HTMLScriptElement | null;
 
     if (existingScript) {
+      if (window.RmPaymentEngine || ['loaded', 'complete'].includes((existingScript as any).readyState)) {
+        resolve();
+        return;
+      }
       existingScript.addEventListener('load', () => resolve(), { once: true });
       existingScript.addEventListener('error', () => reject(new Error('Unable to load Remita payment script')), { once: true });
       return;

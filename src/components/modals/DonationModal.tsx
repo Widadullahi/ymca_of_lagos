@@ -71,9 +71,9 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose }) => {
           scriptUrl: response.data.payment_url,
           inlineConfig: response.data.inline_config,
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error processing donation:', error);
-        displayNotification('error', 'Failed to process donation');
+        displayNotification('error', error?.message || 'Failed to process donation');
       }
     }
   };
