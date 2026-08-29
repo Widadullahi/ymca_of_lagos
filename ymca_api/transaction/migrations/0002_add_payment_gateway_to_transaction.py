@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
             field=models.CharField(
                 choices=[
                     ("paystack", "Paystack"),
-                    ("remitta", "Remitta"),
+                    ("remita", "remita"),
                     ("stripe", "Stripe"),
                     ("flutterwave", "Flutterwave"),
                     ("other", "Other"),

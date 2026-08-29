@@ -37,7 +37,7 @@ class MembershipSubscription(models.Model):
         ('credit_card', 'Credit Card'),
         ('bank_transfer', 'Bank Transfer'),
         ('paystack', 'Paystack'),
-        ('remitta', 'Remitta'),
+        ('remita', 'remita'),
         ('flutterwave', 'Flutterwave'),
         ('cash', 'Cash'),
         ('other', 'Other'),

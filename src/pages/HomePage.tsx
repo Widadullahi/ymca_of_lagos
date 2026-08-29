@@ -32,9 +32,9 @@ const HomePage: React.FC = () => {
     name: '',
     amount: '',
     email: '',
+    phone: '',
     redirect_url: FRONTEND_URL + '',
   });
-
 
 
   // Quotes data
@@ -79,7 +79,7 @@ const HomePage: React.FC = () => {
 
   const closeDonationModal = () => {
     setIsDonationModalOpen(false);
-    setDonationForm({ name: '', amount: '', email: '', redirect_url: FRONTEND_URL + '', });
+    setDonationForm({ name: '', amount: '', email: '', phone: '', redirect_url: FRONTEND_URL + '', });
     document.body.style.overflow = 'auto';
   };
 
@@ -98,7 +98,7 @@ const HomePage: React.FC = () => {
         if (!response?.data?.rrr) {
           throw new Error('Missing Remita RRR');
         }
-        localStorage.setItem('remitta_rrr', response.data.rrr);
+        localStorage.setItem('remita_rrr', response.data.rrr);
         await openRemitaInlinePayment({
           rrr: response.data.rrr,
           scriptUrl: response.data.payment_url,
@@ -626,6 +626,19 @@ const HomePage: React.FC = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                       placeholder="Enter your email address"
                       required
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label htmlFor="donorPhone" className="block text-sm font-medium text-gray-700 mb-2">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      id="donorPhone"
+                      value={donationForm.phone}
+                      onChange={(e) => setDonationForm({ ...donationForm, phone: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="Enter your phone number"
                     />
                   </div>
                   

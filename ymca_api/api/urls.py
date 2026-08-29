@@ -12,7 +12,7 @@ from api.views.transaction import (
     TotalMembersCountView,
     StartMembershipDemoView,
     VerifyPaymentView,
-    RemittaWebhookView,
+    RemitaWebhookView,
     InitiateDonationView
 )
 from api.views.members import AdminAddMembersView, AdminGetSingleRequestView, AdminGetMemberOverview, AdminMemberRetrieveUpdateDestroyView, AdminMemberUpdateDestroyView, AdminMembersBulkUploadView, AdminPromoteMemberView, AdminUpdateRequestStatusView, AdminUserRequestListView, CreateUserRequestView, CurrentUserRequestUpdateView, UserRequestDetailView, UserRequestListView, VerifyCardIdNumberView, AdminMembersExportView, AdminsExportView, SendEmailVerificationCodeView, VerifyEmailVerificationCodeView
@@ -67,7 +67,7 @@ urlpatterns = [
     path('membership/activation', ActivateMembershipView.as_view(), name='ActivateMembershipView'),
     path('membership/renewal', RenewMembershipView.as_view(), name='RenewMembershipView'),
     path('payment/verify', VerifyPaymentView.as_view(), name='VerifyPaymentView'),
-    path('payment/webhook', RemittaWebhookView.as_view(), name='RemittaWebhookView'),
+    path('payment/webhook', RemitaWebhookView.as_view(), name='RemitaWebhookView'),
     path('initiate/donation', InitiateDonationView.as_view(), name='InitiateDonationView'),
     path('total-members-count', TotalMembersCountView.as_view(), name='TotalMembersCountView'),
     # Subscription endpoints

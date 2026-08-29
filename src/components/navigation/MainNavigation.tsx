@@ -52,7 +52,7 @@ const MainNavigation: React.FC<MainNavigationProps> = () => {
         if (!response?.data?.rrr) {
           throw new Error('Missing Remita RRR');
         }
-        localStorage.setItem('remitta_rrr', response.data.rrr);
+        localStorage.setItem('remita_rrr', response.data.rrr);
         await openRemitaInlinePayment({
           rrr: response.data.rrr,
           scriptUrl: response.data.payment_url,

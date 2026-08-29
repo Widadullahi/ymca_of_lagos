@@ -1,0 +1,109 @@
+Good question! Deploying to Render (backend) + Vercel (frontend) is a solid setup, but there are several things you'll need to adjust for the Remita integration to work. Let me check the project to give you specific guidance.
+→Explored — 2 reads
++Thought · 166ms
+→Explored — 4 reads
++Thought · 454ms
+→Explored — 2 reads
++Thought · 2.9s
+SubagentsShell
+Now I have a full picture of the project. The good news is yes, it will work on Render + Vercel, 
+but there are several things to configure. Here's a breakdown:
+Build·Ling 3.0 Flash Fin FreeOpenCode Zen
+~/Music/ymca:main
+✅ What Already Works
+show inactive ctrl+a- Remita URL (REMITA_BASE_URL=https://demo.remita.net) — correct, 
+no code changes neededtabs ←/→
+- inlineConfig pattern — already fixed in all three call sites (HomePage, MainNavigation, MemberDashboardMember)
+- CORS — CORS_ALLOW_ALL_ORIGINS is configurable via env var
+- gunicorn is already in requirements.txt
+- .env is in .gitignore — secrets won't be exposed in the repo
+⚠️ What You Must Do
+1. Switch from SQLite to PostgreSQL
+Render's filesystem is ephemeral — SQLite won't survive deploys. You have two options:
+Option A (Recommended): Use Render's PostgreSQL add-on
+# Add to requirements.txt
+psycopg2-binary==2.9.10
+Update settings.py:
+import os
+import dj_database_url
+
+DATABASES = {
+    'default': dj_database_url.config(
+        default='sqlite:///db.sqlite3',
+        conn_max_age=600
+    )
+}
+Option B: Use an external PostgreSQL (Neon, Supabase, Railway, etc.)
+2. Create a render.yaml (or configure via Render dashboard)
+services:
+  - type: web
+    name: ymca-backend
+    env: python
+    buildCommand: pip install -r ymca_api/requirements.txt && python ymca_api/manage.py collectstatic --noinput && python ymca_api/manage.py migrate
+    startCommand: gunicorn ymca_api.wsgi:application --bind 0.0.0.0:$PORT --workers 2
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: backend.settings
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_SECRET_KEY
+        value: <your-secret-key>
+      - key: DJANGO_ALLOWED_HOSTS
+        value: <your-render-url>.onrender.com,localhost,127.0.0.1
+      - key: DJANGO_CORS_ALLOW_ALL_ORIGINS
+        value: "false"
+      - key: DJANGO_CORS_ALLOWED_ORIGINS
+        value: https://your-frontend.vercel.app,http://localhost:5173
+      - key: REMITA_BASE_URL
+        value: https://demo.remita.net
+      - key: REMITA_MERCHANT_ID
+        value: "2547916"
+      - key: REMITA_API_KEY
+        value: "1946"
+      - key: REMITA_SERVICE_TYPE_ID
+        value: "4430731"
+      - key: REMITA_PUBLIC_KEY
+        value: <your-public-key>
+      - key: DATABASE_URL
+        value: <render-postgres-url>
+3. Remita IP Whitelisting — This Is Critical
+This is the same issue causing the 403 locally. Render's servers have fixed IPs. You need to:
+1. Log into https://demo.remita.net
+2. Go to Settings → API/Integration → Allowed IPs
+3. Add your Render server's IP(s) — find them in the Render dashboard under your service's details
+4. Alternatively, if Render doesn't assign static IPs on your plan, set up a proxy (like a small VPS or Cloudflare Tunnel) with a known static IP and whitelist that instead
+4. Frontend: Update VITE_BACKEND_URL on Vercel
+In Vercel project settings → Environment Variables:
+VITE_BACKEND_URL = https://your-app.onrender.com/api/v1
+And remove the hardcoded localhost reference. The frontend code should use import.meta.env.VITE_BACKEND_URL.
+5. Configure Remita Webhook URL
+In the Remita merchant dashboard, set the webhook URL to your deployed endpoint:
+https://your-app.onrender.com/api/v1/transaction/webhook/
+6. Remove redirect_url Requirement (Optional but Recommended)
+Both charge_user() and charge_user_for_donation() require redirect_url from request.data, but since you're using inline payments, you don't need it. The code will block payments until you remove or relax that check:
+# In charge_user() and charge_user_for_donation(), replace:
+redirect_url = request.data.get('redirect_url')
+if not redirect_url:
+    return bad_request_response(message="Redirect URL is required")
+
+# With just:
+redirect_url = request.data.get('redirect_url')  # optional for inline payments
+7. Set DEBUG = False and ALLOWED_HOSTS Properly
+When deploying, make sure:
+- DJANGO_DEBUG=false
+- DJANGO_ALLOWED_HOSTS includes your Render URL and Vercel URL
+📋 Summary Checklist
+Step
+REMITA_BASE_URL already correct
+inlineConfig already added to call sites
+Switch SQLite → PostgreSQL
+Set env vars on Render dashboard
+Whitelist Render IP on Remita dashboard
+Update VITE_BACKEND_URL on Vercel
+Configure Remita webhook URL
+Remove redirect_url requirement
+Set DEBUG=false, proper ALLOWED_HOSTS
+Add psycopg2-binary to requirements
+Add dj-database-url to requirements
+The code is in good shape — the remaining work is all deployment configuration, not code changes. 
+Would you like me to generate the specific files (like render.yaml, updated settings.py, etc.)?

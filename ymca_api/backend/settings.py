@@ -3,9 +3,10 @@ from datetime import timedelta
 import os
 from pathlib import Path
 
-# Load environment variables from .env file
+# Load environment variables from .env file (parent directory of BASE_DIR)
 from dotenv import load_dotenv
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(dotenv_path=BASE_DIR.parent / '.env')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -220,7 +221,7 @@ LOGGING = {
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
             'propagate': False,
         },
-        # This will show logs from remitta.py (and other api utils)
+        # This will show logs from remita.py (and other api utils)
         'api': {
             'handlers': ['console'],
             'level': 'DEBUG',
@@ -247,10 +248,10 @@ RESEND_API_URL = os.getenv("RESEND_API_URL", "https://api.resend.com/emails")
 PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "")
 PAYSTACK_PUBLIC_KEY = os.getenv("PAYSTACK_PUBLIC_KEY", "")
 
-# Remitta Settings
-REMITTA_BASE_URL = os.getenv("REMITTA_BASE_URL", "https://demo.remita.net/remita/exapp/api/v1/send/api")
-REMITTA_MERCHANT_ID = os.getenv("REMITTA_MERCHANT_ID", "")
-REMITTA_API_KEY = os.getenv("REMITTA_API_KEY", "")
-REMITTA_SERVICE_TYPE_ID = os.getenv("REMITTA_SERVICE_TYPE_ID", "")
-REMITTA_PUBLIC_KEY = os.getenv("REMITTA_PUBLIC_KEY", "")
+# Remita Settings
+REMITA_BASE_URL = os.getenv("REMITA_BASE_URL", "https://demo.remita.net/remita/exapp/api/v1/send/api")
+REMITA_MERCHANT_ID = os.getenv("REMITA_MERCHANT_ID", "")
+REMITA_API_KEY = os.getenv("REMITA_API_KEY", "")
+REMITA_SERVICE_TYPE_ID = os.getenv("REMITA_SERVICE_TYPE_ID", "")
+REMITA_PUBLIC_KEY = os.getenv("REMITA_PUBLIC_KEY", "")
 

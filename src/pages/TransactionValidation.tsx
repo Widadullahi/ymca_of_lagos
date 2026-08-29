@@ -4,7 +4,7 @@ import { useAuth } from '../context/NewAuthContext';
 
 // Define types for our transaction data and API response
 type ApiResponse = {
-  success: boolean;
+  status: boolean;
   message: string;
 };
 
@@ -34,12 +34,12 @@ const TransactionValidation: React.FC = () => {
       console.log('Verification response:', response);
 
       setValidationResult(response?.data);
-      if (user && response?.data?.success) {
+      if (user && response?.data?.status) {
         fetchUserProfile();
       }
       // Clear RRR from localStorage after verification if successful
-      if (response?.data?.success) {
-        localStorage.removeItem('remitta_rrr');
+      if (response?.data?.status) {
+        localStorage.removeItem('remita_rrr');
       }
       setLoading(false);
     } catch (error: any) {
@@ -49,12 +49,12 @@ const TransactionValidation: React.FC = () => {
       if (error.message === 'Payment still processing') {
         setIsProcessing(true);
         setValidationResult({
-          success: false,
+          status: false,
           message: 'Your payment is still processing. Please check again in a few moments.'
         });
       } else {
         setValidationResult({
-          success: false,
+          status: false,
           message: error.message || 'An error occurred while validating the transaction'
         });
       }
@@ -64,7 +64,7 @@ const TransactionValidation: React.FC = () => {
 
   useEffect(() => {
     // First try to get RRR from localStorage
-    const storedRrr = localStorage.getItem('remitta_rrr');
+    const storedRrr = localStorage.getItem('remita_rrr');
     // Also check URL params for RRR
     const urlRrr = searchParams.get('rrr');
     
@@ -120,7 +120,7 @@ const TransactionValidation: React.FC = () => {
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
         <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
           <div className="text-center">
-            {validationResult?.success ? (
+            {validationResult?.status ? (
               <>
                 <div className="flex items-center justify-center w-16 h-16 mx-auto bg-green-100 rounded-full">
                   <svg className="w-8 h-8 text-green-500" fill="currentColor" viewBox="0 0 20 20">
@@ -195,7 +195,7 @@ const TransactionValidation: React.FC = () => {
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-gray-700">Verify Payment</h2>
-          <p className="mt-2 text-gray-500">Enter your Remitta Retrieval Reference (RRR) to verify your payment.</p>
+          <p className="mt-2 text-gray-500">Enter your remita Retrieval Reference (RRR) to verify your payment.</p>
         </div>
         <div>
           <input

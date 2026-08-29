@@ -1,1 +1,1 @@
-from .remitta import Remitta
+from .remita import Remita as remita

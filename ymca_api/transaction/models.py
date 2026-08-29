@@ -14,7 +14,7 @@ class Transaction(models.Model):
     )
     PAYMENT_GATEWAY_CHOICES = (
         ('paystack', 'Paystack'),
-        ('remitta', 'Remitta'),
+        ('remita', 'remita'),
         ('stripe', 'Stripe'),
         ('flutterwave', 'Flutterwave'),
         ('other', 'Other'),
