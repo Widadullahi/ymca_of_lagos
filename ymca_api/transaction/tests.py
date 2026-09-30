@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.test import RequestFactory
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 from unittest.mock import patch, Mock
 import datetime
 from uuid import uuid4
@@ -368,3 +369,245 @@ class remitaUtilityTests(TestCase):
             # Test webhook without RRR
             result = remita.process_webhook({})
             self.assertEqual(result.status_code, 400)
+
+
+class RemitaDonationTests(TestCase):
+    """Tests for the anonymous donation flow (charge_user_for_donation)."""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        settings.REMITA_MERCHANT_ID = '2547916'
+        settings.REMITA_API_KEY = '1946'
+        settings.REMITA_SERVICE_TYPE_ID = '4430731'
+        settings.REMITA_BASE_URL = 'https://demo.remita.net/remita/exapp/api/v1/send/api'
+        settings.REMITA_PUBLIC_KEY = 'test_public_key'
+
+    def tearDown(self):
+        settings.REMITA_MERCHANT_ID = ''
+        settings.REMITA_API_KEY = ''
+        settings.REMITA_SERVICE_TYPE_ID = ''
+        settings.REMITA_BASE_URL = 'https://demo.remita.net/remita/exapp/api/v1/send/api'
+        settings.REMITA_PUBLIC_KEY = ''
+
+    def _donation_request(self, amount=5000):
+        request = self.factory.post('/initiate/donation', {
+            'redirect_url': 'https://example.com/payment',
+            'amount': amount,
+            'name': 'Anonymous Donor',
+            'email': 'donor@example.com',
+            'phone': '08012345678',
+        })
+        request.user = AnonymousUser()
+        request.data = {
+            'redirect_url': 'https://example.com/payment',
+            'amount': amount,
+            'name': 'Anonymous Donor',
+            'email': 'donor@example.com',
+            'phone': '08012345678',
+        }
+        return request
+
+    @patch('requests.post')
+    def test_donation_success(self, mock_post):
+        """Anonymous donation creates a pending transaction and returns inline data."""
+        mock_response = Mock()
+        mock_response.ok = True
+        mock_response.json.return_value = {'statuscode': '00', 'RRR': '555000111222'}
+        mock_post.return_value = mock_response
+
+        result = remita.charge_user_for_donation(
+            self._donation_request(), amount=5000,
+            name='Anonymous Donor', email='donor@example.com', phone='08012345678',
+        )
+
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.data['data']['rrr'], '555000111222')
+        self.assertIn('inline_config', result.data['data'])
+        self.assertIn('payment_url', result.data['data'])
+
+        transaction = Transaction.objects.filter(transaction_type='DONATION').first()
+        self.assertIsNotNone(transaction)
+        self.assertIsNone(transaction.user)
+        self.assertEqual(transaction.payment_gateway, 'remita')
+        self.assertEqual(transaction.status, 'pending')
+        self.assertEqual(transaction.response.get('rrr'), '555000111222')
+
+    @patch('requests.post')
+    def test_donation_invalid_amount(self, mock_post):
+        """Zero/negative amounts are rejected before hitting Remita."""
+        result = remita.charge_user_for_donation(
+            self._donation_request(), amount=0,
+            name='Anonymous Donor', email='donor@example.com',
+        )
+        self.assertEqual(result.status_code, 400)
+        mock_post.assert_not_called()
+        self.assertEqual(Transaction.objects.filter(transaction_type='DONATION').count(), 0)
+
+    @patch('requests.post')
+    def test_donation_missing_credentials(self, mock_post):
+        """Requests fail fast when Remita credentials are not configured."""
+        settings.REMITA_MERCHANT_ID = ''
+        result = remita.charge_user_for_donation(
+            self._donation_request(), amount=5000,
+            name='Anonymous Donor', email='donor@example.com',
+        )
+        self.assertEqual(result.status_code, 400)
+        self.assertIn('credentials', result.data['message'].lower())
+        mock_post.assert_not_called()
+
+    @patch('requests.post')
+    def test_donation_remita_error(self, mock_post):
+        """A Remita error status surfaces the gateway message."""
+        mock_response = Mock()
+        mock_response.ok = True
+        mock_response.json.return_value = {
+            'statuscode': '01', 'statusmessage': 'Invalid service type'
+        }
+        mock_post.return_value = mock_response
+
+        result = remita.charge_user_for_donation(
+            self._donation_request(), amount=5000,
+            name='Anonymous Donor', email='donor@example.com',
+        )
+        self.assertEqual(result.status_code, 400)
+        self.assertIn('Invalid service type', result.data['message'])
+
+    @patch('requests.post')
+    def test_donation_transaction_rolls_back_on_error(self, mock_post):
+        """The pending transaction is marked failed (not left pending) when RRR generation fails."""
+        mock_response = Mock()
+        mock_response.ok = True
+        mock_response.json.return_value = {'statuscode': '99', 'statusmessage': 'Down'}
+        mock_post.return_value = mock_response
+
+        remita.charge_user_for_donation(
+            self._donation_request(), amount=5000,
+            name='Anonymous Donor', email='donor@example.com',
+        )
+        transaction = Transaction.objects.filter(transaction_type='DONATION').first()
+        self.assertIsNotNone(transaction)
+        self.assertEqual(transaction.status, 'failed')
+        self.assertIn('error', transaction.response)
+
+    def test_inline_payment_data_shape(self):
+        """build_inline_payment_data returns the contract the frontend expects."""
+        data = remita.build_inline_payment_data(
+            rrr='123456789012',
+            transaction_id='abc-123',
+            amount=2500,
+            payer_name='Ada Obi',
+            payer_email='ada@example.com',
+            payer_phone='08011122233',
+            description='Membership',
+            base_url='https://demo.remita.net/remita/exapp/api/v1/send/api',
+        )
+        self.assertEqual(data['rrr'], '123456789012')
+        self.assertEqual(data['payment_url'],
+                         'https://demo.remita.net/payment/v1/remita-pay-inline.bundle.js')
+        cfg = data['inline_config']
+        self.assertTrue(cfg['processRrr'])
+        self.assertEqual(cfg['key'], 'test_public_key')
+        self.assertEqual(cfg['amount'], '2500.00')
+        self.assertEqual(cfg['firstName'], 'Ada')
+        self.assertEqual(cfg['lastName'], 'Obi')
+        self.assertEqual(cfg['extendedData']['customFields'][0]['name'], 'rrr')
+
+    def test_parse_response_jsonp(self):
+        """parse_response unwraps Remita's jsonp(...) envelope."""
+        class FakeResponse:
+            text = 'jsonp({"statuscode": "00", "RRR": "290389681283"})'
+
+            def json(self):
+                raise ValueError('not json')
+
+        parsed = remita.parse_response(FakeResponse())
+        self.assertEqual(parsed['statuscode'], '00')
+        self.assertEqual(parsed['RRR'], '290389681283')
+
+    @patch('requests.get')
+    def test_donation_validate_marks_success_without_card(self, mock_get):
+        """Validating a successful DONATION never touches ID cards."""
+        Transaction.objects.create(
+            amount=5000,
+            transaction_type='DONATION',
+            payment_gateway='remita',
+            status='pending',
+            response={'rrr': '777000999111', 'name': 'Anonymous Donor'},
+        )
+        mock_response = Mock()
+        mock_response.ok = True
+        mock_response.json.return_value = {'statuscode': '00'}
+        mock_get.return_value = mock_response
+
+        result = remita.validate_payment('777000999111')
+        self.assertEqual(result.status_code, 200)
+        self.assertTrue(result.data['data']['success'])
+
+        transaction = Transaction.objects.get(response__rrr='777000999111')
+        self.assertEqual(transaction.status, 'success')
+
+    @patch('requests.get')
+    def test_validate_payment_idempotent(self, mock_get):
+        """Re-validating an already-successful payment does not double-apply."""
+        transaction = Transaction.objects.create(
+            user=self._member(),
+            amount=3000,
+            transaction_type='ID',
+            payment_gateway='remita',
+            status='success',
+            response={'rrr': '123456789012', 'charged_years': 1, 'arrears_years': 0},
+        )
+        mock_response = Mock()
+        mock_response.ok = True
+        mock_response.json.return_value = {'statuscode': '00'}
+        mock_get.return_value = mock_response
+
+        result = remita.validate_payment('123456789012')
+        self.assertEqual(result.status_code, 200)
+        self.assertIn('already successful', result.data['message'])
+
+        transaction.refresh_from_db()
+        self.assertEqual(transaction.status, 'success')
+
+    @patch('requests.get')
+    def test_validate_payment_processing(self, mock_get):
+        """Unknown status codes map to 'Payment still processing'."""
+        Transaction.objects.create(
+            user=self._member(),
+            amount=3000,
+            transaction_type='ID',
+            payment_gateway='remita',
+            status='pending',
+            response={'rrr': '123456789012', 'charged_years': 1, 'arrears_years': 0},
+        )
+        mock_response = Mock()
+        mock_response.ok = True
+        mock_response.json.return_value = {'statuscode': '025'}
+        mock_get.return_value = mock_response
+
+        result = remita.validate_payment('123456789012')
+        self.assertEqual(result.status_code, 400)
+        self.assertIn('processing', result.data['message'])
+
+    @patch('requests.get')
+    def test_validate_payment_unknown_rrr(self, mock_get):
+        """An RRR with no matching transaction is rejected."""
+        mock_response = Mock()
+        mock_response.ok = True
+        mock_response.json.return_value = {'statuscode': '00'}
+        mock_get.return_value = mock_response
+
+        result = remita.validate_payment('999888777666')
+        self.assertEqual(result.status_code, 400)
+        self.assertIn('not found', result.data['message'].lower())
+
+    def _member(self):
+        user = User.objects.create_user(
+            email='member@example.com',
+            password='testpass123',
+            first_name='Test',
+            last_name='Member',
+            phone_number='08012345678',
+        )
+        IDCard.objects.create(user=user, id_number='LYA1234567')
+        return user

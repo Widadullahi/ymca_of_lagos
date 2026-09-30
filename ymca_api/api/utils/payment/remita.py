@@ -11,7 +11,14 @@ from transaction.models import Transaction
 
 logger = logging.getLogger(__name__)
 
-REMITA_SUCCESS_STATUSES = ["00", "0", "025", "success", True]
+# Status codes differ per endpoint (verified against Remita demo, Sep 2026):
+# - paymentinit (RRR generation): '025' = "Payment Reference generated" -> SUCCESS
+# - status.reg (verification): '00' = paid; '021'/'025' = pending/unpaid -> NOT success
+REMITA_INIT_SUCCESS_STATUSES = ["00", "0", "025", "success", True]
+REMITA_VERIFICATION_SUCCESS_STATUSES = ["00", "0", "success", True]
+# Legacy alias kept for tests/imports
+REMITA_SUCCESS_STATUSES = REMITA_VERIFICATION_SUCCESS_STATUSES
+REMITA_FAILED_STATUSES = ["01", "failed", "99"]
 
 
 class Remita:
@@ -284,7 +291,7 @@ class Remita:
                 response_data = Remita.parse_response(response)
                 # Check Remita's response status (varies by API version)
                 status_code = response_data.get("statuscode") or response_data.get("status")
-                if status_code in REMITA_SUCCESS_STATUSES:
+                if status_code in REMITA_INIT_SUCCESS_STATUSES:
                     rrr = response_data.get("RRR") or response_data.get("rrr")
                     # Update transaction to store RRR in response field
                     transaction.response = {
@@ -306,6 +313,14 @@ class Remita:
                     )
                 else:
                     error_msg = response_data.get("statusmessage") or response_data.get("statusMessage") or response_data.get("message") or "Failed to generate RRR"
+                    # Do not leak an orphaned pending transaction when RRR generation fails
+                    transaction.status = "failed"
+                    transaction.response = {
+                        **(transaction.response or {}),
+                        "error": error_msg,
+                        "remita": response_data,
+                    }
+                    transaction.save()
                     return bad_request_response(message=error_msg)
 
             error_msg = "Failed to initiate payment with Remita"
@@ -365,18 +380,21 @@ class Remita:
                     logger.error("No transaction found for RRR: %s", rrr)
                     return bad_request_response(message="Transaction not found")
 
-                if status_code in REMITA_SUCCESS_STATUSES:
-                    if transaction.status == 'success':
-                        return success_response(
-                            message="Transaction already successful.",
-                            data={
-                                "transaction_id": str(transaction.id),
-                                "success": True,
-                                "amount": transaction.amount,
-                                "message": "Transaction already successful."
-                            }
-                        )
+                # Trust our own recorded state first: if success was already
+                # applied (e.g. via webhook or a previous verification), report
+                # success even if the gateway is slow to reflect it.
+                if transaction.status == 'success':
+                    return success_response(
+                        message="Transaction already successful.",
+                        data={
+                            "transaction_id": str(transaction.id),
+                            "success": True,
+                            "amount": transaction.amount,
+                            "message": "Transaction already successful."
+                        }
+                    )
 
+                if status_code in REMITA_VERIFICATION_SUCCESS_STATUSES:
                     transaction.status = "success"
                     transaction_metadata = transaction.response or {}
                     transaction.response = {
@@ -384,29 +402,9 @@ class Remita:
                         "remita": response_data,
                         "rrr": rrr,
                     }
-
-                    # Update user's card and membership status only if it's not a donation
-                    if transaction.transaction_type != 'DONATION' and transaction.user:
-                        id_card, created = IDCard.objects.get_or_create(user=transaction.user)
-                        transaction_metadata = transaction.response or {}
-                        charged_years = max(1, int(transaction_metadata.get('charged_years') or 1))
-                        arrears_years = max(0, int(transaction_metadata.get('arrears_years') or 0))
-                        payment_date = datetime.date.today()
-
-                        id_card.is_active = True
-                        id_card.first_time = False
-                        id_card.expired = False
-                        if transaction.transaction_type == 'RENEWAL' and arrears_years > 1:
-                            id_card.expired_at = Remita.next_may_31(payment_date)
-                        else:
-                            id_card.expired_at = Remita.expiry_after_payment(charged_years, payment_date)
-                        id_card.save()
-
-                        transaction.user.membership_expiry = id_card.expired_at
-                        transaction.user.is_active = True
-                        transaction.user.save(update_fields=['membership_expiry', 'is_active', 'updated_at'])
-
                     transaction.save()
+
+                    Remita.apply_payment_success(transaction)
 
                     return success_response(
                         message="Payment successful.",
@@ -418,7 +416,7 @@ class Remita:
                         }
                     )
 
-                elif status_code in ["01", "failed", "99"]:
+                elif status_code in REMITA_FAILED_STATUSES:
                     transaction.status = "failed"
                     transaction.response = {
                         **(transaction.response or {}),
@@ -437,6 +435,38 @@ class Remita:
         except Exception as e:
             logger.exception("Exception occurred during payment validation: %s", str(e))
             return bad_request_response(message=f'Unable to verify payment at the moment: {str(e)}')
+
+    @staticmethod
+    def apply_payment_success(transaction):
+        """Mark a transaction successful and apply its side effects.
+
+        Side effects: activate/extend the payer's ID card + membership expiry
+        (skipped for DONATION and user-less transactions).
+        Idempotent-ish: caller is responsible for not double-applying.
+        """
+        transaction.status = "success"
+        transaction.save(update_fields=['status', 'updated_at'])
+
+        # Update user's card and membership status only if it's not a donation
+        if transaction.transaction_type != 'DONATION' and transaction.user:
+            id_card, created = IDCard.objects.get_or_create(user=transaction.user)
+            transaction_metadata = transaction.response or {}
+            charged_years = max(1, int(transaction_metadata.get('charged_years') or 1))
+            arrears_years = max(0, int(transaction_metadata.get('arrears_years') or 0))
+            payment_date = datetime.date.today()
+
+            id_card.is_active = True
+            id_card.first_time = False
+            id_card.expired = False
+            if transaction.transaction_type == 'RENEWAL' and arrears_years > 1:
+                id_card.expired_at = Remita.next_may_31(payment_date)
+            else:
+                id_card.expired_at = Remita.expiry_after_payment(charged_years, payment_date)
+            id_card.save()
+
+            transaction.user.membership_expiry = id_card.expired_at
+            transaction.user.is_active = True
+            transaction.user.save(update_fields=['membership_expiry', 'is_active', 'updated_at'])
 
     @staticmethod
     def charge_user_for_donation(request, amount, name, email=None, phone=''):
@@ -504,7 +534,7 @@ class Remita:
                 response_data = Remita.parse_response(response)
                 # Check Remita's response status
                 status_code = response_data.get("statuscode") or response_data.get("status")
-                if status_code in REMITA_SUCCESS_STATUSES:
+                if status_code in REMITA_INIT_SUCCESS_STATUSES:
                     rrr = response_data.get("RRR") or response_data.get("rrr")
                     # Update transaction to store RRR in response field
                     transaction.response = {
@@ -526,6 +556,14 @@ class Remita:
                     )
                 else:
                     error_msg = response_data.get("statusmessage") or response_data.get("statusMessage") or response_data.get("message") or "Failed to generate RRR"
+                    # Do not leak an orphaned pending transaction when RRR generation fails
+                    transaction.status = "failed"
+                    transaction.response = {
+                        **(transaction.response or {}),
+                        "error": error_msg,
+                        "remita": response_data,
+                    }
+                    transaction.save()
                     return bad_request_response(message=error_msg)
 
             error_msg = "Failed to initiate donation payment with Remita"
