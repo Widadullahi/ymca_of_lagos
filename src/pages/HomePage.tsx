@@ -28,6 +28,7 @@ const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const { fetchWithAuth, FRONTEND_URL, displayNotification } = useAuth();
   const [isDonationModalOpen, setIsDonationModalOpen] = useState<boolean>(false);
+  const [isDonationSubmitting, setIsDonationSubmitting] = useState(false);
   const [donationForm, setDonationForm] = useState({
     name: '',
     amount: '',
@@ -85,7 +86,9 @@ const HomePage: React.FC = () => {
 
   const handleDonationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isDonationSubmitting) return;
     if (donationForm.name && donationForm.amount) {
+      setIsDonationSubmitting(true);
       try {
         const response = await fetchWithAuth({
           method: 'POST',
@@ -108,6 +111,8 @@ const HomePage: React.FC = () => {
       } catch (error: any) {
         console.error('Error processing donation:', error);
         displayNotification('error', error?.message || 'Failed to process donation');
+      } finally {
+        setIsDonationSubmitting(false);
       }
     }
   };
@@ -674,12 +679,14 @@ const HomePage: React.FC = () => {
                     
                     <motion.button
                       type="submit"
+                      disabled={isDonationSubmitting}
+                      aria-busy={isDonationSubmitting}
                       variants={buttonVariants}
                       whileHover="hover"
                       whileTap="tap"
                       className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     >
-                      Donate
+                      {isDonationSubmitting ? 'Connecting to payment…' : 'Donate'}
                     </motion.button>
                   </div>
                 </form>

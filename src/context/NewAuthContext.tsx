@@ -42,7 +42,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [globalLoading, setGlobalLoading] = useState<any>(false);
   const [globalLoadingText, setGlobalLoadingText] = useState<any>('Loading....');
-  const REQUEST_TIMEOUT_MS = 30000;
+  // A sleeping Render free instance can take over 50 seconds to start.
+  const REQUEST_TIMEOUT_MS = 90000;
 
   // Fetch user profile after the token is available or on token update
   const fetchUserProfile = async () => {
