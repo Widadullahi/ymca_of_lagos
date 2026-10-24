@@ -125,15 +125,27 @@ it repeatedly is safe.)
 |---|---|---|---|
 | `paymentinit` | `025` | Payment Reference generated | **success** → return RRR |
 | `paymentinit` | `00`/`0` | success (older gateways) | **success** → return RRR |
-| `status.reg` | `00`/`0` | paid | mark success, extend membership |
+| `status.reg` | `00`/`01` (`0` legacy) | paid | mark success, extend membership |
 | `status.reg` | `021` | Transaction Pending | "Payment still processing" |
 | `status.reg` | `025` | reference pending/unpaid | "Payment still processing" |
-| `status.reg` | `01`/`99` | failed | mark failed |
+| `status.reg` | `02`/`012`/`99` | failed or aborted | mark failed |
 
 ⚠️ This split (`REMITA_INIT_SUCCESS_STATUSES` vs
 `REMITA_VERIFICATION_SUCCESS_STATUSES`) fixed a real bug: `025` was previously
 treated as payment success during verification, which could activate
 memberships for unpaid RRRs.
+
+The RRR status endpoint documents `01` as successful; it must not be confused
+with codes from other Remita APIs. Reference: https://api.remita.net/.
+
+Run frontend loader/callback regression checks with `npm run test:payments`.
+These cover script failure, timeout, retry, cancellation, and the RRR payload.
+Backend tests also cover legacy `remitta` transaction records, environment-name
+fallbacks, and atomic rollback if membership activation fails.
+
+During deployment, `REMITA_*` takes precedence over legacy `REMITTA_*` variables.
+Set the full matching credential set before removing the old variables.
+The `/membership/demo` bypass is disabled by default and cannot run outside DEBUG.
 
 ---
 

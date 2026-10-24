@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/NewAuthContext';
 
@@ -17,6 +17,7 @@ const TransactionValidation: React.FC = () => {
   const [manualRrr, setManualRrr] = useState<string>('');
   const [currentRrr, setCurrentRrr] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const lastAutoVerifiedRrr = useRef<string | null>(null);
 
   const validateTransaction = async (rrrToValidate: string) => {
     setLoading(true);
@@ -33,12 +34,13 @@ const TransactionValidation: React.FC = () => {
       });
       console.log('Verification response:', response);
 
-      setValidationResult(response?.data);
-      if (user && response?.data?.status) {
+      const successful = response?.status === true && response?.data?.success === true;
+      setValidationResult({ status: successful, message: response?.message || 'Unable to verify payment' });
+      if (user && successful) {
         fetchUserProfile();
       }
       // Clear RRR from localStorage after verification if successful
-      if (response?.data?.status) {
+      if (successful) {
         localStorage.removeItem('remita_rrr');
       }
       setLoading(false);
@@ -70,6 +72,8 @@ const TransactionValidation: React.FC = () => {
     
     if (storedRrr || urlRrr) {
       const rrrToUse = urlRrr || storedRrr;
+      if (lastAutoVerifiedRrr.current === rrrToUse) return;
+      lastAutoVerifiedRrr.current = rrrToUse;
       setCurrentRrr(rrrToUse);
       validateTransaction(rrrToUse!);
     } else {

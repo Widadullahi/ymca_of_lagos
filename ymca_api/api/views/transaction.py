@@ -12,6 +12,8 @@ class StartMembershipDemoView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
+        if not settings.DEBUG or not settings.ENABLE_DEMO_MEMBERSHIP:
+            return bad_request_response(message="Demo activation is disabled", status_code=403)
         id_card, created = IDCard.objects.get_or_create(user=request.user)
         id_card.is_active = True
         id_card.first_time = False

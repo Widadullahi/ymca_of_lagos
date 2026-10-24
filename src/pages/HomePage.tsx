@@ -103,6 +103,7 @@ const HomePage: React.FC = () => {
           rrr: response.data.rrr,
           scriptUrl: response.data.payment_url,
           inlineConfig: response.data.inline_config,
+          onError: message => displayNotification('error', message),
         });
       } catch (error: any) {
         console.error('Error processing donation:', error);

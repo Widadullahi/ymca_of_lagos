@@ -249,9 +249,15 @@ PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "")
 PAYSTACK_PUBLIC_KEY = os.getenv("PAYSTACK_PUBLIC_KEY", "")
 
 # Remita Settings
-REMITA_BASE_URL = os.getenv("REMITA_BASE_URL", "https://demo.remita.net/remita/exapp/api/v1/send/api")
-REMITA_MERCHANT_ID = os.getenv("REMITA_MERCHANT_ID", "")
-REMITA_API_KEY = os.getenv("REMITA_API_KEY", "")
-REMITA_SERVICE_TYPE_ID = os.getenv("REMITA_SERVICE_TYPE_ID", "")
-REMITA_PUBLIC_KEY = os.getenv("REMITA_PUBLIC_KEY", "")
+def remita_env(name, default=""):
+    # Keep existing Render deployments working while migrating the old spelling.
+    return (os.getenv(f"REMITA_{name}") or os.getenv(f"REMITTA_{name}") or default).strip()
+
+
+REMITA_BASE_URL = remita_env("BASE_URL", "https://demo.remita.net/remita/exapp/api/v1/send/api").rstrip('/')
+REMITA_MERCHANT_ID = remita_env("MERCHANT_ID")
+REMITA_API_KEY = remita_env("API_KEY")
+REMITA_SERVICE_TYPE_ID = remita_env("SERVICE_TYPE_ID")
+REMITA_PUBLIC_KEY = remita_env("PUBLIC_KEY")
+ENABLE_DEMO_MEMBERSHIP = env_bool("ENABLE_DEMO_MEMBERSHIP", False)
 

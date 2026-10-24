@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.test import RequestFactory
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
@@ -253,7 +253,7 @@ class remitaUtilityTests(TestCase):
         mock_response = Mock()
         mock_response.ok = True
         mock_response.json.return_value = {
-            'statuscode': '01',
+            'statuscode': '02',
             'statusmessage': 'Invalid request'
         }
         mock_post.return_value = mock_response
@@ -340,7 +340,7 @@ class remitaUtilityTests(TestCase):
         mock_response = Mock()
         mock_response.ok = True
         mock_response.json.return_value = {
-            'statuscode': '01',
+            'statuscode': '02',
             'statusmessage': 'Payment failed'
         }
         mock_get.return_value = mock_response
@@ -611,3 +611,67 @@ class RemitaDonationTests(TestCase):
         )
         IDCard.objects.create(user=user, id_number='LYA1234567')
         return user
+
+    @patch('requests.get')
+    def test_rrr_status_01_is_paid(self, mock_get):
+        tx = Transaction.objects.create(amount=3000, transaction_type='DONATION', payment_gateway='remita', response={'rrr': 'STATUS01'})
+        mock_get.return_value = Mock(ok=True, text='{"statuscode":"01"}')
+        result = remita.validate_payment('STATUS01')
+        tx.refresh_from_db()
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(tx.status, 'success')
+        self.assertEqual(mock_get.call_args.kwargs['timeout'], 20)
+
+    @patch('requests.get')
+    def test_legacy_gateway_records_can_be_verified(self, mock_get):
+        tx = Transaction.objects.create(amount=3000, transaction_type='DONATION', payment_gateway='remitta', response={'rrr': 'LEGACY'})
+        mock_get.return_value = Mock(ok=True, text='{"statuscode":"00"}')
+        self.assertEqual(remita.validate_payment('LEGACY').status_code, 200)
+        tx.refresh_from_db()
+        self.assertEqual(tx.status, 'success')
+
+    @patch('requests.get')
+    def test_pending_gateway_does_not_confirm_legacy_success(self, mock_get):
+        Transaction.objects.create(amount=3000, transaction_type='DONATION', payment_gateway='remitta', status='success', response={'rrr': 'UNPAID'})
+        mock_get.return_value = Mock(ok=True, text='{"statuscode":"025"}')
+        result = remita.validate_payment('UNPAID')
+        self.assertEqual(result.status_code, 400)
+        self.assertIn('processing', result.data['message'])
+
+    @patch('requests.get')
+    def test_membership_failure_rolls_back_and_retry_repairs(self, mock_get):
+        member = self._member()
+        tx = Transaction.objects.create(user=member, amount=3000, transaction_type='ID', payment_gateway='remita', response={'rrr': 'ROLLBACK', 'charged_years': 1})
+        mock_get.return_value = Mock(ok=True, text='{"statuscode":"00"}')
+        with patch('api.utils.payment.remita.IDCard.save', side_effect=RuntimeError('test database failure')):
+            self.assertEqual(remita.validate_payment('ROLLBACK').status_code, 400)
+        tx.refresh_from_db()
+        self.assertEqual(tx.status, 'pending')
+        self.assertFalse(IDCard.objects.get(user=member).is_active)
+        self.assertEqual(remita.validate_payment('ROLLBACK').status_code, 200)
+        self.assertTrue(IDCard.objects.get(user=member).is_active)
+
+    def test_apply_success_is_idempotent(self):
+        tx = Transaction.objects.create(user=self._member(), amount=3000, transaction_type='ID', payment_gateway='remita', response={'charged_years': 1})
+        remita.apply_payment_success(tx)
+        with patch('api.utils.payment.remita.IDCard.save') as card_save:
+            remita.apply_payment_success(tx)
+        card_save.assert_not_called()
+
+    @override_settings(DEBUG=True, ENABLE_DEMO_MEMBERSHIP=False)
+    def test_demo_activation_disabled_by_default(self):
+        from rest_framework.test import APIClient
+        client = APIClient()
+        member = self._member()
+        client.force_authenticate(member)
+        response = client.post('/api/v1/membership/demo', {}, format='json')
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(IDCard.objects.get(user=member).is_active)
+
+    def test_environment_name_transition(self):
+        import os
+        from backend.settings import remita_env
+        with patch.dict(os.environ, {'REMITA_PUBLIC_KEY': '', 'REMITTA_PUBLIC_KEY': 'old-key'}):
+            self.assertEqual(remita_env('PUBLIC_KEY'), 'old-key')
+        with patch.dict(os.environ, {'REMITA_PUBLIC_KEY': 'new-key', 'REMITTA_PUBLIC_KEY': 'old-key'}):
+            self.assertEqual(remita_env('PUBLIC_KEY'), 'new-key')

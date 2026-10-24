@@ -5,6 +5,7 @@ import hashlib
 import logging
 import requests
 from django.conf import settings
+from django.db import transaction as db_transaction
 from account.models import IDCard, User
 from api.utils.response.response_format import bad_request_response, success_response
 from transaction.models import Transaction
@@ -13,12 +14,12 @@ logger = logging.getLogger(__name__)
 
 # Status codes differ per endpoint (verified against Remita demo, Sep 2026):
 # - paymentinit (RRR generation): '025' = "Payment Reference generated" -> SUCCESS
-# - status.reg (verification): '00' = paid; '021'/'025' = pending/unpaid -> NOT success
+# - status.reg: '00'/'01' = paid; '021'/'025' = pending/unpaid.
 REMITA_INIT_SUCCESS_STATUSES = ["00", "0", "025", "success", True]
-REMITA_VERIFICATION_SUCCESS_STATUSES = ["00", "0", "success", True]
+REMITA_VERIFICATION_SUCCESS_STATUSES = ["00", "01", "0", "success", True]
 # Legacy alias kept for tests/imports
 REMITA_SUCCESS_STATUSES = REMITA_VERIFICATION_SUCCESS_STATUSES
-REMITA_FAILED_STATUSES = ["01", "failed", "99"]
+REMITA_FAILED_STATUSES = ["02", "012", "failed", "99"]
 
 
 class Remita:
@@ -282,7 +283,8 @@ class Remita:
             response = requests.post(
                 payment_init_url,
                 json=data,
-                headers=headers
+                headers=headers,
+                timeout=20,
             )
 
             Remita.log_remita_response("membership", response)
@@ -344,16 +346,15 @@ class Remita:
             logger.info("Remita credentials - merchant_id: %s, base_url: %s", merchant_id, base_url)
 
             api_hash = Remita.generate_status_hash(merchant_id, rrr, api_key)
-            logger.info("Generated status API hash: %s", api_hash)
 
             # Call Remita status API
             headers = Remita.build_headers(merchant_id, api_hash)
             status_url = f"{base_url}/echannelsvc/{merchant_id}/{rrr}/{api_hash}/status.reg"
-            logger.info("Calling Remita status API: %s", status_url)
 
             response = requests.get(
                 status_url,
-                headers=headers
+                headers=headers,
+                timeout=20,
             )
 
             logger.info("Remita status API response status: %s", response.status_code)
@@ -369,7 +370,7 @@ class Remita:
                 # First, try to find transaction with this RRR
                 logger.info("Looking for transaction with RRR: %s", rrr)
                 transaction = Transaction.objects.filter(
-                    payment_gateway='remita',
+                    payment_gateway__in=['remita', 'remitta'],
                     response__rrr=rrr
                 ).first()
 
@@ -383,7 +384,7 @@ class Remita:
                 # Trust our own recorded state first: if success was already
                 # applied (e.g. via webhook or a previous verification), report
                 # success even if the gateway is slow to reflect it.
-                if transaction.status == 'success':
+                if transaction.status == 'success' and status_code in REMITA_VERIFICATION_SUCCESS_STATUSES:
                     return success_response(
                         message="Transaction already successful.",
                         data={
@@ -402,8 +403,6 @@ class Remita:
                         "remita": response_data,
                         "rrr": rrr,
                     }
-                    transaction.save()
-
                     Remita.apply_payment_success(transaction)
 
                     return success_response(
@@ -417,12 +416,13 @@ class Remita:
                     )
 
                 elif status_code in REMITA_FAILED_STATUSES:
-                    transaction.status = "failed"
-                    transaction.response = {
-                        **(transaction.response or {}),
-                        "remita": response_data,
-                    }
-                    transaction.save()
+                    with db_transaction.atomic():
+                        locked = Transaction.objects.select_for_update().get(pk=transaction.pk)
+                        # A racing webhook must not undo an already applied payment.
+                        if locked.status != 'success':
+                            locked.status = "failed"
+                            locked.response = {**(locked.response or {}), "remita": response_data}
+                            locked.save(update_fields=['status', 'response', 'updated_at'])
                     return bad_request_response(message="Payment not successful.")
                 else:
                     return bad_request_response(message='Payment still processing')
@@ -437,15 +437,21 @@ class Remita:
             return bad_request_response(message=f'Unable to verify payment at the moment: {str(e)}')
 
     @staticmethod
+    @db_transaction.atomic
     def apply_payment_success(transaction):
         """Mark a transaction successful and apply its side effects.
 
         Side effects: activate/extend the payer's ID card + membership expiry
         (skipped for DONATION and user-less transactions).
-        Idempotent-ish: caller is responsible for not double-applying.
+        Lock the record and commit membership changes together with payment status.
         """
+        metadata = transaction.response
+        transaction = Transaction.objects.select_for_update().get(pk=transaction.pk)
+        if transaction.status == 'success':
+            return
+        transaction.response = metadata
         transaction.status = "success"
-        transaction.save(update_fields=['status', 'updated_at'])
+        transaction.save(update_fields=['status', 'response', 'updated_at'])
 
         # Update user's card and membership status only if it's not a donation
         if transaction.transaction_type != 'DONATION' and transaction.user:
@@ -525,7 +531,8 @@ class Remita:
             response = requests.post(
                 payment_init_url,
                 json=data,
-                headers=headers
+                headers=headers,
+                timeout=20,
             )
 
             Remita.log_remita_response("donation", response)
