@@ -13,7 +13,6 @@ dist-ssr
 *.local
 
 # Editor directories and files
-.vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
@@ -24,8 +23,6 @@ dist-ssr
 *.sw?
 
 # Env files / secrets
-.env
-.env.*
 !.env.example
 
 # Python / Django
@@ -55,3 +52,4 @@ ymca_api/*.sqlite3
 branch_structure.json
 temp_auto_push.bat
 temp_interactive_push.bat
+config.bat

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import ymca from '../../assets/images/image.png';
 import { useAuth } from '../../context/NewAuthContext';
-import { openRemitaInlinePayment } from '../../api/remitaInline';
+import { startPaymentCheckout } from '../../api/paymentCheckout';
 
 interface MainNavigationProps {
   openDonationModal: () => void;
@@ -46,18 +46,10 @@ const MainNavigation: React.FC<MainNavigationProps> = () => {
         const response = await fetchWithAuth({
           method: 'POST',
           path: `/initiate/donation`,
-          body: donationForm
+          body: donationForm,
+          isAthenticated: false,
         });
-        // Store RRR in localStorage for verification later
-        if (!response?.data?.rrr) {
-          throw new Error('Missing Remita RRR');
-        }
-        localStorage.setItem('remita_rrr', response.data.rrr);
-        await openRemitaInlinePayment({
-          rrr: response.data.rrr,
-          scriptUrl: response.data.payment_url,
-          inlineConfig: response.data.inline_config,
-        });
+        await startPaymentCheckout(response.data, message => displayNotification('error', message));
       } catch (error: any) {
         console.error('Error processing donation:', error);
         displayNotification('error', error?.message || 'Failed to process donation');
@@ -110,15 +102,20 @@ const MainNavigation: React.FC<MainNavigationProps> = () => {
     document.body.style.overflow = 'auto';
   };
 
+  const navigateFromMobileMenu = (path: string) => {
+    navigate(path);
+    setIsMobileMenuOpen(false);
+  };
+
   return (
-    <nav className="bg-white">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center py-4">
+    <nav className="relative z-40 border-b border-gray-100 bg-white shadow-sm">
+      <div className="container mx-auto px-4 sm:px-6">
+        <div className="flex h-[68px] items-center justify-between sm:h-20">
           <div className="flex items-center">
             <img 
               src={ymca} 
               alt="YMCA Lagos Logo" 
-              className="h-10 w-auto object-contain" 
+              className="h-10 w-auto object-contain sm:h-12"
             />
           </div>
           
@@ -224,10 +221,16 @@ const MainNavigation: React.FC<MainNavigationProps> = () => {
           <div className="md:hidden">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="text-gray-700 hover:text-red-700 focus:outline-none"
+              type="button"
+              aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-primary-navigation"
+              className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-800 shadow-sm transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-300"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                {isMobileMenuOpen
+                  ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m6 6 12 12M18 6 6 18" />
+                  : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />}
               </svg>
             </button>
           </div>
@@ -237,103 +240,58 @@ const MainNavigation: React.FC<MainNavigationProps> = () => {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-t border-gray-200 py-4"
+              initial={{ opacity: 0, height: 0, y: -6 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -6 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              id="mobile-primary-navigation"
+              className="absolute inset-x-4 top-full z-50 overflow-hidden md:hidden sm:inset-x-6"
             >
-              <div className="flex flex-col space-y-4">
-                <button 
-                  onClick={() => {
-                    navigate('/');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="text-gray-700 hover:text-red-700 font-medium transition-colors text-left"
-                >
-                  Home
-                </button>
-                <button 
-                  onClick={() => {
-                    navigate('/about-us');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="text-gray-700 hover:text-red-700 font-medium transition-colors text-left"
-                >
-                  About Us
-                </button>
-                <button 
-                  onClick={() => {
-                    navigate('/history');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="text-gray-700 hover:text-red-700 font-medium transition-colors text-left"
-                >
-                  YMCA History
-                </button>
-                <button 
-                  onClick={() => {
-                    navigate('/vision-2030');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="text-gray-700 hover:text-red-700 font-medium transition-colors text-left"
-                >
-                  Vision 2030
-                </button>
-                
-                {/* Mobile Membership Options - COMMENTED OUT */}
-                {/* <div className="pl-2">
-                  <div className="text-gray-700 font-medium mb-2">Membership</div>
-                  <div className="pl-4 space-y-2">
-                    <button 
-                      onClick={() => {
-                        navigate('/membership-request');
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className="block text-gray-600 hover:text-red-700 transition-colors text-left"
+              <div className="rounded-b-2xl border border-gray-100 bg-white p-4 shadow-xl shadow-gray-900/10 sm:p-5">
+                <p className="mb-3 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">Explore YMCA Lagos</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    ['Home', '/'],
+                    ['About Us', '/about-us'],
+                    ['YMCA History', '/history'],
+                    ['Vision 2030', '/vision-2030'],
+                  ].map(([label, path]) => (
+                    <button
+                      key={path}
+                      type="button"
+                      onClick={() => navigateFromMobileMenu(path)}
+                      className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-3 text-left text-sm font-semibold text-gray-700 transition hover:border-red-100 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-200"
                     >
-                      Membership Request
+                      {label}
                     </button>
-                    <button 
-                      onClick={() => {
-                        navigate('/membership-login');
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className="block text-gray-600 hover:text-red-700 transition-colors text-left"
-                    >
-                      Membership Login
-                    </button>
-                  </div>
-                </div> */}
-                
-                <button 
+                  ))}
+                </div>
+                <button
+                  type="button"
                   onClick={() => {
                     openDonationModal();
                     setIsMobileMenuOpen(false);
                   }}
-                  className="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition-colors text-left w-fit"
+                  className="mt-4 flex w-full items-center justify-center rounded-xl bg-red-700 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2"
                 >
-                  Donate
+                  Make a Donation <span className="ml-2" aria-hidden="true">→</span>
                 </button>
-                
-                <button 
-                  onClick={() => {
-                    navigate('/login');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="block text-gray-600 hover:text-red-700 transition-colors text-left border border-gray-300 px-4 py-2 rounded-lg hover:border-red-700 w-fit"
-                >
-                  Login
-                </button>
-                
-                <button 
-                  onClick={() => {
-                    navigate('/membership-request');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition-colors text-left w-fit"
-                >
-                  Register
-                </button>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => navigateFromMobileMenu('/login')}
+                    className="rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-200"
+                  >
+                    Login
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateFromMobileMenu('/membership-request')}
+                    className="rounded-xl border border-red-700 px-4 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-200"
+                  >
+                    Register
+                  </button>
+                </div>
               </div>
             </motion.div>
           )}

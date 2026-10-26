@@ -152,12 +152,10 @@ const UpdateForm: React.FC<UpdateFormProps> = ({
       const nextBase64s = [...videoBase64s];
 
       for (const file of validFiles) {
-        console.log(`Processing video: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
         nextFiles.push(file);
         nextPreviews.push(URL.createObjectURL(file));
         const base64 = await convertToBase64(file);
         nextBase64s.push(base64);
-        console.log(`Video converted to base64: ${file.name}`);
       }
 
       setSelectedVideoFiles(nextFiles);

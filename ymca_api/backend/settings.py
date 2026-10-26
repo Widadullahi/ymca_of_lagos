@@ -2,6 +2,7 @@
 from datetime import timedelta
 import os
 from pathlib import Path
+from django.core.exceptions import ImproperlyConfigured
 
 # Load environment variables from .env file (parent directory of BASE_DIR)
 from dotenv import load_dotenv
@@ -24,13 +25,20 @@ def env_list(name: str, default: str = "") -> list[str]:
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-change-me-before-production')
+# Production must opt into a secret and host list. Local development remains
+# convenient when DJANGO_DEBUG=true is explicitly set (as in local_preview.py).
+DEBUG = env_bool('DJANGO_DEBUG', False)
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', '').strip()
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'local-preview-only-insecure-key-do-not-deploy'
+    else:
+        raise ImproperlyConfigured('DJANGO_SECRET_KEY must be set when DJANGO_DEBUG is false.')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env_bool('DJANGO_DEBUG', True)
-
-ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', '*')
+ALLOWED_HOSTS = env_list(
+    'DJANGO_ALLOWED_HOSTS',
+    'localhost,127.0.0.1' if DEBUG else 'ymca-of-lagos.onrender.com',
+)
 
 
 # Application definition
@@ -66,7 +74,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = env_bool('DJANGO_CORS_ALLOW_ALL_ORIGINS', True)
+CORS_ALLOW_ALL_ORIGINS = env_bool('DJANGO_CORS_ALLOW_ALL_ORIGINS', DEBUG)
+CORS_ALLOWED_ORIGINS = env_list(
+    'DJANGO_CORS_ALLOWED_ORIGINS',
+    'http://localhost:5173,http://127.0.0.1:5173' if DEBUG else 'https://ymca-of-lagos.vercel.app',
+)
 
 CORS_ALLOW_METHODS = [
     'GET',
@@ -107,7 +119,7 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': os.getenv('DJANGO_DATABASE_PATH', BASE_DIR / 'db.sqlite3'),
     }
 }
 
@@ -148,9 +160,7 @@ USE_TZ = True
 
 
 # Define the directory for static files
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')] if (BASE_DIR / 'static').is_dir() else []
 
 STATIC_URL = '/static/'
 
@@ -168,10 +178,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=365),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=365 * 5),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
+    # The blacklist app is not installed; rotation still issues a new token.
+    'BLACKLIST_AFTER_ROTATION': False,
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
     'VERIFYING_KEY': None,
@@ -184,6 +195,14 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
 }
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = env_bool('DJANGO_SECURE_SSL_REDIRECT', not DEBUG)
+SECURE_HSTS_SECONDS = int(os.getenv('DJANGO_SECURE_HSTS_SECONDS', '31536000' if not DEBUG else '0'))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool('DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS', False)
+SECURE_HSTS_PRELOAD = env_bool('DJANGO_SECURE_HSTS_PRELOAD', False)
+SESSION_COOKIE_SECURE = env_bool('DJANGO_SESSION_COOKIE_SECURE', not DEBUG)
+CSRF_COOKIE_SECURE = env_bool('DJANGO_CSRF_COOKIE_SECURE', not DEBUG)
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -260,4 +279,10 @@ REMITA_API_KEY = remita_env("API_KEY")
 REMITA_SERVICE_TYPE_ID = remita_env("SERVICE_TYPE_ID")
 REMITA_PUBLIC_KEY = remita_env("PUBLIC_KEY")
 ENABLE_DEMO_MEMBERSHIP = env_bool("ENABLE_DEMO_MEMBERSHIP", False)
+REMITA_CHECKOUT_MODE = os.getenv('REMITA_CHECKOUT_MODE', 'invoice')
+REMITA_HOSTED_BASE_URL = os.getenv('REMITA_HOSTED_BASE_URL', 'https://api-demo.systemspecsng.com/services/connect-gateway/api/v1/payment-engine').rstrip('/')
+REMITA_SECRET_KEY = os.getenv('REMITA_SECRET_KEY', '').strip()
+# Never allow simulated payments against the production settings.
+REMITA_LOCAL_TEST_MODE = DEBUG and env_bool('REMITA_LOCAL_TEST_MODE', False)
+LOCAL_FRONTEND_URL = os.getenv('LOCAL_FRONTEND_URL', 'http://127.0.0.1:5173').rstrip('/')
 

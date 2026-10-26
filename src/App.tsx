@@ -14,6 +14,8 @@ import RoleBasedRoute from './components/RoleBasedRoute';
 import MemberDashboardMember from './pages/MemberDashboardMember';
 import { useAuth } from './context/NewAuthContext';
 import TransactionValidation from './pages/TransactionValidation';
+import LocalCheckoutPage from './pages/LocalCheckoutPage';
+import DonationsPage from './pages/admin/DonationsPage';
 import DashboardPage from './pages/DashboardPage';
 import ProfileManagementPage from './components/ProfileManagementPage';
 import HomePage from './pages/HomePage';
@@ -67,6 +69,8 @@ const App: React.FC = () => {
         <Route path="/account" element={<PrivateRoute element={<ProfileManagementPage />} />} />
         <Route path="/myid" element={<PrivateRoute element={<DashboardPage />} />} />
         <Route path="/payment" element={<TransactionValidation />} />
+        <Route path="/checkout/local-test" element={<LocalCheckoutPage />} />
+        <Route path="/admin/donations" element={<RoleBasedRoute element={<DonationsPage />} requiredRole="Admin" />} />
         <Route path="/admin/dashboard" element={<RoleBasedRoute element={<MemberDashboard />} requiredRole="Admin" />} />
         <Route path="/admin/staff" element={<RoleBasedRoute element={<StaffAdminPage />} requiredRole="Admin" />} />
         <Route path="/admin/admin-access" element={<RoleBasedRoute element={<AdminAccessPage />} requiredRole="Admin" />} />

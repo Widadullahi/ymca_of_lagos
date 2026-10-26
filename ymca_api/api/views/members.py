@@ -1,8 +1,10 @@
 import threading
 import base64
 import csv
+import html
 import io
 import logging
+import secrets
 import uuid
 import openpyxl
 import requests
@@ -13,6 +15,7 @@ from django.core.mail import send_mail
 from django.http import HttpResponse
 from datetime import date, timedelta
 from rest_framework import generics
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction,IntegrityError
 from django.utils import timezone
@@ -20,7 +23,7 @@ from django.db.models import Count
 from django.db.models.functions import TruncMonth
 from rest_framework import serializers
 from account.models import Category, Church, EmailVerification, IDCard, User, UserRequest, YouthGroup, RequestStatus
-from account.serializers import IDCardSerializer, RegisterSerializer
+from account.serializers import RegisterSerializer
 from account.serializers import UserSerializer
 from api.serializers.members import (
     EmailVerificationCodeSerializer,
@@ -37,6 +40,18 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from openpyxl.worksheet.datavalidation import DataValidation
 
 logger = logging.getLogger(__name__)
+
+
+class EmailVerificationSendThrottle(AnonRateThrottle):
+    rate = '5/minute'
+
+
+class EmailVerificationCheckThrottle(AnonRateThrottle):
+    rate = '10/minute'
+
+
+class MembershipApplicationThrottle(AnonRateThrottle):
+    rate = '5/hour'
 
 
 def send_verification_email(recipient_email: str, verification_code: str) -> None:
@@ -66,11 +81,7 @@ def send_verification_email(recipient_email: str, verification_code: str) -> Non
         )
 
         if not response.ok:
-            try:
-                error_payload = response.json()
-            except ValueError:
-                error_payload = response.text
-            raise RuntimeError(f'Resend API error: {error_payload}')
+            raise RuntimeError(f'Resend API request failed with HTTP {response.status_code}')
 
         return
 
@@ -84,29 +95,34 @@ def send_verification_email(recipient_email: str, verification_code: str) -> Non
         fail_silently=False,
     )
 
-def send_status_update_email(recipient_email: str, status: str, review_notes: str, user_name: str) -> None:
+def send_status_update_email(recipient_email: str, status: str, review_notes: str, user_name: str, temporary_password: str | None = None) -> None:
     if status == 'approved':
         subject = 'Your YMCA Lagos Membership Request has been Approved!'
-        text_body = f"Hello {user_name},\n\nYour membership application has been approved. Welcome to YMCA Lagos!\n\nYour default password is: member12345"
+        safe_user_name = html.escape(user_name)
+        safe_temporary_password = html.escape(temporary_password or '')
+        credentials = (
+            f"\n\nYour temporary password is: {temporary_password}\nPlease change it after signing in."
+            if temporary_password else ''
+        )
+        text_body = f"Hello {user_name},\n\nYour membership application has been approved. Welcome to YMCA Lagos!{credentials}"
         html_body = (
-            f"<p>Hello {user_name},</p>"
+            f"<p>Hello {safe_user_name},</p>"
             "<p>Your membership application has been approved. Welcome to YMCA Lagos!</p>"
-            "<p>Your default password is: <strong>member12345</strong></p>"
-            "<p>Please log in and change your password as soon as possible.</p>"
+            + (f"<p>Your temporary password is: <strong>{safe_temporary_password}</strong></p><p>Please change it after signing in.</p>" if temporary_password else '')
         )
     elif status == 'rejected':
         subject = 'Update on your YMCA Lagos Membership Request'
         if review_notes:
             text_body = f"Hello {user_name},\n\nWe are sorry to inform you that your membership application has been rejected.\n\n{review_notes}"
             html_body = (
-                f"<p>Hello {user_name},</p>"
+                f"<p>Hello {html.escape(user_name)},</p>"
                 "<p>We are sorry to inform you that your membership application has been rejected.</p>"
-                f"<p>{review_notes}</p>"
+                f"<p>{html.escape(review_notes)}</p>"
             )
         else:
             text_body = f"Hello {user_name},\n\nWe are sorry to inform you that your membership application has been rejected."
             html_body = (
-                f"<p>Hello {user_name},</p>"
+                f"<p>Hello {html.escape(user_name)},</p>"
                 "<p>We are sorry to inform you that your membership application has been rejected.</p>"
             )
     else:
@@ -131,11 +147,7 @@ def send_status_update_email(recipient_email: str, status: str, review_notes: st
             )
 
             if not response.ok:
-                try:
-                    error_payload = response.json()
-                except ValueError:
-                    error_payload = response.text
-                logger.error(f'Resend API error: {error_payload}')
+                logger.error('Resend API rejected a membership status email (HTTP %s)', response.status_code)
             return
 
         connection = get_connection(timeout=getattr(settings, 'EMAIL_TIMEOUT', 15))
@@ -148,12 +160,28 @@ def send_status_update_email(recipient_email: str, status: str, review_notes: st
             connection=connection,
             html_message=html_body,
         )
-    except Exception as e:
-        logger.error(f'Failed to send status update email: {e}')
+    except Exception:
+        logger.error('Failed to send membership status email')
+
+
+def queue_member_credentials_email(email: str, user_name: str, temporary_password: str) -> None:
+    """Send initial credentials only after the account transaction commits."""
+    transaction.on_commit(lambda: threading.Thread(
+        target=send_status_update_email,
+        kwargs={
+            'recipient_email': email,
+            'status': 'approved',
+            'review_notes': '',
+            'user_name': user_name,
+            'temporary_password': temporary_password,
+        },
+        daemon=True,
+    ).start())
 
 
 class SendEmailVerificationCodeView(generics.GenericAPIView):
     permission_classes = []
+    throttle_classes = [EmailVerificationSendThrottle]
     serializer_class = EmailVerificationRequestSerializer
 
     @staticmethod
@@ -177,22 +205,6 @@ class SendEmailVerificationCodeView(generics.GenericAPIView):
             serializer.is_valid(raise_exception=True)
 
             email = serializer.validated_data['email']
-            masked_password = ''
-            if settings.EMAIL_HOST_PASSWORD:
-                masked_password = '*' * min(len(settings.EMAIL_HOST_PASSWORD), 8)
-            logger.info(
-                'Email config debug: %s',
-                {
-                    'EMAIL_HOST': settings.EMAIL_HOST,
-                    'EMAIL_PORT': settings.EMAIL_PORT,
-                    'EMAIL_USE_TLS': settings.EMAIL_USE_TLS,
-                    'EMAIL_HOST_USER': settings.EMAIL_HOST_USER,
-                    'DEFAULT_FROM_EMAIL': settings.DEFAULT_FROM_EMAIL,
-                    'EMAIL_HOST_PASSWORD_SET': bool(settings.EMAIL_HOST_PASSWORD),
-                    'EMAIL_HOST_PASSWORD_MASK': masked_password,
-                    'RESEND_API_KEY_SET': bool(settings.RESEND_API_KEY),
-                }
-            )
             if settings.RESEND_API_KEY and self._looks_like_placeholder(settings.DEFAULT_FROM_EMAIL):
                 return internal_server_error_response(
                     message='Email delivery is not configured on the server. Set a valid DEFAULT_FROM_EMAIL for your email provider.'
@@ -234,7 +246,7 @@ class SendEmailVerificationCodeView(generics.GenericAPIView):
             # Let DRF handle validation errors
             raise e
         except Exception as e:
-            logger.exception(f'Email verification send failed: {str(e)}')
+            logger.exception('Email verification send failed')
             return internal_server_error_response(
                 message='Unable to send verification code right now. Please try again.'
             )
@@ -247,6 +259,7 @@ class SendEmailVerificationCodeView(generics.GenericAPIView):
 
 class VerifyEmailVerificationCodeView(generics.GenericAPIView):
     permission_classes = []
+    throttle_classes = [EmailVerificationCheckThrottle]
     serializer_class = EmailVerificationCodeSerializer
 
     def post(self, request, *args, **kwargs):
@@ -618,8 +631,14 @@ class AdminMembersBulkUploadView(generics.GenericAPIView):
                             is_active=is_active,
                             membership_expiry=expiry_date,
                         )
-                        user.set_password('member12345')
+                        temporary_password = secrets.token_urlsafe(24)
+                        user.set_password(temporary_password)
                         user.save()
+                        queue_member_credentials_email(
+                            email,
+                            f'{first_name} {last_name}'.strip(),
+                            temporary_password,
+                        )
 
                         user_request = UserRequest.objects.create(
                             user=user,
@@ -718,9 +737,10 @@ class AdminAddMembersView(generics.GenericAPIView):
                 if UserRequest.objects.filter(email__iexact=email).exists():
                     return bad_request_response(message='A request with this email already exists')
 
+                temporary_password = secrets.token_urlsafe(24)
                 user = User.objects.create_user(
                     email=email,
-                    password='member12345',
+                    password=temporary_password,
                     first_name=first_name,
                     last_name=last_name,
                     is_admin=False,
@@ -784,6 +804,8 @@ class AdminAddMembersView(generics.GenericAPIView):
 
                 card.save()
 
+                queue_member_credentials_email(email, f'{first_name} {last_name}'.strip(), temporary_password)
+
                 return success_response(
                     data=UserSerializer(user, context={'request': request}).data,
                     message='Member created successfully'
@@ -844,6 +866,7 @@ class CreateUserRequestView(generics.CreateAPIView):
     """
     serializer_class = UserRequestSerializer
     permission_classes = []  # User must be logged in
+    throttle_classes = [MembershipApplicationThrottle]
     parser_classes = [MultiPartParser, FormParser]  # Handle file uploads
     
     def create(self, request, *args, **kwargs):
@@ -1079,13 +1102,14 @@ class AdminUpdateRequestStatusView(generics.UpdateAPIView):
                     'message': 'A user with this email already exists. Cannot approve request.'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Create user profile with default password
+            # Generate a unique temporary password for the new member.
             try:
                 with transaction.atomic():
+                    temporary_password = secrets.token_urlsafe(24)
                     # Create the user with minimal essential data
                     user = User.objects.create_user(
                         email=user_request.email,
-                        password='member12345',
+                        password=temporary_password,
                         first_name=user_request.first_name,
                         last_name=user_request.last_name,
                         is_admin=False,
@@ -1114,18 +1138,11 @@ class AdminUpdateRequestStatusView(generics.UpdateAPIView):
                     except:pass
 
                     if user_request.email:
-                        user_name = f"{user_request.first_name} {user_request.last_name}"
-                        thread = threading.Thread(
-                            target=send_status_update_email,
-                            kwargs={
-                                "recipient_email": user_request.email,
-                                "status": "approved",
-                                "review_notes": review_notes,
-                                "user_name": user_name,
-                            }
+                        queue_member_credentials_email(
+                            user_request.email,
+                            f"{user_request.first_name} {user_request.last_name}".strip(),
+                            temporary_password,
                         )
-
-                        thread.start()
                                         
                     return success_response(
                         data={
@@ -1136,7 +1153,7 @@ class AdminUpdateRequestStatusView(generics.UpdateAPIView):
                             'user_id': str(user.id),
                             'user_email': user.email,
                         },
-                        message='Request approved successfully and user profile created with default password'
+                        message='Request approved successfully and temporary sign-in details will be emailed'
                     )
                     
             except IntegrityError as e:
@@ -1188,8 +1205,13 @@ class AdminUpdateRequestStatusView(generics.UpdateAPIView):
 
 
 
+class CardVerificationThrottle(AnonRateThrottle):
+    rate = '10/minute'
+
+
 class VerifyCardIdNumberView(generics.GenericAPIView):
     permission_classes = []
+    throttle_classes = [CardVerificationThrottle]
 
     def get(self, request, id_number):
         card = IDCard.objects.filter(id_number=id_number).first()
@@ -1200,31 +1222,29 @@ class VerifyCardIdNumberView(generics.GenericAPIView):
                 data={
                     'valid': False,
                     'error': 'Card not found or invalid verification ID',
-                    'cardId': id_number
                 }
             )
 
-        # Check and update expiration status
-        if card.expired_at and card.expired_at < date.today():
-            if not card.expired:
-                card.expired = True
-                card.save(update_fields=['expired'])
-        else:
-            if card.expired:
-                card.expired = False
-                card.save(update_fields=['expired'])
-
-        # Build response
-        response_data = IDCardSerializer(card).data
-        response_data['first_name'] = card.user.first_name
-        response_data['last_name'] = card.user.last_name
+        # Keep this public verification response limited to the details needed
+        # to confirm the card; GET requests must not mutate the card record.
+        expired = bool(card.expired_at and card.expired_at < date.today())
+        days_remaining = max((card.expired_at - date.today()).days, 0) if card.expired_at else 0
+        response_data = {
+            'id_number': card.id_number,
+            'first_name': card.user.first_name,
+            'last_name': card.user.last_name,
+            'is_active': card.is_active,
+            'expired': expired,
+            'expired_at': card.expired_at,
+            'days_remaining': days_remaining,
+        }
 
         return success_response(
             data=dict(
                 valid=True,
                 data=response_data,
                 verifiedAt=card.updated_at,
-                expired=card.expired
+                expired=expired
             )
         )
 

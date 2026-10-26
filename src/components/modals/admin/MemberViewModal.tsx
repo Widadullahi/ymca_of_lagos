@@ -40,12 +40,11 @@ const MemberViewModal: React.FC<{
         is_active : !member.is_active
       }
       try {
-        const response = await fetchWithAuth({
+        await fetchWithAuth({
           method: 'PATCH',
           path: `/admin/members/${member?.id}`,
           body:payload
         });
-        console.log(response)
         displayNotification('success', 'Member status updated successfully');
         onStatusChange(member.id);
         setShowStatusConfirmation(false);
@@ -63,7 +62,6 @@ const MemberViewModal: React.FC<{
           method: 'DELETE',
           path: `/admin/members/${member?.id}`,
         });
-        console.log(response)
         displayNotification('success', response?.message || 'Member status updated successfully');
         onDeleteMember(member.id);
         setShowDeleteConfirmation(false);

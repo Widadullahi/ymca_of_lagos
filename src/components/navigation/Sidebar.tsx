@@ -74,7 +74,6 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
     navigate('/login');
   };
 
-  console.log(sidebarOpen)
 
   return (
     <>
@@ -115,7 +114,6 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
           <button
             ref={trigger}
             onClick={() => {
-              console.log(sidebarOpen);
               setSidebarOpen(!sidebarOpen); 
             }}
             aria-controls="sidebar"

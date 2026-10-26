@@ -16,7 +16,7 @@ const [sidebarOpen, setSidebarOpen] = useState(false);
     <div className="">
       {/* Sidebar */}
       <div className="flex h-screen overflow-hidden">
-        <Navigation />
+        <Navigation mobileNavOpen={sidebarOpen} setMobileNavOpen={setSidebarOpen} />
         <div className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
             <Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
             <main>

@@ -4,7 +4,7 @@ import { useAuth } from '../context/NewAuthContext';
 // Import icons from react-icons
 import { FaIdCard, FaCalendarAlt, FaCreditCard, FaCheck} from 'react-icons/fa';
 import { BiErrorCircle } from 'react-icons/bi';
-import { openRemitaInlinePayment } from '../api/remitaInline';
+import { startPaymentCheckout } from '../api/paymentCheckout';
 
 interface FeeSettings {
   youth_council_first_payment: number;
@@ -152,17 +152,7 @@ const MemberDashboardMember: React.FC = () => {
         path: path,
         body: payload
       });
-      // Store RRR in localStorage for verification later
-      if (!response?.data?.rrr) {
-        throw new Error('Missing Remita RRR');
-      }
-      localStorage.setItem('remita_rrr', response.data.rrr);
-      await openRemitaInlinePayment({
-        rrr: response.data.rrr,
-        scriptUrl: response.data.payment_url,
-        inlineConfig: response.data.inline_config,
-        onError: message => displayNotification('error', message),
-      });
+      await startPaymentCheckout(response.data, message => displayNotification('error', message));
     } catch (error: any) {
       console.error('Error processing payment:', error);
       displayNotification('error', error?.message || 'Failed to process payment');

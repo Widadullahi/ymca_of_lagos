@@ -63,7 +63,6 @@ const AdminUpdatesPage = () => {
       setError(null);
 
       const { posts, count } = await postsApi.getPosts({ page_size: 100 });
-      console.log('Admin fetched posts:', posts);
       setUpdates(posts);
       setTotalCount(count);
       setSelectedUpdateIds([]);
@@ -96,7 +95,6 @@ const AdminUpdatesPage = () => {
       setIsSubmitting(true);
       setError(null);
 
-      console.log('Form data received in parent:', formData);
 
       // Prepare data for API using FormData for file uploads
       const apiData = new FormData();
@@ -124,18 +122,6 @@ const AdminUpdatesPage = () => {
         formData.videoFiles.forEach((file: File) => {
           apiData.append('attachments', file);
         });
-        console.log('Video attachments prepared:', formData.videoFiles.length, 'videos');
-      }
-
-      console.log('Form data received:', formData);
-      console.log('PrimaryImage:', formData.primaryImageFile);
-      console.log('OtherImages:', formData.otherImageFiles);
-      
-      // Log all FormData entries
-      console.log('Sending to API (FormData entries):');
-      for (const [key, value] of apiData.entries()) {
-        const valueStr = typeof value === 'object' && value !== null && 'name' in value ? value.name : String(value);
-        console.log('  ' + key + ': ' + valueStr + ' (type: ' + typeof value + ')');
       }
 
       if (isEditing && updateToEdit) {
@@ -270,11 +256,6 @@ const AdminUpdatesPage = () => {
       update.content?.toLowerCase().includes(normalizedSearchTerm)
     );
   });
-
-  console.log('Admin updates:', updates);
-  console.log('Admin filtered updates:', filteredUpdates);
-  console.log('News count:', updates.filter(u => u.type === 'latest-news').length);
-  console.log('Events count:', updates.filter(u => u.type === 'upcoming-event').length);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
