@@ -27,6 +27,7 @@ const UserListingPage: React.FC = () => {
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [hasNextPage, setHasNextPage] = useState<boolean>(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [churches, setChurches] = useState<{ value: string, label: string }[]>([]);
   const [youthGroups, setYouthGroups] = useState<{ value: string, label: string }[]>([]);
@@ -377,27 +378,27 @@ const UserListingPage: React.FC = () => {
   };
 
   const AddUserButtonSection = () => (
-    <div className="flex space-x-3">
+    <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:gap-3">
       <button
         onClick={() => setShowAddUserModal(true)}
-        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+        className="col-span-2 rounded-lg bg-red-700 px-4 py-3 text-sm font-semibold text-white hover:bg-red-800 sm:col-span-1 sm:py-2"
       >
         Add Member
       </button>
       <button
         onClick={() => setShowBulkUploadModal(true)}
-        className="px-4 py-2 border border-indigo-600 text-indigo-600 rounded-md hover:bg-indigo-50"
+        className="rounded-lg border border-gray-300 px-3 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 sm:whitespace-nowrap sm:py-2"
       >
         Bulk Upload
       </button>
       <button
         onClick={handleExport}
         disabled={isExporting}
-        className="px-4 py-2 border border-green-600 text-green-600 rounded-md hover:bg-green-50 flex items-center disabled:opacity-50"
+        className="flex items-center justify-center rounded-lg border border-gray-300 px-3 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 sm:whitespace-nowrap sm:py-2"
       >
         {isExporting ? (
           <>
-            <span className="animate-spin h-4 w-4 mr-2 border-t-2 border-b-2 border-green-600 rounded-full"></span>
+            <span className="mr-2 h-4 w-4 animate-spin rounded-full border-t-2 border-b-2 border-gray-600"></span>
             Exporting...
           </>
         ) : (
@@ -504,13 +505,13 @@ const UserListingPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen relative">
+    <div className="relative mx-auto min-w-0 max-w-7xl space-y-5">
       {/* Floating action bar for bulk actions */}
       {showActionBar && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-30 bg-white shadow-lg rounded-lg px-6 py-3 flex items-center space-x-4 border border-gray-200">
-          <span className="text-gray-700 font-medium">{selectedUserIds.length} selected</span>
+        <div className="fixed inset-x-3 bottom-4 z-30 mx-auto flex max-w-md items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-xl sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2">
+          <span className="text-sm font-medium text-gray-700">{selectedUserIds.length} selected</span>
           <button
-            className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+            className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800"
             onClick={handleBulkAction}
           >
             Take Action
@@ -521,7 +522,7 @@ const UserListingPage: React.FC = () => {
       {/* Modal for choosing bulk action (membership type or status update) */}
       {showBulkActionModal && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md relative">
+          <div className="relative mx-3 max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-xl bg-white p-5 shadow-lg sm:p-8">
             <button
               className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
               onClick={closeBulkActionModal}
@@ -591,19 +592,26 @@ const UserListingPage: React.FC = () => {
           </div>
         </div>
       )}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Members</h1>
+          <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Members</h1>
           <p className="text-gray-600 mt-1">Browse and filter member records</p>
         </div>
-        <div className="mt-4 md:mt-0">
+        <div className="w-full sm:mt-0 sm:w-auto">
           <AddUserButtonSection />
         </div>
       </div>
 
       {/* Filters section */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-6">
+      <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
+        <div className="mb-4 flex items-center justify-between gap-3 md:hidden">
+          <p className="text-sm text-gray-600"><strong className="text-gray-900">{filteredMembers.length}</strong> members</p>
+          <button type="button" onClick={() => setFiltersOpen((open) => !open)} aria-expanded={filtersOpen} className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700">
+            {filtersOpen ? 'Hide filters' : 'Search & filters'}
+          </button>
+        </div>
+        <div className={`${filtersOpen ? 'block' : 'hidden'} md:block`}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 sm:gap-5">
           <div>
             <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
               Search
@@ -611,7 +619,7 @@ const UserListingPage: React.FC = () => {
             <input
               type="text"
               id="search"
-              placeholder="Search by name, email, or phone"
+              placeholder="Name, email or phone"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md"
@@ -764,16 +772,17 @@ const UserListingPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-6 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-sm text-gray-600">
             <strong>{filteredMembers.length}</strong> result{filteredMembers.length !== 1 ? 's' : ''} found
           </div>
           <button
             onClick={clearFilters}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+            className="self-start rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             Clear Filters
           </button>
+        </div>
         </div>
       </div>
 
@@ -788,9 +797,39 @@ const UserListingPage: React.FC = () => {
           <p className="text-gray-500">Try adjusting your filter criteria or add a new member.</p>
         </div>
       ) : (
-        <div className="overflow-hidden bg-white shadow-sm rounded-lg">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+        <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+          <div className="divide-y divide-gray-100 md:hidden">
+            <div className="flex items-center gap-3 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
+              <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} aria-label="Select all members" />
+              Select all ({filteredMembers.length})
+            </div>
+            {filteredMembers.map((member) => (
+              <article key={member.id} className="p-4">
+                <div className="flex items-start gap-3">
+                  <input type="checkbox" className="mt-1" checked={selectedUserIds.includes(member.id)} onChange={() => toggleSelectUser(member.id)} aria-label={`Select member ${member.first_name} ${member.last_name}`} />
+                  <img className="h-11 w-11 shrink-0 rounded-full object-cover" src={member?.image || avatar} alt="" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="truncate font-semibold text-gray-900">{member.first_name} {member.last_name}</h2>
+                      {member.is_admin && <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-red-700">Admin</span>}
+                    </div>
+                    <p className="break-all text-sm text-gray-500">{member.email}</p>
+                    {member.phone_number && <p className="mt-0.5 text-sm text-gray-500">{member.phone_number}</p>}
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                      <span className="rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-700">{member.is_admin ? 'Admin access' : getMembershipLabel(member)}</span>
+                      <span className={`rounded-full px-2.5 py-1 font-medium ${member.is_admin ? 'bg-red-50 text-red-700' : member?.card?.expired || !member.is_active ? 'bg-amber-50 text-amber-800' : 'bg-green-50 text-green-700'}`}>{member.is_admin ? 'Admin' : member?.card?.expired || !member.is_active ? 'Expired' : 'Active'}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2 pl-8">
+                  <button onClick={() => navigate(`/admin/users/${member.id}`)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700">View member</button>
+                  <button onClick={() => setViewingCardMember(member)} className="rounded-lg bg-red-700 px-3 py-2 text-sm font-semibold text-white">View card</button>
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="hidden overflow-x-auto md:block">
+            <table className="min-w-[900px] divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th scope="col" className="px-4 py-3">

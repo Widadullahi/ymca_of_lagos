@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/NewAuthContext';
-import { openRemitaInlinePayment } from '../../api/remitaInline';
+import { startPaymentCheckout } from '../../api/paymentCheckout';
 
 interface DonationModalProps {
   isOpen: boolean;
@@ -64,17 +64,7 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose }) => {
           body: donationForm,
           isAthenticated: false
         });
-        // Store RRR in localStorage for verification later
-        if (!response?.data?.rrr) {
-          throw new Error('Missing Remita RRR');
-        }
-        localStorage.setItem('remita_rrr', response.data.rrr);
-        await openRemitaInlinePayment({
-          rrr: response.data.rrr,
-          scriptUrl: response.data.payment_url,
-          inlineConfig: response.data.inline_config,
-          onError: message => displayNotification('error', message),
-        });
+        await startPaymentCheckout(response.data, message => displayNotification('error', message));
       } catch (error: any) {
         console.error('Error processing donation:', error);
         displayNotification('error', error?.message || 'Failed to process donation');

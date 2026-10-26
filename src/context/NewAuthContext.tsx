@@ -58,7 +58,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         method: 'GET',
         path: `/account/`,
       });
-      console.log(data);
       setUser(data?.data);
     } catch (error) {
       console.error('Error fetching user profile:', error);

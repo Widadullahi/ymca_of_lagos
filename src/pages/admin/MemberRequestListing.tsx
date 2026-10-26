@@ -127,7 +127,7 @@ const MemberRequestListing: React.FC = () => {
       
       // Show success message with user creation info if applicable
       if (response?.data?.user_created) {
-        displayNotification('success', `Request approved successfully! User profile created for ${response.data.user_email} with default password 'member12345'`);
+        displayNotification('success', `Request approved successfully! Temporary sign-in details will be emailed to ${response.data.user_email}.`);
       } else {
         displayNotification('success', 'Request approved successfully!');
       }
@@ -200,7 +200,7 @@ const MemberRequestListing: React.FC = () => {
       setReviewNotes('');
 
       if (response?.data?.user_created) {
-        displayNotification('success', `Request approved successfully! User profile created for ${response.data.user_email} with default password 'member12345'`);
+        displayNotification('success', `Request approved successfully! Temporary sign-in details will be emailed to ${response.data.user_email}.`);
       } else {
         displayNotification('success', 'Rejected request approved successfully!');
       }

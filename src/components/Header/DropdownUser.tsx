@@ -13,10 +13,12 @@ const DropdownUser = () => {
 
   return (
     <ClickOutside onClick={() => setDropdownOpen(false)} className="relative">
-      <Link
+      <button
+        type="button"
         onClick={() => setDropdownOpen(!dropdownOpen)}
-        className="flex items-center gap-4"
-        to="#"
+        aria-expanded={dropdownOpen}
+        aria-label="Open account menu"
+        className="flex items-center gap-3 text-left"
       >
         <span className="hidden text-right lg:block">
           <span className="block text-sm font-medium text-black">
@@ -26,10 +28,10 @@ const DropdownUser = () => {
         </span>
 
         <span className="h-12 w-12 rounded-full">
-          <img src={user?.image || avatar} alt="User" className="h-12 w-12 rounded-full" />
+          <img src={user?.image || avatar} alt="" className="h-10 w-10 rounded-full object-cover sm:h-12 sm:w-12" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = avatar; }} />
         </span>
 
-      </Link>
+      </button>
 
       {/* <!-- Dropdown Start --> */}
       {dropdownOpen && (

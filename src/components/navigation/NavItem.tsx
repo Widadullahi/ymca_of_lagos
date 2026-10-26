@@ -27,7 +27,7 @@ if (to && !subItems) {
         className={({ isActive }) => 
           `flex items-center gap-3.5 p-4 text-sm font-medium duration-300 ease-in-out ${
             isActive 
-              ? 'text-blue-600 bg-blue-100 rounded-md' 
+              ? 'text-red-700 bg-red-50 rounded-md'
               : 'text-gray-700 hover:bg-gray-100 rounded-md'
           }`
         }

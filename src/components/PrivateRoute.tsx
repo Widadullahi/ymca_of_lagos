@@ -11,8 +11,6 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ element }) => {
   const { authToken, globalLoading, user } = useAuth();
   const location = useLocation();
 
-  console.log(authToken)
-
   // If we are still fetching the initial profile, don't redirect yet
   if (globalLoading && !authToken) {
     return <div>Loading credentials...</div>;

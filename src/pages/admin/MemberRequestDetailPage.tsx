@@ -124,12 +124,6 @@ const MemberRequestDetailPage: React.FC = () => {
           ...(payload || {}),
           ...((payload as any)?.user_request || {}),
         };
-        console.log('Full API response:', response);
-        console.log('Extracted payload:', payload);
-        console.log('Nested user_request payload:', payload?.user_request);
-        console.log('next_of_kin_name:', finalPayload?.next_of_kin_name || finalPayload?.next_of_kin);
-        console.log('next_of_kin_phone:', finalPayload?.next_of_kin_phone);
-        console.log('valid_id_type:', finalPayload?.valid_id_type || finalPayload?.validIdType);
         setMemberRequest(finalPayload);
       } catch (error) {
         console.error('Error fetching member request:', error);
@@ -155,7 +149,7 @@ const MemberRequestDetailPage: React.FC = () => {
       // Check if user was created as part of approval
       if (response?.data?.user_created) {
         toast.success(
-          `Member request approved successfully! User profile created for ${response.data.user_email} with default password 'member12345'`,
+          `Member request approved successfully! Temporary sign-in details will be emailed to ${response.data.user_email}.`,
           { autoClose: 8000 }
         );
       } else {
@@ -203,7 +197,7 @@ const MemberRequestDetailPage: React.FC = () => {
       const response = await memberRequestsApi.reconsiderMemberRequest(memberRequest.id);
       if (response?.data?.user_created) {
         toast.success(
-          `Member request approved successfully! User profile created for ${response.data.user_email} with default password 'member12345'`,
+          `Member request approved successfully! Temporary sign-in details will be emailed to ${response.data.user_email}.`,
           { autoClose: 8000 }
         );
       } else {

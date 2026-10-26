@@ -1,5 +1,6 @@
 import datetime
 import json
+import threading
 from decimal import Decimal
 import hashlib
 import logging
@@ -37,7 +38,6 @@ class Remita:
                 "url": url,
                 "orderId": data.get("orderId"),
                 "amount": data.get("amount"),
-                "payerEmail": data.get("payerEmail"),
                 "description": data.get("description"),
             },
         )
@@ -45,7 +45,7 @@ class Remita:
     @staticmethod
     def log_remita_response(context: str, response):
         logger.info("%s Remita response status: %s", context, response.status_code)
-        logger.debug("%s Remita response body: %s", context, response.text)
+        # Gateway bodies can contain payer details and payment references.
 
     @staticmethod
     def parse_response(response):
@@ -252,6 +252,9 @@ class Remita:
             )
 
             # Get Remita credentials
+            if settings.REMITA_CHECKOUT_MODE == 'hosted':
+                from api.utils.payment.hosted import HostedCheckout
+                return HostedCheckout.initialize(transaction, f'{user.first_name or ""} {user.last_name or ""}', user.email, user.phone_number or '')
             merchant_id = settings.REMITA_MERCHANT_ID
             api_key = settings.REMITA_API_KEY
             service_type_id = settings.REMITA_SERVICE_TYPE_ID
@@ -333,17 +336,21 @@ class Remita:
                 error_msg = f"{error_msg}: {response.text}"
             return bad_request_response(message=error_msg)
 
-        except Exception as e:
-            return bad_request_response(message=str(e))
+        except Exception:
+            logger.exception('Remita membership checkout initialization failed')
+            return bad_request_response(message='Unable to start payment right now. Please try again.')
 
     @staticmethod
     def validate_payment(rrr: str):
         try:
-            logger.info("Starting payment validation for RRR: %s", rrr)
+            rrr = str(rrr or '').strip()
+            if not rrr.isdigit() or len(rrr) > 30:
+                return bad_request_response(message="Invalid RRR")
+            logger.info("Starting Remita payment validation")
             merchant_id = settings.REMITA_MERCHANT_ID
             api_key = settings.REMITA_API_KEY
             base_url = settings.REMITA_BASE_URL
-            logger.info("Remita credentials - merchant_id: %s, base_url: %s", merchant_id, base_url)
+            logger.info("Using configured Remita endpoint: %s", base_url)
 
             api_hash = Remita.generate_status_hash(merchant_id, rrr, api_key)
 
@@ -358,17 +365,14 @@ class Remita:
             )
 
             logger.info("Remita status API response status: %s", response.status_code)
-            logger.info("Remita status API response text: %s", response.text)
 
             if response.ok:
                 response_data = Remita.parse_response(response)
-                logger.info("Parsed Remita response data: %s", response_data)
                 status_code = response_data.get("statuscode") or response_data.get("status")
                 logger.info("Remita status code: %s", status_code)
 
                 # Find transaction by RRR in response metadata (we store RRR in transaction.response)
                 # First, try to find transaction with this RRR
-                logger.info("Looking for transaction with RRR: %s", rrr)
                 transaction = Transaction.objects.filter(
                     payment_gateway__in=['remita', 'remitta'],
                     response__rrr=rrr
@@ -378,7 +382,7 @@ class Remita:
                     logger.info("Found transaction: %s, type: %s, status: %s",
                                 transaction.id, transaction.transaction_type, transaction.status)
                 else:
-                    logger.error("No transaction found for RRR: %s", rrr)
+                    logger.warning("No transaction found for validated Remita reference")
                     return bad_request_response(message="Transaction not found")
 
                 # Trust our own recorded state first: if success was already
@@ -430,11 +434,11 @@ class Remita:
             return bad_request_response(message='Failed to verify payment with Remita')
 
         except Transaction.DoesNotExist:
-            logger.exception("Transaction not found for RRR: %s", rrr)
+            logger.warning("No local transaction matched the verified Remita reference")
             return bad_request_response(message="Transaction not found")
-        except Exception as e:
-            logger.exception("Exception occurred during payment validation: %s", str(e))
-            return bad_request_response(message=f'Unable to verify payment at the moment: {str(e)}')
+        except Exception:
+            logger.exception("Remita payment validation failed")
+            return bad_request_response(message='Unable to verify payment at the moment. Please try again.')
 
     @staticmethod
     @db_transaction.atomic
@@ -445,11 +449,10 @@ class Remita:
         (skipped for DONATION and user-less transactions).
         Lock the record and commit membership changes together with payment status.
         """
-        metadata = transaction.response
         transaction = Transaction.objects.select_for_update().get(pk=transaction.pk)
         if transaction.status == 'success':
             return
-        transaction.response = metadata
+        transaction.response = transaction.response or {}
         transaction.status = "success"
         transaction.save(update_fields=['status', 'response', 'updated_at'])
 
@@ -473,6 +476,21 @@ class Remita:
             transaction.user.membership_expiry = id_card.expired_at
             transaction.user.is_active = True
             transaction.user.save(update_fields=['membership_expiry', 'is_active', 'updated_at'])
+
+        # Send receipts only after the payment and membership update commit. Email
+        # delivery failures must never roll back a confirmed payment.
+        from api.utils.payment.receipts import send_payment_receipt
+        payment_id = str(transaction.pk)
+
+        def start_receipt_email():
+            threading.Thread(
+                target=send_payment_receipt,
+                args=(payment_id,),
+                name=f'payment-receipt-{payment_id}',
+                daemon=True,
+            ).start()
+
+        db_transaction.on_commit(start_receipt_email)
 
     @staticmethod
     def charge_user_for_donation(request, amount, name, email=None, phone=''):
@@ -500,6 +518,9 @@ class Remita:
             )
 
             # Get Remita credentials
+            if settings.REMITA_CHECKOUT_MODE == 'hosted':
+                from api.utils.payment.hosted import HostedCheckout
+                return HostedCheckout.initialize(transaction, name, email, phone)
             merchant_id = settings.REMITA_MERCHANT_ID
             api_key = settings.REMITA_API_KEY
             service_type_id = settings.REMITA_SERVICE_TYPE_ID
@@ -581,8 +602,9 @@ class Remita:
                 error_msg = f"{error_msg}: {response.text}"
             return bad_request_response(message=error_msg)
 
-        except Exception as e:
-            return bad_request_response(message=str(e))
+        except Exception:
+            logger.exception('Remita donation checkout initialization failed')
+            return bad_request_response(message='Unable to start donation payment right now. Please try again.')
 
     @staticmethod
     def process_webhook(payload):
@@ -593,7 +615,8 @@ class Remita:
 
             return Remita.validate_payment(rrr)
 
-        except Exception as e:
-            return bad_request_response(message=str(e))
+        except Exception:
+            logger.exception('Remita webhook processing failed')
+            return bad_request_response(message='Unable to process payment notification right now.')
 
 remita = Remita()

@@ -25,15 +25,13 @@ const TransactionValidation: React.FC = () => {
     setValidationResult(null);
     setCurrentRrr(rrrToValidate);
     try {
-      console.log('Validating transaction with RRR:', rrrToValidate);
       const response = await fetchWithAuth({
           method: 'POST',
           path: '/payment/verify',
-          body: { rrr: rrrToValidate },
+          body: (searchParams.get('reference') || (!searchParams.get('rrr') && localStorage.getItem('remita_reference')))
+            ? { reference: rrrToValidate } : { rrr: rrrToValidate },
           isAthenticated: false
       });
-      console.log('Verification response:', response);
-
       const successful = response?.status === true && response?.data?.success === true;
       setValidationResult({ status: successful, message: response?.message || 'Unable to verify payment' });
       if (user && successful) {
@@ -42,6 +40,7 @@ const TransactionValidation: React.FC = () => {
       // Clear RRR from localStorage after verification if successful
       if (successful) {
         localStorage.removeItem('remita_rrr');
+        localStorage.removeItem('remita_reference');
       }
       setLoading(false);
     } catch (error: any) {
@@ -66,9 +65,9 @@ const TransactionValidation: React.FC = () => {
 
   useEffect(() => {
     // First try to get RRR from localStorage
-    const storedRrr = localStorage.getItem('remita_rrr');
+    const storedRrr = localStorage.getItem('remita_reference') || localStorage.getItem('remita_rrr');
     // Also check URL params for RRR
-    const urlRrr = searchParams.get('rrr');
+    const urlRrr = searchParams.get('reference') || searchParams.get('rrr');
     
     if (storedRrr || urlRrr) {
       const rrrToUse = urlRrr || storedRrr;

@@ -116,7 +116,6 @@ const UserDetailPage: React.FC = () => {
 
         setMember(response);
         setFormData(response);
-        console.log(response)
       } catch (error) {
         console.error('Error fetching member details:', error);
         displayNotification('error', 'Failed to load member details');
