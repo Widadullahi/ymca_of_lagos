@@ -14,22 +14,21 @@ const TransactionValidation: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(true);
   const [validationResult, setValidationResult] = useState<ApiResponse | null>(null);
-  const [manualRrr, setManualRrr] = useState<string>('');
-  const [currentRrr, setCurrentRrr] = useState<string | null>(null);
+  const [manualReference, setManualReference] = useState<string>('');
+  const [currentReference, setCurrentReference] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const lastAutoVerifiedRrr = useRef<string | null>(null);
+  const lastAutoVerifiedReference = useRef<string | null>(null);
 
-  const validateTransaction = async (rrrToValidate: string) => {
+  const validateTransaction = async (referenceToValidate: string) => {
     setLoading(true);
     setIsProcessing(false);
     setValidationResult(null);
-    setCurrentRrr(rrrToValidate);
+    setCurrentReference(referenceToValidate);
     try {
       const response = await fetchWithAuth({
           method: 'POST',
           path: '/payment/verify',
-          body: (searchParams.get('reference') || (!searchParams.get('rrr') && localStorage.getItem('remita_reference')))
-            ? { reference: rrrToValidate } : { rrr: rrrToValidate },
+          body: { reference: referenceToValidate },
           isAthenticated: false
       });
       const successful = response?.status === true && response?.data?.success === true;
@@ -37,10 +36,9 @@ const TransactionValidation: React.FC = () => {
       if (user && successful) {
         fetchUserProfile();
       }
-      // Clear RRR from localStorage after verification if successful
+      // Clear payment reference from localStorage after verification if successful
       if (successful) {
-        localStorage.removeItem('remita_rrr');
-        localStorage.removeItem('remita_reference');
+        localStorage.removeItem('paystack_reference');
       }
       setLoading(false);
     } catch (error: any) {
@@ -64,33 +62,33 @@ const TransactionValidation: React.FC = () => {
   };
 
   useEffect(() => {
-    // First try to get RRR from localStorage
-    const storedRrr = localStorage.getItem('remita_reference') || localStorage.getItem('remita_rrr');
-    // Also check URL params for RRR
-    const urlRrr = searchParams.get('reference') || searchParams.get('rrr');
+    // First try to get payment reference from localStorage
+    const storedReference = localStorage.getItem('paystack_reference');
+    // Also check URL params for payment reference
+    const urlReference = searchParams.get('reference') || searchParams.get('trxref');
     
-    if (storedRrr || urlRrr) {
-      const rrrToUse = urlRrr || storedRrr;
-      if (lastAutoVerifiedRrr.current === rrrToUse) return;
-      lastAutoVerifiedRrr.current = rrrToUse;
-      setCurrentRrr(rrrToUse);
-      validateTransaction(rrrToUse!);
+    if (storedReference || urlReference) {
+      const referenceToUse = urlReference || storedReference;
+      if (lastAutoVerifiedReference.current === referenceToUse) return;
+      lastAutoVerifiedReference.current = referenceToUse;
+      setCurrentReference(referenceToUse);
+      validateTransaction(referenceToUse!);
     } else {
-      // No RRR found, show manual input
+      // No payment reference found, show manual input
       setLoading(false);
     }
   }, [searchParams, user, fetchWithAuth, fetchUserProfile]);
 
   const handleManualVerify = async () => {
-    if (!manualRrr.trim()) {
+    if (!manualReference.trim()) {
       return;
     }
-    validateTransaction(manualRrr.trim());
+    validateTransaction(manualReference.trim());
   };
 
   const handleRetry = () => {
-    if (currentRrr) {
-      validateTransaction(currentRrr);
+    if (currentReference) {
+      validateTransaction(currentReference);
     }
   };
 
@@ -192,20 +190,20 @@ const TransactionValidation: React.FC = () => {
     );
   }
 
-  // If no RRR found, show manual input form
+  // If no payment reference found, show manual input form
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-gray-700">Verify Payment</h2>
-          <p className="mt-2 text-gray-500">Enter your remita Retrieval Reference (RRR) to verify your payment.</p>
+          <p className="mt-2 text-gray-500">Enter your Paystack payment reference to verify your payment.</p>
         </div>
         <div>
           <input
             type="text"
-            placeholder="Enter RRR"
-            value={manualRrr}
-            onChange={(e) => setManualRrr(e.target.value)}
+            placeholder="Enter payment reference"
+            value={manualReference}
+            onChange={(e) => setManualReference(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           />
         </div>

@@ -34,7 +34,7 @@ const HomePage: React.FC = () => {
     amount: '',
     email: '',
     phone: '',
-    redirect_url: FRONTEND_URL + '',
+    redirect_url: FRONTEND_URL + '/payment',
   });
 
 
@@ -80,7 +80,7 @@ const HomePage: React.FC = () => {
 
   const closeDonationModal = () => {
     setIsDonationModalOpen(false);
-    setDonationForm({ name: '', amount: '', email: '', phone: '', redirect_url: FRONTEND_URL + '', });
+    setDonationForm({ name: '', amount: '', email: '', phone: '', redirect_url: FRONTEND_URL + '/payment', });
     document.body.style.overflow = 'auto';
   };
 

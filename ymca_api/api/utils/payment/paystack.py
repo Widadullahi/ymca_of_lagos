@@ -1,5 +1,8 @@
 import datetime
 import requests
+from decimal import Decimal, InvalidOperation
+from django.core.exceptions import ValidationError
+from django.db import transaction as db_transaction
 from django.conf import settings
 from account.models import IDCard, User
 from api.utils.response.response_format import bad_request_response, success_response
@@ -35,7 +38,7 @@ class Paystack:
     @staticmethod
     def get_member_prefix(user: User) -> str:
         try:
-            id_number = (user.card.id_number or '').upper()
+            id_number = (user.idcard.id_number or '').upper()
         except Exception:
             id_number = ''
 
@@ -84,7 +87,7 @@ class Paystack:
             reference_date = datetime.date.today()
 
         try:
-            card = user.card
+            card = user.idcard
         except Exception:
             card = None
 
@@ -105,338 +108,159 @@ class Paystack:
         return headers
 
     @staticmethod
-    def charge_user(request,user_id, transaction_type, **kwargs):
-        transaction=None
+    def initialize(transaction, email, redirect_url):
+        labels = {
+            'DONATION': 'Donation',
+            'ID': 'Membership Activation',
+            'RENEWAL': 'Membership Renewal',
+        }
+        label = labels[transaction.transaction_type]
+        metadata = {
+            **(transaction.response or {}),
+            'transaction_type': transaction.transaction_type,
+            'payment_type': label,
+            'description': f'YMCA Lagos - {label}',
+            'payment_reference': str(transaction.id),
+        }
+        fields = [
+            {'display_name': 'Payment Type', 'variable_name': 'payment_type', 'value': label},
+            {'display_name': 'YMCA Reference', 'variable_name': 'payment_reference', 'value': str(transaction.id)},
+        ]
+        if transaction.transaction_type == 'DONATION':
+            fields.append({'display_name': 'Donor Name', 'variable_name': 'donor_name', 'value': metadata['name']})
+        elif transaction.user:
+            name = f'{transaction.user.first_name or ""} {transaction.user.last_name or ""}'.strip()
+            fields.append({'display_name': 'Member Name', 'variable_name': 'member_name', 'value': name or email})
+            try:
+                card_number = transaction.user.idcard.id_number
+            except IDCard.DoesNotExist:
+                card_number = ''
+            if card_number:
+                fields.append({'display_name': 'Membership Number', 'variable_name': 'membership_number', 'value': card_number})
+            fields.append({'display_name': 'Years Paid', 'variable_name': 'charged_years', 'value': metadata['charged_years']})
+        metadata['custom_fields'] = fields
+        transaction.response = metadata
+        transaction.save(update_fields=['response', 'updated_at'])
         try:
-            user = request.user
-            requested_years = request.data.get("years", 1)
-            try:
-                requested_years = max(1, int(requested_years or 1))
-            except (TypeError, ValueError):
-                return bad_request_response(message="Invalid number of years")
-
-            arrears_years = 0
-            if transaction_type == 'RENEWAL':
-                arrears_years = Paystack.calculate_arrears_years(user)
-                charged_years = max(requested_years, arrears_years)
-                amount_naira = Paystack.calculate_renewal_amount(user, charged_years)
-            else:
-                charged_years = requested_years
-                amount_naira = Paystack.calculate_activation_amount(user, charged_years)
-
-            amount = int(round(float(amount_naira) * 100))
-
-            if amount <= 0:
-                return bad_request_response(message="Amount must be greater than zero")
-
-            redirect_url = f"{request.data.get('redirect_url')}"
-
-            # Create transaction record in database
-            transaction = Transaction.objects.create(
-                user=request.user,
-                amount=amount / 100,
-                transaction_type=transaction_type,
-                status="pending",
-                response={
-                    "requested_years": requested_years,
-                    "charged_years": charged_years,
-                    "arrears_years": arrears_years,
-                    "transaction_type": transaction_type,
-                    "enforced_amount": amount / 100,
-                }
-            )
-            metadata = {
-                "application_id": str(transaction.id),
-                "email": transaction.user.email,
-                "description": "YMCA membership payment",
-                "requested_years": requested_years,
-                "charged_years": charged_years,
-                "arrears_years": arrears_years,
-                "transaction_type": transaction_type,
-            }
-
-            # Prepare request payload for Paystack
-            data = {
-                "email": transaction.user.email,
-                "amount": amount, 
-                "reference":str(transaction.id),
-                "currency": "NGN",
-                "callback_url": redirect_url,
-                "metadata": metadata,
-            }
-
             response = requests.post(
-                "https://api.paystack.co/transaction/initialize",
-                json=data,
-                headers=Paystack.get_header()
+                'https://api.paystack.co/transaction/initialize',
+                json={
+                    'email': email,
+                    'amount': int(transaction.amount * 100),
+                    'currency': 'NGN',
+                    'reference': str(transaction.id),
+                    'callback_url': redirect_url,
+                    'metadata': metadata,
+                },
+                headers=Paystack.get_header(), timeout=20,
             )
-
-            if response.ok:
-                response_data = response.json()
-                if response.status_code == 200 and response_data["status"] == True:
-                    print(response_data['data'])
-                    payment_url = response_data['data']['authorization_url']
-                    return success_response(
-                        data={"payment_url": payment_url},
-                    )
-
-                return bad_request_response(message=response_data.get('message', 'Failed to initiate payment.'))
-            
-            error_msg = 'Failed to initiate payment.'
-            try:
-                error_msg = f"{error_msg} Reason: {response.json().get('message', response.text)}"
-            except Exception:
-                error_msg = f"{error_msg} Reason: {response.text}"
-
-            return bad_request_response(message=error_msg)
-
-        except Exception as e:
-            return bad_request_response(message=str(e))
-        
-
+            result = response.json()
+            if response.ok and result.get('status') is True:
+                return success_response(data={
+                    'payment_url': result['data']['authorization_url'],
+                    'payment_reference': str(transaction.id),
+                })
+            message = result.get('message', 'Failed to initiate payment.')
+        except (requests.RequestException, ValueError, KeyError):
+            message = 'Unable to initialize Paystack checkout. Please try again.'
+        transaction.status = 'failed'
+        transaction.response = {**(transaction.response or {}), 'error': message}
+        transaction.save(update_fields=['status', 'response', 'updated_at'])
+        return bad_request_response(message=message)
     
     @staticmethod
-    def charge_user_for_donation(request,amount, name, email=None):
+    def charge_user(request, user_id, transaction_type, **kwargs):
+        user = request.user
         try:
-            amount = int(round(float(amount) * 100))  # amount (in kobo)
-            if amount <= 0:
-                return bad_request_response(message="Amount must be greater than zero")
-            redirect_url = f"{request.data.get('redirect_url')}"
-            metadata = {
-                "payment_mode": 'donation',
-                "name": name,
-                "email": email,
-                "description": "Donation"
-            }
-
-            # Prepare request payload for Paystack
-            data = {
-                "email": email,
-                "amount": amount, 
-                "currency": "NGN",
-                "callback_url": redirect_url,
-                "metadata": metadata,
-            }
-
-            response = requests.post(
-                "https://api.paystack.co/transaction/initialize",
-                json=data,
-                headers=Paystack.get_header()
-            )
-            if response.ok:
-                response_data = response.json()
-                if response.status_code == 200 and response_data["status"] == True:
-                    print(response_data['data'])
-                    payment_url = response_data['data']['authorization_url']
-                    return success_response(
-                        data={"payment_url": payment_url},
-                    )
-
-                return bad_request_response(message=response_data.get('message', 'Failed to initiate payment.'))
-
-            error_msg = 'Failed to initiate payment.'
-            try:
-                error_msg = f"{error_msg} Reason: {response.json().get('message', response.text)}"
-            except Exception:
-                error_msg = f"{error_msg} Reason: {response.text}"
-
-            return bad_request_response(message=error_msg)
-
-        except Exception as e:
-            return bad_request_response(message=str(e))
-
+            requested_years = max(1, int(request.data.get('years') or 1))
+        except (TypeError, ValueError):
+            return bad_request_response(message='Invalid number of years')
+        arrears_years = Paystack.calculate_arrears_years(user) if transaction_type == 'RENEWAL' else 0
+        charged_years = max(requested_years, arrears_years)
+        amount = (Paystack.calculate_renewal_amount(user, charged_years) if transaction_type == 'RENEWAL'
+                  else Paystack.calculate_activation_amount(user, charged_years))
+        if amount <= 0:
+            return bad_request_response(message='Amount must be greater than zero')
+        transaction = Transaction.objects.create(
+            user=user, amount=amount, transaction_type=transaction_type, payment_gateway='paystack',
+            response={'requested_years': requested_years, 'charged_years': charged_years,
+                      'arrears_years': arrears_years, 'transaction_type': transaction_type, 'enforced_amount': amount},
+        )
+        return Paystack.initialize(transaction, user.email, request.data.get('redirect_url'))
 
     @staticmethod
-    def validate_payment(transaction_id):
+    def charge_user_for_donation(request, amount, name, email=None, phone=''):
+        if amount <= 0:
+            return bad_request_response(message='Amount must be greater than zero')
+        transaction = Transaction.objects.create(
+            amount=amount, transaction_type='DONATION', payment_gateway='paystack',
+            response={'name': name, 'email': email, 'phone': phone},
+        )
+        return Paystack.initialize(transaction, email, request.data.get('redirect_url'))
+
+    @staticmethod
+    def validate_payment(reference):
         try:
-            # Verify payment with Paystack
+            transaction = Transaction.objects.get(id=reference, payment_gateway='paystack')
+        except (Transaction.DoesNotExist, ValueError, ValidationError):
+            return bad_request_response(message='Transaction not found.')
+        try:
             response = requests.get(
-                f"https://api.paystack.co/transaction/verify/{transaction_id}",
-                headers=Paystack.get_header()
+                f'https://api.paystack.co/transaction/verify/{transaction.id}',
+                headers=Paystack.get_header(), timeout=20,
             )
-            if response.ok:
-                response_data = response.json()
-                # print(response_data)
-                if response.status_code == 200 and response_data["status"] in ["success",True]:
-                    payment_status = response_data['data']['status']
-                    system_tx_ref = response_data['data']['reference']
-                    
-                    try:
-                        transaction = Transaction.objects.get(id=system_tx_ref)
-                    except:
-                        return bad_request_response(
-                            message="Transaction not found."
-                        )
-
-                    # Update the transaction based on the payment status
-                    if payment_status == "success":
-                        if transaction.status == 'success':
-                            return success_response(
-                                message="Transaction already successful.",
-                                data={
-                                    "transaction_id": str(transaction.id),
-                                    "success":True,
-                                    "amount": transaction.amount,
-                                    "message": "Transaction already successful."
-                                }
-                            )
-                        if transaction.status != "success":
-                            transaction.status = "success"
-                            transaction_metadata = transaction.response or {}
-                            paystack_data = response_data['data']
-                            transaction.response = {
-                                **transaction_metadata,
-                                "paystack": paystack_data,
-                            }
-                            id_card, created = IDCard.objects.get_or_create(user=transaction.user)
-                            charged_years = max(1, int(transaction_metadata.get('charged_years') or 1))
-                            arrears_years = max(0, int(transaction_metadata.get('arrears_years') or 0))
-                            payment_date = datetime.date.today()
-
-                            id_card.is_active =True
-                            id_card.first_time =False
-                            id_card.expired = False
-                            if transaction.transaction_type == 'RENEWAL' and arrears_years > 1:
-                                # Arrears clear old missed years and reactivate the card for the current cycle.
-                                id_card.expired_at = Paystack.next_may_31(payment_date)
-                            else:
-                                id_card.expired_at = Paystack.expiry_after_payment(charged_years, payment_date)
-                            id_card.save()
-                            transaction.user.membership_expiry = id_card.expired_at
-                            transaction.user.is_active = True
-                            transaction.user.save(update_fields=['membership_expiry', 'is_active', 'updated_at'])
-                            transaction.save()
-                            return success_response(
-                                message="Payment successful.",
-                                data={
-                                    "transaction_id": str(transaction.id),
-                                    "success":True,
-                                    "amount": transaction.amount,
-                                    "message": "Payment successful."
-                                }
-                            )
-                  
-                        return success_response(message="Payment successful.")
-
-                    elif payment_status == "failed":
-                        transaction.status = "failed"
-                        transaction.response = response_data['data']
-                        transaction.save()
-                        return bad_request_response(message="Payment not successful.")
+            result = response.json()
+            if not response.ok or result.get('status') is not True:
+                return bad_request_response(message='Payment verification failed.')
+            data = result['data']
+            if (data.get('reference') != str(transaction.id) or data.get('currency') != 'NGN'
+                    or Decimal(str(data.get('amount'))) != transaction.amount * 100):
+                return bad_request_response(message='Payment details do not match the transaction.')
+            with db_transaction.atomic():
+                transaction = Transaction.objects.select_for_update().get(pk=transaction.pk)
+                if transaction.status != 'success':
+                    if data.get('status') == 'success':
+                        Paystack.apply_payment_success(transaction, data)
+                    elif data.get('status') == 'failed':
+                        transaction.status = 'failed'
+                        transaction.response = {**(transaction.response or {}), 'paystack': data}
+                        transaction.save(update_fields=['status', 'response', 'updated_at'])
+                        return bad_request_response(message='Payment not successful.')
                     else:
                         return bad_request_response(message='Payment still processing')
-
-                return bad_request_response(message="Payment verification failed.")
-
-            return bad_request_response(message='Failed to verify payment.')
-
-        except Transaction.DoesNotExist:
-            return bad_request_response(message="Transaction not found.")
-        except Exception as e:
-            print(e)
+            return success_response(message='Payment successful.', data={
+                'transaction_id': str(transaction.id), 'success': True, 'amount': transaction.amount,
+            })
+        except (requests.RequestException, ValueError, KeyError, InvalidOperation):
             return bad_request_response(message='Unable to verify payment at the moment')
         
-
     @staticmethod
-    def validate_payment_donation(transaction_id):
-        try:
-            # Verify payment with Paystack
-            response = requests.get(
-                f"https://api.paystack.co/transaction/verify/{transaction_id}",
-                headers=Paystack.get_header()
-            )
-            if response.ok:
-                response_data = response.json()
-                if response.status_code == 200 and response_data["status"] in ["success",True]:
-
-                    return success_response(
-                                message="Transaction already successful.",
-                    )
-                return bad_request_response(message="Payment verification failed.")
-            return bad_request_response(message='Failed to verify payment.')
-        except Transaction.DoesNotExist:
-            return bad_request_response(message="Transaction not found.")
-        except Exception as e:
-            print(e)
-            return bad_request_response(message='Unable to verify payment at the moment')
-        
-
+    def apply_payment_success(transaction, data):
+        metadata = transaction.response or {}
+        if transaction.transaction_type != 'DONATION' and transaction.user:
+            id_card, _ = IDCard.objects.get_or_create(user=transaction.user)
+            charged_years = max(1, int(metadata.get('charged_years') or 1))
+            arrears_years = max(0, int(metadata.get('arrears_years') or 0))
+            id_card.is_active = True
+            id_card.first_time = False
+            id_card.expired = False
+            if transaction.transaction_type == 'RENEWAL' and arrears_years > 1:
+                id_card.expired_at = Paystack.next_may_31()
+            else:
+                id_card.expired_at = Paystack.expiry_after_payment(charged_years)
+            id_card.save()
+            transaction.user.membership_expiry = id_card.expired_at
+            transaction.user.is_active = True
+            transaction.user.save(update_fields=['membership_expiry', 'is_active', 'updated_at'])
+        transaction.status = 'success'
+        transaction.response = {**metadata, 'paystack': data}
+        transaction.save(update_fields=['status', 'response', 'updated_at'])
 
     @staticmethod
     def process_webhook(payload):
-        try:
-            transaction_id = payload['data']['reference']
-            payment_status = payload['data']['status']
-
-            # Call Paystack to verify the payment
-            response = requests.get(
-                f"https://api.paystack.co/transaction/verify/{transaction_id}",
-                headers=Paystack.get_header()
-            )
-
-            if response.ok:
-                response_data = response.json()
-                if response.status_code == 200 and response_data["status"] == "success":
-                    payment_status = response_data['data']['status']
-                    system_tx_ref = response_data['data']['reference']
-
-                    transaction = Transaction.objects.get(id=system_tx_ref)
-
-                    # Update the transaction based on the payment status
-                    if payment_status == "success":
-                        if transaction.status == 'success':
-                            return success_response(
-                                message="Transaction already successful.",
-                                data={"message": "Transaction already successful."}
-                            )
-                        if transaction.status != "success":
-                            transaction.status = "success"
-                            transaction_metadata = transaction.response or {}
-                            paystack_data = response_data['data']
-                            transaction.response = {
-                                **transaction_metadata,
-                                "paystack": paystack_data,
-                            }
-                            id_card, created = IDCard.objects.get_or_create(user=transaction.user)
-                            id_card.is_active =True
-                            id_card.expired = False
-                            charged_years = max(1, int(transaction_metadata.get('charged_years') or 1))
-                            arrears_years = max(0, int(transaction_metadata.get('arrears_years') or 0))
-                            payment_date = datetime.date.today()
-                            if transaction.transaction_type == 'RENEWAL' and arrears_years > 1:
-                                id_card.expired_at = Paystack.next_may_31(payment_date)
-                            else:
-                                id_card.expired_at = Paystack.expiry_after_payment(charged_years, payment_date)
-                            id_card.save()
-                            transaction.user.membership_expiry = id_card.expired_at
-                            transaction.user.is_active = True
-                            transaction.user.save(update_fields=['membership_expiry', 'is_active', 'updated_at'])
-                            transaction.save()
-                            return success_response(
-                                message="Payment successful.",
-                                data={
-                                    "transaction_id": str(transaction.id),
-                                    "amount": transaction.amount,
-                                    "message": "Payment successful."
-                                }
-                            )
-                  
-                        return success_response(message="Payment successful.")
-
-                    elif payment_status == "failed":
-                        transaction.status = "failed"
-                        transaction.response = response_data['data']
-                        transaction.save()
-                        return bad_request_response(message="Payment not successful.")
-                    else:
-                        return bad_request_response(message='Payment still processing')
-
-                return bad_request_response(message="Payment verification failed.")
-
-            return bad_request_response(message='Failed to verify payment.')
-
-        except Transaction.DoesNotExist:
-            return bad_request_response(message="Transaction not found.")
-        except Exception as e:
-            return bad_request_response(message=str(e))
-
+        if payload.get('event') != 'charge.success':
+            return success_response(message='Event acknowledged.')
+        reference = (payload.get('data') or {}).get('reference')
+        if not reference:
+            return bad_request_response(message='Payment reference is required')
+        return Paystack.validate_payment(reference)

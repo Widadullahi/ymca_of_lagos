@@ -1,1 +1,1 @@
-from .remita import Remita as remita
+from .paystack import Paystack

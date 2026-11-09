@@ -7,7 +7,7 @@
     "dev": "node init && vite",
     "build": "node init && tsc -b && vite build",
     "lint": "eslint .",
-    "test:payments": "node --test tests/remitaInline.test.mjs",
+    "test:payments": "node --test tests/paymentCheckout.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

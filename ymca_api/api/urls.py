@@ -12,10 +12,9 @@ from api.views.transaction import (
     TotalMembersCountView,
     StartMembershipDemoView,
     VerifyPaymentView,
-    RemitaWebhookView,
+    PaystackWebhookView,
     InitiateDonationView,
     AdminDonationsView,
-    LocalCheckoutView,
 )
 from api.views.members import AdminAddMembersView, AdminGetSingleRequestView, AdminGetMemberOverview, AdminMemberRetrieveUpdateDestroyView, AdminMemberUpdateDestroyView, AdminMembersBulkUploadView, AdminPromoteMemberView, AdminUpdateRequestStatusView, AdminUserRequestListView, CreateUserRequestView, CurrentUserRequestUpdateView, UserRequestDetailView, UserRequestListView, VerifyCardIdNumberView, AdminMembersExportView, AdminsExportView, SendEmailVerificationCodeView, VerifyEmailVerificationCodeView
 from api.views.set_password import AdminSetUserPasswordView
@@ -69,10 +68,9 @@ urlpatterns = [
     path('membership/activation', ActivateMembershipView.as_view(), name='ActivateMembershipView'),
     path('membership/renewal', RenewMembershipView.as_view(), name='RenewMembershipView'),
     path('payment/verify', VerifyPaymentView.as_view(), name='VerifyPaymentView'),
-    path('payment/webhook', RemitaWebhookView.as_view(), name='RemitaWebhookView'),
+    path('payment/webhook', PaystackWebhookView.as_view(), name='PaystackWebhookView'),
     path('initiate/donation', InitiateDonationView.as_view(), name='InitiateDonationView'),
     path('admin/donations/', AdminDonationsView.as_view(), name='admin-donations'),
-    path('payment/local-test/<uuid:reference>/', LocalCheckoutView.as_view(), name='local-checkout'),
     path('total-members-count', TotalMembersCountView.as_view(), name='TotalMembersCountView'),
     # Subscription endpoints
     path('subscriptions/', include('subscription.urls')),

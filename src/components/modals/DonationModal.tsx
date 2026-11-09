@@ -15,7 +15,7 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose }) => {
     name: '',
     amount: '',
     email: '',
-    redirect_url: FRONTEND_URL + '',
+    redirect_url: FRONTEND_URL + '/payment',
   });
 
   const buttonVariants = {
@@ -75,7 +75,7 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleClose = () => {
-    setDonationForm({ name: '', amount: '', email: '', redirect_url: FRONTEND_URL + '' });
+    setDonationForm({ name: '', amount: '', email: '', redirect_url: FRONTEND_URL + '/payment' });
     document.body.style.overflow = 'auto';
     onClose();
   };

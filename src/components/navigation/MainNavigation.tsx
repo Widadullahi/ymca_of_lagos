@@ -19,7 +19,7 @@ const MainNavigation: React.FC<MainNavigationProps> = () => {
     name: '',
     amount: '',
     email: '',
-    redirect_url: FRONTEND_URL + '',
+    redirect_url: FRONTEND_URL + '/payment',
   });
 
   useEffect(() => {
@@ -98,7 +98,7 @@ const MainNavigation: React.FC<MainNavigationProps> = () => {
 
   const closeDonationModal = () => {
     setIsDonationModalOpen(false);
-    setDonationForm({ name: '', amount: '', email: '', redirect_url: FRONTEND_URL + '', });
+    setDonationForm({ name: '', amount: '', email: '', redirect_url: FRONTEND_URL + '/payment', });
     document.body.style.overflow = 'auto';
   };
 

@@ -240,7 +240,7 @@ LOGGING = {
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
             'propagate': False,
         },
-        # This will show logs from remita.py (and other api utils)
+        # Payment and API utility logs
         'api': {
             'handlers': ['console'],
             'level': 'DEBUG',
@@ -267,22 +267,4 @@ RESEND_API_URL = os.getenv("RESEND_API_URL", "https://api.resend.com/emails")
 PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "")
 PAYSTACK_PUBLIC_KEY = os.getenv("PAYSTACK_PUBLIC_KEY", "")
 
-# Remita Settings
-def remita_env(name, default=""):
-    # Keep existing Render deployments working while migrating the old spelling.
-    return (os.getenv(f"REMITA_{name}") or os.getenv(f"REMITTA_{name}") or default).strip()
-
-
-REMITA_BASE_URL = remita_env("BASE_URL", "https://demo.remita.net/remita/exapp/api/v1/send/api").rstrip('/')
-REMITA_MERCHANT_ID = remita_env("MERCHANT_ID")
-REMITA_API_KEY = remita_env("API_KEY")
-REMITA_SERVICE_TYPE_ID = remita_env("SERVICE_TYPE_ID")
-REMITA_PUBLIC_KEY = remita_env("PUBLIC_KEY")
 ENABLE_DEMO_MEMBERSHIP = env_bool("ENABLE_DEMO_MEMBERSHIP", False)
-REMITA_CHECKOUT_MODE = os.getenv('REMITA_CHECKOUT_MODE', 'invoice')
-REMITA_HOSTED_BASE_URL = os.getenv('REMITA_HOSTED_BASE_URL', 'https://api-demo.systemspecsng.com/services/connect-gateway/api/v1/payment-engine').rstrip('/')
-REMITA_SECRET_KEY = os.getenv('REMITA_SECRET_KEY', '').strip()
-# Never allow simulated payments against the production settings.
-REMITA_LOCAL_TEST_MODE = DEBUG and env_bool('REMITA_LOCAL_TEST_MODE', False)
-LOCAL_FRONTEND_URL = os.getenv('LOCAL_FRONTEND_URL', 'http://127.0.0.1:5173').rstrip('/')
-
